@@ -1,0 +1,100 @@
+{
+  "products": [
+    {
+      "_id": "1",
+      "primaryDishTitle": "PHULKA",
+      "subDishTitle": "CHANNA MASALA",
+      "shortDescription": "A savory and cozy combination",
+      "description": "Soft phulka embraces a lively, spicy chana masala. With its mild texture and filling flavor, this healthy pair is ideal for small bellies. A straightforward yet delicious dish that combines the tang of chickpeas with the warmth of bread.",
+      "cuisine": "Indian",
+      "status": "active",
+      "image": "/menu/biriyani-img.png",
+      "nutrition": {
+        "calories": 3,
+        "fats": 2,
+        "carbs": 4,
+        "proteins": 3
+      }
+    },
+    {
+      "_id": "2",
+      "primaryDishTitle": "PHULKA",
+      "subDishTitle": "PANEER BUTTER MASALA",
+      "shortDescription": "Savor the luscious, creamy delight",
+      "description": "Tender phulka with paneer butter masala. With its symphony of flavors and textures, this opulent combination is a delicious feast. A rich, fragrant curry and soft bread combine to create a very delightful meal.",
+      "cuisine": "Indian",
+      "status": "active",
+      "image": "/menu/biriyani-img.png",
+      "nutrition": {
+        "calories": 4,
+        "fats": 3,
+        "carbs": 4,
+        "proteins": 4
+      }
+    },
+    {
+      "_id": "3",
+      "primaryDishTitle": "PAV",
+      "subDishTitle": "BHAJI",
+      "shortDescription": "Full of sour and delicious tastes",
+      "description": "This well-liked Pav Bhaji is ready to eat with soft buttered buns. The dish consists of mashed veggies cooked with aromatic spices. Allow your child's palate to enjoy this tasty and thrilling food treat.",
+      "cuisine": "Indian",
+      "status": "active",
+      "image": "/menu/biriyani-img.png",
+      "nutrition": {
+        "calories": 3,
+        "fats": 2,
+        "carbs": 3,
+        "proteins": 2
+      }
+    },
+    {
+      "_id": "4",
+      "primaryDishTitle": "5 SPICE",
+      "subDishTitle": "FRIED RICE + BABY CORN",
+      "shortDescription": "Fluffy fried rice warmed by five aromatic spices",
+      "description": "Picture fluffy fried rice that has been warmed by five aromatic spices. This wonderful delicacy is enhanced by the texture and taste of tender baby corn. A tasty and distinctive take on a traditional dish that sparks your child's interest in food.",
+      "cuisine": "Asian",
+      "status": "active",
+      "image": "/menu/biriyani-img.png",
+      "nutrition": {
+        "calories": 3,
+        "fats": 2,
+        "carbs": 4,
+        "proteins": 2
+      }
+    },
+    {
+      "_id": "5",
+      "primaryDishTitle": "VEG",
+      "subDishTitle": "NOODLES + GRAVY",
+      "shortDescription": "A vibrant variety of garden vegetables",
+      "description": "Nutritious noodles blend with garden vegetables. This wholesome combo is embraced by a hearty gravy, which adds a layer of deliciousness. A tasty and nutritious supper that is warm and filling for your child.",
+      "cuisine": "Asian",
+      "status": "active",
+      "image": "/menu/biriyani-img.png",
+      "nutrition": {
+        "calories": 3,
+        "fats": 2,
+        "carbs": 4,
+        "proteins": 2
+      }
+    },
+    {
+      "_id": "6",
+      "primaryDishTitle": "ALFREDO PASTA",
+      "subDishTitle": "GARLIC BREAD",
+      "shortDescription": "Rich and cozy dish with velvety sauce",
+      "description": "Soft pasta covered in velvety, smooth Alfredo sauce. Crispy, pungent garlic bread creates the ideal contrast of flavor and texture. Creamy pasta and delicious garlic make for a sophisticated yet kid-friendly meal.",
+      "cuisine": "Italian",
+      "status": "active",
+      "image": "/menu/biriyani-img.png",
+      "nutrition": {
+        "calories": 4,
+        "fats": 3,
+        "carbs": 4,
+        "proteins": 3
+      }
+    }
+  ]
+}

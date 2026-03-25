@@ -1,0 +1,368 @@
+/***** Icon Style *****/
+
+.iconrotates{
+    -webkit-animation:spin 4s linear infinite;
+    -moz-animation:spin 4s linear infinite;
+    animation:spin 4s linear infinite;
+}
+
+@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+
+.iconrubberband{
+    -webkit-animation:rubberband 4s linear infinite;
+    -moz-animation:rubberband 4s linear infinite;
+    animation:rubberband 4s linear infinite;
+}
+.zoominoutanimi{-webkit-animation: zoom-in-zoom-out 2s ease-out infinite;animation: zoom-in-zoom-out 2s ease-out infinite;}
+
+@keyframes rubberband {
+    0%{
+        transform: scaleX(1);
+    }
+    40%{
+        transform: scaleX(1.12) scaleY(0.75);
+    }
+    55%{
+        transform: scaleX(0.85) scaleY(1);
+    }
+    65%{
+        transform: scaleX(1.09) scaleY(0.85);
+    }
+    75%{
+        transform: scaleX(0.9)  scaleY(1);
+    }
+    90%{
+        transform: scaleX(1.05) scaleY(0.95);
+    }
+    100%{
+        transform: scaleX(1) scaleY(1);
+    }
+}
+@-webkit-keyframes zoom-in-zoom-out {
+  0% {
+    -webkit-transform: scale(0.3, 0.3);
+            transform: scale(0.3, 0.3);
+  }
+  50% {
+    -webkit-transform: scale(1, 1);
+            transform: scale(1, 1);
+  }
+  100% {
+    -webkit-transform: scale(0.3, 0.3);
+            transform: scale(0.3, 0.3);
+  }
+}
+@keyframes zoom-in-zoom-out {
+  0% {
+    -webkit-transform: scale(0.3, 0.3);
+            transform: scale(0.3, 0.3);
+  }
+  50% {
+    -webkit-transform: scale(1, 1);
+            transform: scale(1, 1);
+  }
+  100% {
+    -webkit-transform: scale(0.3, 0.3);
+            transform: scale(0.3, 0.3);
+  }
+}
+/*****Home*****/
+.hbanIconss{}
+
+.hbanIconss .hbicn{aspect-ratio: 1;pointer-events: none;}
+.hbanIconss .hbicn img{width: 100%;height: 100%;}
+.hbanIconss .iconone{top: 0;left: 0;-webkit-transform: translate(-45%, -40%);-ms-transform: translate(-45%, -40%);transform: translate(-45%, -40%);}
+.hbanIconss .icontwo{top: 0;left: 26%;-webkit-transform: translateY(-180%);-ms-transform: translateY(-180%);transform: translateY(-180%);}
+.hbanIconss .iconthree{top: 0;left: 65%;-webkit-transform: translateY(-100%);-ms-transform: translateY(-100%);transform: translateY(-100%);}
+.hbanIconss .iconfour{top: 35%;right: 0;-webkit-transform: translate(100%, -100%);-ms-transform: translate(100%, -100%);transform: translate(100%, -100%);}
+.hbanIconss .iconfive{bottom: 0;right: 14%;}
+.hbanIconss .iconsix{bottom: 30%;left: 0%;-webkit-transform: translateX(-120%);-ms-transform: translateX(-120%);transform: translateX(-120%);}
+.hbanIconss .iconseven{bottom: 10%;left: 56%;-webkit-transform: translateX(-120%);-ms-transform: translateX(-120%);transform: translateX(-120%);width: 10px;height: 10px;background: #F197B6;border-radius: 50%;}
+
+.hintroIconss .hintroicn{aspect-ratio: 1;pointer-events: none;}
+.hintroIconss .hintroicn img{width: 100%;height: 100%;}
+.hintroIconss .iconone{right: -6%;top: 50%;width: 4.5vw;}
+.hintroIconss .icontwo{right: 15%;bottom: 0;width: 4vw;}
+.hintroIconss .iconthree{left: 0;bottom: 40%;-webkit-transform: translateX(-150%);-ms-transform: translateX(-150%);transform: translateX(-150%);width: 4vw;}
+.hintroIconss .iconfour{bottom: 5%;left: 20%;width: 2.5vw;}
+.hintroIconss .iconfive{bottom: 56%;left: 35%;width: 2vw;}
+.hintroIconss .iconsix{bottom: 23%;left: 2.5%;width: 1.4vw;}
+.hintroIconss .iconseven{top: 7%;left: 1%;width: 1.5vw;}
+.hintroIconss .iconeight{background: #F9B71A;width: 15px;aspect-ratio: 1;bottom: 0%;left: 38%;font-size: 0;border-radius: 50%;z-index: 99;}
+.hintroIconss .iconnine{background: #F9B71A;width: 10px;aspect-ratio: 1;top: 0%;left: 26%;font-size: 0;border-radius: 50%;z-index: 99;}
+
+.aboutuspage .hintroIconss .icontwo{    bottom: -6%;}
+
+.hMenusIconss{}
+
+.hMenusIconss .iconone{right: 5%;top: -18%;width: 6vw;}
+.hMenusIconss .icontwo{right: 0%;top: 8%;transform: translateX(110%);width: 3vw;}
+.hMenusIconss .iconthree{right: 0;top: 30%;transform: translateX(120%);width: 5.6vw;}
+.hMenusIconss .iconfour{right: 0%;bottom: 30%;transform: translateX(120%);width: 5vw;}
+.hMenusIconss .iconfive{right: 0%;bottom: 10%;transform: translateX(120%);width: 3vw;}
+.hMenusIconss .iconsix{left: 0%;bottom: 20%;transform: translateX(-120%);width: 5vw;}
+.hMenusIconss .iconseven{left: 0%;bottom: 45%;transform: translateX(-120%);width: 6vw;}
+.hMenusIconss .iconeight{left: 0%;top: 20%;transform: translateX(-120%);width: 5vw;}
+.hMenusIconss .iconnine{left: 0%;top: -8%;transform: translateX(-110%);width: 4vw;}
+
+.hlfoutIconss .hlfouticn{aspect-ratio: 1;pointer-events: none;}
+.hlfoutIconss .hlfouticn img{width: 100%;height: 100%;}
+.hlfoutIconss .iconone{right: 37%;top: 29%;width: 7vw;}
+
+.hteamIconss .hteamicn{aspect-ratio: 1;pointer-events: none;}
+.hteamIconss .hteamicn img{width: 100%;height: 100%;}
+.hteamIconss .iconone{left: 15%;top: 8%;}
+.hteamIconss .icontwo{top: 12%;right: 12%;}
+.hteamIconss .iconthree{top: 42%;right: 0;-webkit-transform: translateX(150%);-ms-transform: translateX(150%);transform: translateX(150%);}
+.hteamIconss .iconfour{bottom: 0;right: 0;-webkit-transform: translateX(50%);-ms-transform: translateX(50%);transform: translateX(50%);}
+.hteamIconss .iconfive{bottom: 0;left: 0;-webkit-transform: translateX(-50%);-ms-transform: translateX(-50%);transform: translateX(-50%);   }
+.hteamIconss .iconsix{top: 20%;left: 0;-webkit-transform: translateX(-120%);-ms-transform: translateX(-120%);transform: translateX(-120%);}
+
+.hDoctIconss .hDocticn{aspect-ratio: 1;pointer-events: none;} 
+.hDoctIconss .hDocticn img{width: 100%;height: 100%;}
+.hDoctIconss .iconone{top: -3%;right: 31%;}
+.hDoctIconss .icontwo{top: 40%;right: 0;transform: translate(140%, -50%);}
+.hDoctIconss .iconthree{bottom: 20%;right: 4%;}
+.hDoctIconss .iconfour{bottom: -3%;left: 30%;}
+.hDoctIconss .iconfive{top: 62%;left: 0;transform: translateX(-150%);width: 5vw;}
+.hDoctIconss .iconsix{top: 21%;left: 3%;width: 24px;}
+.hDoctIconss .iconseven{top: 70%;right: 2%;}
+
+.hfformIconss .hfformicn{aspect-ratio: 1;pointer-events: none;} 
+.hfformIconss .hfformicn img{width: 100%;height: 100%;}
+.hfformIconss .iconone{top: 0%; right: 31%;}
+.hfformIconss .icontwo{top: 18%;right: 15%;}
+.hfformIconss .iconthree{bottom: 25%;right: 12%;}
+.hfformIconss .iconfour{bottom: -3%;right: 35%;}
+.hfformIconss .iconfive{bottom: 10%;left: 30%;}
+.hfformIconss .iconsix{top: 52%;left: 15%;}
+.hfformIconss .iconseven{top: 5%;left: 16%;}
+
+.abbanIconss .abbanicn{aspect-ratio: 1;pointer-events: none;}
+.abbanIconss .abbanicn img{width: 100%;height: 100%;}
+
+.abbanIconss .iconone{top: 50%;right: 42%;}
+.abbanIconss .icontwo{top: 22%;right: 7%;}
+
+.ateamIconss .ateamicn{aspect-ratio: 1;pointer-events: none;}
+.ateamIconss .ateamicn img{width: 100%;height: 100%;}
+.ateamIconss .iconone{top: 8%;right: 14%;}
+.ateamIconss .icontwo{top: 27%;right: 0%;transform: translateX(120%);}
+.ateamIconss .iconthree{top: 50%;right: 0%;transform: translateX(120%);}
+.ateamIconss .iconfour{bottom: 15%;right: 0%;transform: translateX(120%);}
+.ateamIconss .iconfive{bottom: 15%;left: 0%;transform: translateX(-120%);}
+.ateamIconss .iconsix{top: 50%;left: 0%;transform: translateX(-120%);}
+.ateamIconss .iconseven{top: 27%;left: 0%;transform: translateX(-120%);}
+.ateamIconss .iconeight{top: 5%;left: 12%;}
+
+.menulIconss .menulicn{aspect-ratio: 1;pointer-events: none;}
+.menulIconss .menulicn img{width: 100%;height: 100%;}
+.menulIconss .iconone{top: 26%;right: -4%;}
+.menulIconss .icontwo{top: 29%;right: 47%;}
+
+@media screen and (max-width:1420px) {
+  .hbanIconss .iconone {
+    width: 40px;
+  }
+
+  .hbanIconss .icontwo {
+    width: 20px;
+  }
+
+  .hbanIconss .iconthree {
+    width: 65px;
+  }
+
+  .hbanIconss .iconfour {
+    width: 35px;
+  }
+
+  .hbanIconss .iconfive {
+    width: 38px;
+  }
+
+  .hbanIconss .iconsix {
+    width: 50px;
+  }
+
+}
+
+.psfbanIconss .psfbanicn{aspect-ratio: 1;pointer-events: none;}
+.psfbanIconss .psfbanicn img{width: 100%;height: 100%;}
+
+.psfbanIconss .iconone{top: -72%;left: 0%;}
+.psfbanIconss .icontwo{top: -90%;left: 33%;}
+.psfbanIconss .iconthree{top: -69%;right: 26%;}
+.psfbanIconss .iconfour{top: 4%;right: -15%;}
+.psfbanIconss .iconfive{bottom: -44%;right: 1%;}
+.psfbanIconss .iconsix{bottom: -46%;right: 36%;}
+.psfbanIconss .iconseven{bottom: -50%;left: 25%;}
+.psfbanIconss .iconeight{bottom: -20%;left: -12%;}
+
+
+.MyAccbanersec .psfbanIconss .iconfour{width: 4vw;}
+
+
+@media screen and (max-width:1200px) {
+  .ateamIconss .icontwo,.ateamIconss .iconthree,.ateamIconss .iconfive,.ateamIconss .iconsix, .ateamIconss .iconseven{width: 34px;}
+  .ateamIconss .icontwo,.ateamIconss .iconthree,.ateamIconss .iconfour{right: 0px;}
+  .ateamIconss .iconfive,.ateamIconss .iconsix,.ateamIconss .iconseven{left: 0px;}
+  .menulIconss .icontwo {top: 64%;}
+  .menulIconss .iconone,.menulIconss .icontwo{width: 40px;}
+
+}
+@media screen and (max-width:1100px) {
+  .hbanIconss .iconsix {width: 22px;}
+  .hbanIconss .iconone {width: 28px;}
+  .hteamIconss .iconsix{-webkit-transform: translateX(-65%);-ms-transform: translateX(-65%);transform: translateX(-65%);width: 60px;}
+  .hfformIconss .iconthree,.hfformIconss .iconsix{width: 60px;}
+  .hteamIconss .iconthree{-webkit-transform: translateX(90%);-ms-transform: translateX(90%);transform: translateX(90%);}
+  .ateamIconss .icontwo,.ateamIconss .iconthree,.ateamIconss .iconfive,.ateamIconss .iconsix, .ateamIconss .iconseven{width: 34px;}
+  .ateamIconss .icontwo,.ateamIconss .iconthree,.ateamIconss .iconfour{    right: -20px;}
+  .ateamIconss .iconfive,.ateamIconss .iconsix,.ateamIconss .iconseven{left: -20px;}
+  .ateamIconss .iconone{width: 50px;top: 4%;right: 6%;}
+  .ateamIconss .iconeight{width: 75px;}
+  .menulIconss .icontwo, .menulIconss .iconone{width: 50px;}
+  .hfformIconss .iconfive {bottom: 10%;   left: 25%;}
+  .hintroIconss .iconone {right: -2%;}
+  .hintroIconss .iconthree {left: 2%;}
+  .hMenusIconss{display: none;}
+  .hteamIconss .iconone{width: 75px;}
+  .hteamIconss .iconfive{width: 65px;}
+  .hDoctIconss .iconseven {top: 25%;right: 5%;width: 80px;}
+}
+@media screen and (max-width:1100px){
+  .hteamIconss .iconone {left: 5%;top: 5%;width: 64px;}
+  .hteamIconss .icontwo {top: 9%;right: 3%;width: 40px;}
+  .hteamIconss .iconthree{width: 38px;}
+  .hteamIconss .iconfour{width: 38px;}
+  .hteamIconss .iconsix{width: 45px;top: 30%;}
+  .ateamIconss .iconeight{    left: 4%;}
+
+}
+
+@media screen and (max-width:1000px){
+  .hbanIconss,.hintroIconss,.hteamIconss .iconthree,.hteamIconss .iconfour,.hteamIconss .iconfive,.hteamIconss .iconsix,.hDoctIconss,.ateamIconss {/*display: none;*/}
+  .hteamIconss .iconone {left: 6%;top: 8%;width: 75px;}
+  .hteamIconss .icontwo {top: 12%;right: 4%;width: 55px;}
+  .hfformIconss .iconthree, .hfformIconss .iconsix {width: 40px;}
+  .hfformIconss .icontwo{width: 30px;}
+  .hfformIconss .iconfour {bottom: -6%;right: 35%;width: 35px;}
+  .hfformIconss .iconfive {bottom: 7%;left: 27%;width: 40px;}
+  .ateamIconss{display: none;}  
+  .hintroIconss .iconeight{width: 10px;}
+  .hbanIconss .iconseven {bottom: 0%;left: 61%;}
+  .psfbanIconss .iconfive {bottom: -59%;}
+  .psfbanIconss .iconfour {top: 13%;right: -11%;width: 56px;}
+}
+
+@media screen and (max-width:920px){
+  .hteamIconss .iconone {left: 5%;top: 5%;width: 64px;}
+  .hteamIconss .icontwo {top: 9%;right: 3%;width: 40px;}
+  .hteamIconss .iconthree{width: 38px;}
+  .hteamIconss .iconfour{width: 38px;}
+  .hteamIconss .iconsix{width: 45px;}
+
+}
+
+@media screen and (max-width:820px){
+  .hteamIconss .iconone {left: 0;top: 5%;width: 45px;}
+  .hteamIconss .icontwo{right: 0;width: 30px;}
+  .hteamIconss .iconthree{width: 30px;}
+  .hteamIconss .iconfour{width: 30px;}
+  .hDoctIconss .iconfive{width: 80px;}
+  .hDoctIconss .icontwo{width: 70px;}
+  .hDoctIconss .iconfour {bottom: -10%;left: 33%;}
+  .hDoctIconss .iconthree {bottom: 14%;right: 4%;}
+  .hDoctIconss .iconsix {top: 13%;left: 1%;}
+  .hDoctIconss .iconone {top: -9%;right: 31%;}
+  .hMenusIconss{display: none;}
+  .hbanIconss .iconseven {bottom: -11%;}
+  .hDoctIconss .iconseven {top: 25%;right: 13%;width: 54px;}
+  .hDoctIconss .iconone, .hDoctIconss .iconfour, .hDoctIconss .iconsix {width: 20px;}
+  .psfbanIconss .iconfour{width: 70px;}
+  .psfbanIconss .iconone,.psfbanIconss .icontwo,.psfbanIconss .iconfive,.psfbanIconss .iconseven,.psfbanIconss .iconeight{width:24px;}
+  .hbanIconss .iconthree { width: 46px;}
+  .hbanIconss .iconfive {width: 22px;}
+  .menulIconss .icontwo, .menulIconss .iconone {width: 37px;}
+  .menulIconss .icontwo {top: 76%;}
+  .abbanIconss .iconone{top: 65%;}
+  .abbanIconss .iconone, .abbanIconss .icontwo {width: 38px;}
+}
+
+@media screen and (max-width:650px){
+  .hlfoutIconss .iconone{display: none;}
+  .hbanIconss .iconone{left: 30px;}
+  .hbanIconss .iconfour{right: 30px;}
+  .hbanIconss .iconfive {right: 13%;}
+  .hbanIconss .iconsix {bottom: 10%;left: 10%;}
+  .hintroIconss .iconone,.hintroIconss .icontwo,.hintroIconss .iconthree,.hintroIconss .iconfour{width: 40px;}
+  .hintroIconss .iconthree {left: 37px;bottom: 55%;}
+  .hteamIconss .iconthree,.hteamIconss .iconfour{display: none;}
+  .hteamIconss .iconsix {transform: translateX(0%);left: auto;right: 0;top: 24%;width: 60px;}
+  .hteamIconss .iconone {left: 1%;top: 21%;width: 75px;transform: rotate(296deg);}
+  .hteamIconss .icontwo {top: auto;bottom: 14%;right: 0%;width: 55px;}
+  .hteamIconss .iconfive{width: 45px;bottom: 10%;left: 6px;}
+  .hDoctIconss .iconone {top: -6%;right: 35%;width: 14px;}
+  .hDoctIconss .icontwo {top: 0;right: 0;transform: translate(0%, -50%);width: 45px;}
+  .hDoctIconss .iconthree {bottom: 13%;right: 6%;width: 18px;}
+  .hDoctIconss .iconfour {bottom: -9%;left: 33%;width: 22px;}
+  .hDoctIconss .iconfive {top: 92%;left: 0;transform: translateX(-0%);   width: 50px;}
+  .hDoctIconss .iconsix {top: 15%;left: 2%;width: 20px;}
+  .hfformIconss .iconone {top: -2%;right: 27%;width: 40px;}
+  .hfformIconss .icontwo {width: 25px;right: 6%;}
+  .hfformIconss .iconthree{width: 32px;bottom: 17%;right: 6%;}
+  .hfformIconss .iconfour {bottom: -2%;right: 30%;width: 28px;}
+  .hfformIconss .iconfive {bottom: 11%;left: 13%;width: 33px;}
+  .hfformIconss .iconsix {width: 30px;top: 55%;left: 3%;}
+  .hfformIconss .iconseven {top: 1%;left: 9%;width: 55px;}
+
+  .abbanIconss .iconone {top: 62%;right: 0%;}
+  .abbanIconss .icontwo {top: auto;right: auto;bottom: 45%;}
+  .menulIconss .iconone {top: 55%;right: -4%;}
+  .menulIconss .icontwo {top: 46%;right: 80%;}
+  .psfbanIconss .iconone {top: 0;left: -10%;}
+  .psfbanIconss .icontwo {top: -55px;left: 33%;}
+  .psfbanIconss .iconthree {top: -27%;right: 26%;}
+  .psfbanIconss .iconfour {top: 4%;right: -10%;width: 40px;}
+  .psfbanIconss .iconfive {bottom: -28%;right: 1%;}
+  .psfbanIconss .iconsix {bottom: -31%;right: 36%;}
+  .psfbanIconss .iconseven {bottom: -31%;left: 25%;}
+  .psfbanIconss .iconeight {bottom: -8%;left: -6%;}
+  .hbanIconss .iconseven {bottom: 18%;}
+
+  .hintroIconss .iconseven{top: 3%;left: 0%;width: 20px;}
+  .hintroIconss .iconnine{top: -4%;left: 95%;}
+  .hDoctIconss .iconseven{display: none;}
+  .MyAccbanersec .psfbanIconss .iconfour{display: none;}
+  .abbanIconss .iconone, .abbanIconss .icontwo {width: 34px;}
+}
+
+@media screen and (max-width:420px){
+  .menulIconss .icontwo, .menulIconss .iconone {width: 33px;}
+  .hbanIconss .iconone {left: 12px;}
+  .hbanIconss .iconfour {right: 16px;width: 27px;}
+  .hbanIconss .iconfive {right: 7%;width: 32px;}
+  .hbanIconss .iconsix {bottom: 10%;left: 15%;bottom: 3%;}
+  .hteamIconss .iconone {left: -4%;top: 21%;width: 48px;}
+  .hteamIconss .iconsix{top: 28%;width: 40px;}
+  .hteamIconss .icontwo{width: 40px;}
+  .hfformIconss .iconone{width: 32px;}
+  .hfformIconss .iconthree {width: 25px;}
+  .hfformIconss .iconsix {width: 21px;}
+  .hfformIconss .iconseven{width: 36px;}
+  .hintroIconss .iconone, .hintroIconss .icontwo, .hintroIconss .iconthree, .hintroIconss .iconfour {width: 32px;}
+  .hintroIconss .iconfour {bottom: 4%;left: 6%;}
+  .hintroIconss .iconfive {bottom: 48%;}
+  .hDoctIconss .iconone {top: -1%;right: 33%;}
+  .hDoctIconss .iconthree {bottom: 19%;right: 4%;}
+  .hDoctIconss .iconfour {bottom: -3%;}
+  .hDoctIconss .iconsix {top: 21%;}
+  .myaccontpage .psfbanIconss .psfbanicn{        width: 25px;}
+  .myaccontpage .psfbanIconss .iconthree{        right: -7%;}
+  .myaccontpage .psfbanIconss .icontwo{left: 48%;}
+  .psfbanIconss .psfbanicn{width: 20px;}
+  .hDoctIconss .iconfour{        width: 14px;}
+}

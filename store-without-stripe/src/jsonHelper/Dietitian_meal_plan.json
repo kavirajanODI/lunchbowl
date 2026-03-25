@@ -1,0 +1,128 @@
+{
+    "meal_plan": [
+        {
+            "day": "Day 1",
+            "meal": "Coconut Pulav with Crispy Peanut & Bhindi Fry"
+        },
+        {
+            "day": "Day 2",
+            "meal": "Jeera Rice with Yellow Dal Tadka"
+        },
+        {
+            "day": "Day 3",
+            "meal": "Methi Aloo Paratha and Raita"
+        },
+        {
+            "day": "Day 4",
+            "meal": "Jeera Rice – Dal Makhani"
+        },
+        {
+            "day": "Day 5",
+            "meal": "Phulka Paneer Butter Masala"
+        },
+        {
+            "day": "Day 6",
+            "meal": "Ellu Milagu Rice & Vendaikkai Varuval"
+        },
+        {
+            "day": "Day 7",
+            "meal": "Paneer Shashlik & Herb Rice"
+        },
+        {
+            "day": "Day 8",
+            "meal": "Ghee Rice and Palak Paneer"
+        },
+        {
+            "day": "Day 9",
+            "meal": "Paneer Paratha and Kadai Veg"
+        },
+        {
+            "day": "Day 10",
+            "meal": "Chana and Cashew Pulav and Tomato Thokku"
+        },
+        {
+            "day": "Day 11",
+            "meal": "Veg Birinji, Boondhi Raita & Salaan"
+        },
+        {
+            "day": "Day 12",
+            "meal": "Wheat Pesto Spaghetti Pasta and Garlic Bread"
+        },
+        {
+            "day": "Day 13",
+            "meal": "Sambar Rice & Color Poriyal"
+        },
+        {
+            "day": "Day 14",
+            "meal": "Lemon Rice & Crispy Plantain Roast"
+        },
+        {
+            "day": "Day 15",
+            "meal": "Veg Pulav & Raita"
+        },
+        {
+            "day": "Day 16",
+            "meal": "Vietnamese Rice Sheet Paneer Momos & Hot Garlic Sauce"
+        },
+        {
+            "day": "Day 17",
+            "meal": "Paneer Kati Roll – Khatta Meeta Sauce"
+        },
+        {
+            "day": "Day 18",
+            "meal": "Creamy Spinach & Corn Au Gratin with Garlic Bread"
+        },
+        {
+            "day": "Day 19",
+            "meal": "Kumbakonam Vetrilai Rice & Kovaikkai Varuval"
+        },
+        {
+            "day": "Day 20",
+            "meal": "Tomato Rice and Baby Potato Fry"
+        },
+        {
+            "day": "Day 21",
+            "meal": "Paneer Bao - with Butter garlic sautéed Vegetables"
+        },
+        {
+            "day": "Day 22",
+            "meal": "Veg Stroganoff with Herb Rice"
+        },
+        {
+            "day": "Day 23",
+            "meal": "Hummus Platter, Pita and Veggies"
+        },
+        {
+            "day": "Day 24",
+            "meal": "Pav Bhaji"
+        },
+        {
+            "day": "Day 25",
+            "meal": "Wheat Pesto Spaghetti Pasta and Garlic Bread"
+        },
+        {
+            "day": "Day 26",
+            "meal": "Thai Red Curry with Herb Rice"
+        },
+        {
+            "day": "Day 27",
+            "meal": "Paneer Pulav & Chatpata Raita"
+        },
+        {
+            "day": "Day 28",
+            "meal": "Wheat Arrabbiata Pasta – Garlic Bread"
+        },
+        {
+            "day": "Day 29",
+            "meal": "Crispy Gobi Fried Rice and Baby Corn Manchurian"
+        },
+        {
+            "day": "Day 30",
+            "meal": "Cheese Paratha and Kadai Paneer"
+        },
+        {
+            "day": "Day 31",
+            "meal": "Veg Fried Rice – Dragon Paneer"
+        }
+    ]
+}

@@ -1,0 +1,142 @@
+[
+  {
+    "primaryDishTitle": "Phulka",
+    "subDishTitle": "Channa Masala",
+    "shortDescription": "A cozy soft phulka paired with spicy chana masala.",
+    "description": "A savory and cozy combination, soft phulka embraces a lively, spicy chana masala. With its mild texture and filling flavor, this healthy pair is ideal for small bellies. A straightforward yet delicious dish that combines the tang of chickpeas with the warmth of bread.",
+    "cuisine": "North Indian"
+  },
+  {
+    "primaryDishTitle": "Phulka",
+    "subDishTitle": "Paneer Butter Masala",
+    "shortDescription": "Tender phulka meets creamy paneer butter masala.",
+    "description": "Savor the luscious, creamy delight of paneer butter masala with tender phulka. With its symphony of flavors and textures, this opulent combination is a delicious feast. A rich, fragrant curry and soft bread combine to create a very delightful meal.",
+    "cuisine": "North Indian"
+  },
+  {
+    "primaryDishTitle": "Pav Bhaji",
+    "subDishTitle": null,
+    "shortDescription": "A tangy and savory veggie mash served with buns.",
+    "description": "This well-liked Pav Bhaji is full of sour and delicious tastes. Ready to eat with soft buttered buns, this dish consists of mashed veggies cooked with aromatic spices. Allow your child's palate to enjoy this tasty and thrilling food treat.",
+    "cuisine": "North Indian"
+  },
+  {
+    "primaryDishTitle": "5 Spice Fried Rice",
+    "subDishTitle": "Baby Corn",
+    "shortDescription": "Five-spice fried rice with tender baby corn.",
+    "description": "Picture fluffy fried rice that has been warmed by five aromatic spices. This wonderful delicacy is enhanced by the texture and taste of tender baby corn. A tasty and distinctive take on a traditional dish that sparks your child's interest in food.",
+    "cuisine": "Chinese"
+  },
+  {
+    "primaryDishTitle": "Veg Noodles",
+    "subDishTitle": "Gravy",
+    "shortDescription": "Garden vegetables with noodles and hearty gravy.",
+    "description": "A vibrant variety of garden vegetables blends with nutritious noodles. This wholesome combo is embraced by a hearty gravy, which adds a layer of deliciousness. A tasty and nutritious supper that is warm and filling for your child.",
+    "cuisine": "Chinese"
+  },
+  {
+    "primaryDishTitle": "Alfredo Pasta",
+    "subDishTitle": "Garlic Bread",
+    "shortDescription": "Creamy Alfredo pasta paired with crispy garlic bread.",
+    "description": "A rich and cozy dish is created when soft pasta is covered in velvety, smooth Alfredo sauce. Crispy, pungent garlic bread creates the ideal contrast of flavor and texture. Creamy pasta and delicious garlic make for a sophisticated yet kid-friendly meal.",
+    "cuisine": "Continental"
+  },
+  {
+    "primaryDishTitle": "Veg Biryani",
+    "subDishTitle": "Raita",
+    "shortDescription": "Flavorful vegetable biryani with cool raita.",
+    "description": "A wonderful combination of tasty vegetables is piled over aromatic rice. The richness of the biryani is contrasted by the cool, creamy raita. An incredibly filling and fragrant dish that provides a delicious blast of vegetable goodness.",
+    "cuisine": "North Indian"
+  },
+  {
+    "primaryDishTitle": "Mac and Cheese",
+    "subDishTitle": "Garlic Bread",
+    "shortDescription": "Creamy mac and cheese with warm garlic bread.",
+    "description": "Savor the cheesy joy of soft macaroni covered in a rich sauce. The warm, crusty garlic bread on the side will be a taste explosion of garlic. A traditional comfort food combo that is certain to make kids happy.",
+    "cuisine": "Continental"
+  },
+  {
+    "primaryDishTitle": "Aloo Paratha",
+    "subDishTitle": null,
+    "shortDescription": "Flaky paratha stuffed with spicy potato filling.",
+    "description": "Savor the soothing warmth of a spicy potato-filled, flaky paratha. Every bite of this filling and substantial meal brings a sense of home. An ideal option for a hearty, tasty lunch that is comforting and comforting.",
+    "cuisine": "North Indian"
+  },
+  {
+    "primaryDishTitle": "Phulka",
+    "subDishTitle": "Palak Paneer",
+    "shortDescription": "Soft phulka with creamy spinach-paneer curry.",
+    "description": "A healthy treat of delicate paneer and bright green spinach is paired with soft phulka. This tasty and nourishing combo offers a delicious fusion of flavors and textures. A very filling meal that combines the softness of bread with the benefits of greens.",
+    "cuisine": "North Indian"
+  },
+  {
+    "primaryDishTitle": "Avocado Sandwich",
+    "subDishTitle": "Hash Brown Potatoes",
+    "shortDescription": "Creamy avocado sandwich with crispy hash browns.",
+    "description": "A delicious and smooth taste is produced by creamy avocado slices snuggled within a soft sandwich. A delightfully crunchy contrast is provided by the golden, crispy hash brown potatoes on the side. A tasty and pleasant combination that is lively and texturally intriguing.",
+    "cuisine": "Continental"
+  },
+  {
+    "primaryDishTitle": "Arrabiata Pasta",
+    "subDishTitle": "Garlic Bread",
+    "shortDescription": "Spicy arrabiata pasta paired with garlic bread.",
+    "description": "Silky pasta is coated in spicy arrabiata sauce, which adds a wonderful burst of flavor. Warm garlic bread exudes a pleasant scent that begs you to sample it. An intriguing and comfortable Italian-inspired dish that is full of flavor.",
+    "cuisine": "Continental"
+  },
+  {
+    "primaryDishTitle": "Hummus and Pita",
+    "subDishTitle": "Jalapeno Cheese Poppers",
+    "shortDescription": "Warm pita and hummus with spicy cheese poppers.",
+    "description": "Soft pita and warm, creamy hummus make for a lovely Mediterranean meal. This tasty spread gets a fun and spicy boost from cheesy jalapeno poppers. A tasty and entertaining combo that's ideal for dipping and sampling different textures.",
+    "cuisine": "Middle Eastern"
+  },
+  {
+    "primaryDishTitle": "Creamy Curd Rice",
+    "subDishTitle": "Potato Roast",
+    "shortDescription": "Cool curd rice with warm, earthy roasted potatoes.",
+    "description": "The sensation of cool, creamy curd rice is calming and pleasant. Roasted potatoes' earthy, toasty aromas offer a lovely contrast. A straightforward but filling dinner that blends rustic warmth with mild chill.",
+    "cuisine": "South Indian"
+  },
+  {
+    "primaryDishTitle": "Edamame Momos",
+    "subDishTitle": "Crispy Lotus Stem",
+    "shortDescription": "Soft edamame momos with crispy lotus stem.",
+    "description": "A mild taste explosion is provided by the delicate small green pockets of edamame momos. A distinct and delightful texture is offered by the subtle crunch of crispy lotus stem. Soft and crisp feelings are explored in this intriguing and light mix.",
+    "cuisine": "Asian"
+  },
+  {
+    "primaryDishTitle": "Ghee Rice",
+    "subDishTitle": "Paneer Curry",
+    "shortDescription": "Aromatic ghee rice paired with paneer curry.",
+    "description": "The foundation for an outstanding meal is aromatic rice laced with the deep aroma of ghee. This wonderful dish is finished with tender paneer cooked in a spicy and flavorful curry. Warmth and spice will entice your child's taste buds with this incredibly fulfilling mix.",
+    "cuisine": "South Indian"
+  },
+  {
+    "primaryDishTitle": "Veg Spring Roll",
+    "subDishTitle": "Pan Fried Noodles with Veggies",
+    "shortDescription": "Crispy spring rolls with savory pan-fried noodles.",
+    "description": "A delightful crunch and delicious stuffing are provided by golden and crispy spring rolls. A variety of crisp and colorful vegetables blend with savory pan-fried noodles. An interesting combination of flavors and textures with a lovely Asian touch.",
+    "cuisine": "Asian"
+  },
+  {
+    "primaryDishTitle": "Burnt Garlic Veg Fried Rice",
+    "subDishTitle": "Veg in Black Bean Sauce",
+    "shortDescription": "Smoky garlic fried rice with savory black bean veggies.",
+    "description": "Burnt garlic adds delicious and smokey overtones to fluffy fried rice. A variety of tender veggies is embraced by a creamy, umami-packed black bean sauce. A strong and tasty blend that provides a distinctive and fulfilling eating experience.",
+    "cuisine": "Chinese"
+  },
+  {
+    "primaryDishTitle": "Veg Hakka Noodles",
+    "subDishTitle": null,
+    "shortDescription": "Flavorful veggie Hakka noodles with aromatic spices.",
+    "description": "Aromatic spices enrich the savory strands of veggie Hakka noodles. Each strand is a delicious combination of flavors and textures. A popular choice owing to its delicious taste, this dish is savory and soothing.",
+    "cuisine": "Chinese"
+  },
+  {
+    "primaryDishTitle": "Aglio e Olio Veg Pasta",
+    "subDishTitle": "Cheesy Garlic Bread",
+    "shortDescription": "Simple garlic pasta with cheesy garlic bread.",
+    "description": "Delicate pasta is combined with aromatic garlic and olive oil in this simple yet delicious dish. A warm, cheesy garlic bread on the side makes a tasty and cozy side dish. A traditional Italian combination that enhances the elegance of basic, premium ingredients.",
+    "cuisine": "Continental"
+  }
+]

@@ -1,0 +1,314 @@
+{
+  "meal_plan": [
+    {
+      "day": "Day 1",
+      "meals": [
+        "Coconut Pulav with Crispy Peanut & Bhindi Fry",
+        "Phulka Channa Masala",
+        "Veg Wheat Alfredo Pasta – Garlic Bread",
+        "Veg Noodles & Veg Manchurian Gravy",
+        "Creamy Curd Rice with Potato Roast"
+      ]
+    },
+    {
+      "day": "Day 2",
+      "meals": [
+        "Jeera Rice with Yellow Dal Tadka",
+        "Pav Bhaji",
+        "Wheat Arrabbiata Pasta – Garlic Bread",
+        "Veg Fried Rice – Dragon Paneer",
+        "Sambar Rice & Color Poriyal"
+      ]
+    },
+    {
+      "day": "Day 3",
+      "meals": [
+        "Veg Biryani – Raita",
+        "Methi Aloo Paratha and Raita",
+        "Wheat Aglio e Olio Cheesy Garlic Bread",
+        "Paneer Bao - with Butter garlic sautéed Vegetables",
+        "Lemon Rice & Crispy Plantain Roast"
+      ]
+    },
+    {
+      "day": "Day 4",
+      "meals": [
+        "Jeera Rice – Dal Makhani",
+        "Phulka Aloo Mutter",
+        "Wheat Spaghetti with Pink Sauce Pasta & Garlic Bread",
+        "Vietnamese Rice Sheet Paneer Momos & Hot Garlic Sauce",
+        "Coconut Rice & Brown Chana Poriyal"
+      ]
+    },
+    {
+      "day": "Day 5",
+      "meals": [
+        "Veg Pulav & Raita",
+        "Phulka Paneer Butter Masala",
+        "Creamy Spinach & Corn Au Gratin with Garlic Bread",
+        "Crispi Gobi Fried rice and Baby Corn Manchurian",
+        "Pepper rasam rice with Carrot Poriyal"
+      ]
+    },
+    {
+      "day": "Day 6",
+      "meals": [
+        "Dal Khichidi & Baby Potato Fry",
+        "Paneer Kati Roll – Khatta Meeta Sauce",
+        "Veg Wheat Pizza",
+        "Paneer fried rice and Gobi Manchurian",
+        "Ellu Milagu Rice & Vendaikkai Varuval"
+      ]
+    },
+    {
+      "day": "Day 7",
+      "meals": [
+        "Paneer Pulav & Chatpata Raita",
+        "phulka with Kashmiri Kofta",
+        "Paneer Shashlik & Herb Rice",
+        "Veg Noodles & Veg Manchurian Gravy",
+        "Karuveppilai Rice and Cauliflower fry"
+      ]
+    },
+    {
+      "day": "Day 8",
+      "meals": [
+        "Ghee Rice and Palak Paneer",
+        "Cheese Paratha and Kadai Paneer",
+        "Thai Green Curry with Herb Rice",
+        "Veg Fried Rice – Dragon Paneer",
+        "Kumbakonam Vetrilai Rice & Kovaikkai Varuval"
+      ]
+    },
+    {
+      "day": "Day 9",
+      "meals": [
+        "Aloo Peas Pulav and Kadai Gobi",
+        "Paneer Paratha and Kadai Veg",
+        "Veg Stroganoff with Herb Rice",
+        "Paneer Bao - with Butter garlic sautéed Vegetables",
+        "Tomato Rice and Baby Potato Fry"
+      ]
+    },
+    {
+      "day": "Day 10",
+      "meals": [
+        "Chana and Cashew Pulav and Tomato Thokku",
+        "Mumbai Vada Pao and Lasoon & Corriander Chutney",
+        "Hummus Platter , Pita bread  and Veggies",
+        "Vietnamese Rice Sheet Paneer Momos & Hot Garlic Sauce",
+        "Temple Style Puliyodharai & Mini Masala Vada"
+      ]
+    },
+    {
+      "day": "Day 11",
+      "meals": [
+        "Coconut Pulav with Crispy Peanut & Bhindi Fry",
+        "Paneer Crepe Shawarma and Mint Sauce",
+        "Wheat Mac & Cheese and Potato Wedges",
+        "Crispi Gobi Fried rice and Baby Corn Manchurian",
+        "Veg Birinji, Boondhi Raita & Salaan"
+      ]
+    },
+    {
+      "day": "Day 12",
+      "meals": [
+        "Jeera Rice with Yellow Dal Tadka",
+        "Phulka Channa Masala",
+        "Wheat Pesto Sphagetti Pasta and Garlic Bread",
+        "Paneer fried rice and Gobi Manchurian",
+        "Creamy Curd Rice with Potato Roast"
+      ]
+    },
+    {
+      "day": "Day 13",
+      "meals": [
+        "Veg Biryani – Raita",
+        "Pav Bhaji",
+        "Thai Red curry with Herb rice",
+        "Veg Noodles & Veg Manchurian Gravy",
+        "Sambar Rice & Color Poriyal"
+      ]
+    },
+    {
+      "day": "Day 14",
+      "meals": [
+        "Jeera Rice – Dal Makhani",
+        "Methi Aloo Paratha and Raita",
+        "Veg Wheat Alfredo Pasta – Garlic Bread",
+        "Veg Fried Rice – Dragon Paneer",
+        "Lemon Rice & Crispy Plantain Roast"
+      ]
+    },
+    {
+      "day": "Day 15",
+      "meals": [
+        "Veg Pulav & Raita",
+        "Phulka Aloo Mutter",
+        "Wheat Arrabbiata Pasta – Garlic Bread",
+        "Paneer Bao - with Butter garlic sautéed Vegetables",
+        "Coconut Rice & Brown Chana Poriyal"
+      ]
+    },
+    {
+      "day": "Day 16",
+      "meals": [
+        "Dal Khichidi & Baby Potato Fry",
+        "Phulka Paneer Butter Masala",
+        "Wheat Aglio e Olio Cheesy Garlic Bread",
+        "Vietnamese Rice Sheet Paneer Momos & Hot Garlic Sauce",
+        "Pepper rasam rice with Carrot Poriyal"
+      ]
+    },
+    {
+      "day": "Day 17",
+      "meals": [
+        "Paneer Pulav & Chatpata Raita",
+        "Paneer Kati Roll – Khatta Meeta Sauce",
+        "Wheat Spaghetti with Pink Sauce Pasta & Garlic Bread",
+        "Crispi Gobi Fried rice and Baby Corn Manchurian",
+        "Ellu Milagu Rice & Vendaikkai Varuval"
+      ]
+    },
+    {
+      "day": "Day 18",
+      "meals": [
+        "Ghee Rice and Palak Paneer",
+        "phulka with Kashmiri Kofta",
+        "Creamy Spinach & Corn Au Gratin with Garlic Bread",
+        "Paneer fried rice and Gobi Manchurian",
+        "Karuveppilai Rice and Cauliflower fry"
+      ]
+    },
+    {
+      "day": "Day 19",
+      "meals": [
+        "Aloo Peas Pulav and Kadai Gobi",
+        "Cheese Paratha and Kadai Paneer",
+        "Veg Wheat Pizza",
+        "Veg Noodles & Veg Manchurian Gravy",
+        "Kumbakonam Vetrilai Rice & Kovaikkai Varuval"
+      ]
+    },
+    {
+      "day": "Day 20",
+      "meals": [
+        "Chana and Cashew Pulav and Tomato Thokku",
+        "Paneer Paratha and Kadai Veg",
+        "Paneer Shashlik & Herb Rice",
+        "Veg Fried Rice – Dragon Paneer",
+        "Tomato Rice and Baby Potato Fry"
+      ]
+    },
+    {
+      "day": "Day 21",
+      "meals": [
+        "Coconut Pulav with Crispy Peanut & Bhindi Fry",
+        "Mumbai Vada Pao and Lasoon & Corriander Chutney",
+        "Thai Green Curry with Herb Rice",
+        "Paneer Bao - with Butter garlic sautéed Vegetables",
+        "Temple Style Puliyodharai & Mini Masala Vada"
+      ]
+    },
+    {
+      "day": "Day 22",
+      "meals": [
+        "Jeera Rice with Yellow Dal Tadka",
+        "Paneer Crepe Shawarma and Mint Sauce",
+        "Veg Stroganoff with Herb Rice",
+        "Vietnamese Rice Sheet Paneer Momos & Hot Garlic Sauce",
+        "Veg Birinji, Boondhi Raita & Salaan"
+      ]
+    },
+    {
+      "day": "Day 23",
+      "meals": [
+        "Veg Biryani – Raita",
+        "Phulka Channa Masala",
+        "Hummus Platter , Pita bread  and Veggies",
+        "Crispi Gobi Fried rice and Baby Corn Manchurian",
+        "Creamy Curd Rice with Potato Roast"
+      ]
+    },
+    {
+      "day": "Day 24",
+      "meals": [
+        "Jeera Rice – Dal Makhani",
+        "Pav Bhaji",
+        "Wheat Mac & Cheese and Potato Wedges",
+        "Paneer fried rice and Gobi Manchurian",
+        "Sambar Rice & Color Poriyal"
+      ]
+    },
+    {
+      "day": "Day 25",
+      "meals": [
+        "Veg Pulav & Raita",
+        "Methi Aloo Paratha and Raita",
+        "Wheat Pesto Sphagetti Pasta and Garlic Bread",
+        "Veg Noodles & Veg Manchurian Gravy",
+        "Lemon Rice & Crispy Plantain Roast"
+      ]
+    },
+    {
+      "day": "Day 26",
+      "meals": [
+        "Dal Khichidi & Baby Potato Fry",
+        "Phulka Aloo Mutter",
+        "Thai Red curry with Herb rice",
+        "Veg Fried Rice – Dragon Paneer",
+        "Coconut Rice & Brown Chana Poriyal"
+      ]
+    },
+    {
+      "day": "Day 27",
+      "meals": [
+        "Paneer Pulav & Chatpata Raita",
+        "Phulka Paneer Butter Masala",
+        "Veg Wheat Alfredo Pasta – Garlic Bread",
+        "Paneer Bao - with Butter garlic sautéed Vegetables",
+        "Pepper rasam rice with Carrot Poriyal"
+      ]
+    },
+    {
+      "day": "Day 28",
+      "meals": [
+        "Ghee Rice and Palak Paneer",
+        "Paneer Kati Roll – Khatta Meeta Sauce",
+        "Wheat Arrabbiata Pasta – Garlic Bread",
+        "Vietnamese Rice Sheet Paneer Momos & Hot Garlic Sauce",
+        "Ellu Milagu Rice & Vendaikkai Varuval"
+      ]
+    },
+    {
+      "day": "Day 29",
+      "meals": [
+        "Aloo Peas Pulav and Kadai Gobi",
+        "phulka with Kashmiri Kofta",
+        "Paneer Shashlik & Herb Rice",
+        "Crispi Gobi Fried rice and Baby Corn Manchurian",
+        "Karuveppilai Rice and Cauliflower fry"
+      ]
+    },
+    {
+      "day": "Day 30",
+      "meals": [
+        "Chana and Cashew Pulav and Tomato Thokku",
+        "Cheese Paratha and Kadai Paneer",
+        "Wheat Mac & Cheese and Potato Wedges",
+        "Paneer fried rice and Gobi Manchurian",
+        "Kumbakonam Vetrilai Rice & Kovaikkai Varuval"
+      ]
+    },
+    {
+      "day": "Day 31",
+      "meals": [
+        "Jeera Rice – Dal Makhani",
+        "Paneer Paratha and Kadai Veg",
+        "Wheat Pesto Sphagetti Pasta and Garlic Bread",
+        "Veg Fried Rice – Dragon Paneer",
+        "Tomato Rice and Baby Potato Fry"
+      ]
+    }
+  ]
+}
