@@ -1,0 +1,251 @@
+API Name,Method,Endpoint,Purpose,Auth Required,Request Fields,Response Fields,Frontend Impact
+Login API,POST,/api/v1/auth/login,User login,Yes,"email, password","token, user details",Frontend: Login Screen
+Send OTP,POST,/api/customer/sendOtp,"Sends a One-Time Password (OTP) via SMS (and optionally email) for verification during signup, login, or password reset.",No,"{
+  ""email"": ""test123@gmail.com"",
+  ""mobile"": ""6777778888"",
+  ""path"": ""signUp""
+}
+","{
+  ""success"": true,
+  ""message"": ""OTP sent successfully via SMS"",
+  ""smsLogId"": {
+    ""message"": ""Your Lunch Bowl OTP is 1752. It is valid for 10 minutes. Do not share this with anyone.\n\nEarth Tech Concepts Pvt Ltd"",
+    ""templateId"": ""1607100000000356197"",
+    ""status"": ""sent"",
+    ""variables"": [
+      ""1752""
+    ],
+    ""_id"": ""6911cc753834f882548cde14"",
+    ""mobile"": ""6777778888"",
+    ""messageType"": ""OTP"",
+    ""messageId"": ""100 - Msg successfully sent. MsgID#7944465"",
+    ""sentAt"": ""2025-11-10T11:28:53.444Z"",
+    ""createdAt"": ""2025-11-10T11:28:53.454Z"",
+    ""updatedAt"": ""2025-11-10T11:28:53.454Z"",
+    ""__v"": 0
+  },
+  ""expiresAt"": ""2025-11-10T11:30:52.419Z""
+}
+",
+Verify OTP,POST,/api/customer/verifyOtp,Verifies the OTP entered by the user for login or signup and returns a JWT token upon successful verification.,No,"json { ""mobile"": ""6777778888"", ""otp"": ""3859"", ""path"": ""logIn-otp"" }","json { ""success"": true, ""token"": ""eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTExZDAzNjM4MzRmODgyNTQ4Y2RlMWYiLCJuYW1lIjoiVGVzdCBhcGkiLCJlbWFpbCI6InRlc3QxMjNAZ21haWwuY29tIiwiaWF0IjoxNzYyNzc4MjkyLCJleHAiOjE3NjI4NjQ2OTJ9.F3tEKA4GDObER11iJbRX44Ynvk5X8ES7hmsAPn_gK2s"", ""_id"": ""6911d0363834f882548cde1f"", ""name"": ""Test api"", ""email"": ""test123@gmail.com"", ""phone"": ""6777778888"", ""freeTrial"": false, ""message"": ""Log in successful!"" }",
+Send OTP (Login),POST,/api/customer/sendOtp,Sends a one-time password (OTP) to the user’s mobile number during login.,No,"json { ""mobile"": ""6777778888"", ""path"": ""logIn"" }","json { ""success"": true, ""message"": ""OTP sent successfully via SMS"", ""smsLogId"": { ""message"": ""Your Lunch Bowl OTP is 3859. It is valid for 10 minutes. Do not share this with anyone.\n\nEarth Tech Concepts Pvt Ltd"", ""templateId"": ""1607100000000356197"", ""status"": ""sent"", ""variables"": [ ""3859"" ], ""_id"": ""6911dc9f3834f882548cde52"", ""mobile"": ""6777778888"", ""messageType"": ""OTP"", ""messageId"": ""100 - Msg successfully sent. MsgID#7946755"", ""sentAt"": ""2025-11-10T12:37:51.997Z"", ""createdAt"": ""2025-11-10T12:37:51.998Z"", ""updatedAt"": ""2025-11-10T12:37:51.998Z"", ""__v"": 0 }, ""expiresAt"": ""2025-11-10T12:39:51.564Z"" }",
+Step Form — Parent Details,POST,/api/customer/stepForm-Register,Saves the parent details for step 1 of the step form registration process.,Yes (Token required after OTP verification),"json { ""path"": ""step-Form-ParentDetails"", ""step"": 1, ""_id"": ""6911d0363834f882548cde1f"" }","json { ""success"": true, ""data"": { ""parentDetails"": { ""country"": ""India"", ""fatherFirstName"": ""sdfg"", ""fatherLastName"": ""g"", ""motherFirstName"": ""dfghj"", ""motherLastName"": ""h"", ""mobile"": ""6777778888"", ""email"": ""test123@gmail.com"", ""address"": ""123,dfg,sdfg"", ""pincode"": ""600001"", ""city"": ""sdfgh"", ""state"": ""dfgh"" }, ""step"": 1, ""subscriptions"": [], ""subscriptionCount"": 0, ""_id"": ""6911dde4a3aa593f2e79e550"", ""user"": ""6911d0363834f882548cde1f"", ""__v"": 0 } }",
+Step Form — Child Details,POST,/api/customer/stepForm-Register,Saves the child details for step 2 of the step form registration process.,✅ Yes (Token required after OTP verification),"json { ""path"": ""step-Form-ChildDetails"", ""st{
+    ""formData"": [
+        {
+            ""childFirstName"": ""dergth"",
+            ""childLastName"": ""sdf"",
+            ""dob"": ""2025-10-27"",
+            ""lunchTime"": ""11:00 AM - 12:00 PM"",
+            ""school"": ""ST Francis Xavier English Medium Matriculation School"",
+            ""location"": ""Alwarpet"",
+            ""childClass"": ""Class 2"",
+            ""section"": ""F"",
+            ""allergies"": """"
+        }
+    ],
+    ""step"": 2,
+    ""path"": ""step-Form-ChildDetails"",
+    ""_id"": ""6912df64a3bfaeee7dbb5858""
+}ep"": 2, ""_id"": ""6911d0363834f882548cde1f"" }","json { ""success"": true, ""data"": [ ""6911de713834f882548cde82"" ] }",
+Get All Schools,GET,/api/schools/get-all-schools,"Fetches the complete list of schools with their names, locations, and lunch times.",❌ No,json {},"json [ { ""_id"": ""6894a43fa9f6385c5e4113da"", ""name"": ""DAV Girls Senior Secondary School"", ""location"": ""Gopalapuram"", ""lunchTime"": ""13:00"", ""createdAt"": ""2025-08-07T13:03:59.339Z"", ""updatedAt"": ""2025-08-07T13:03:59.339Z"", ""__v"": 0 }, { ""_id"": ""6894a46da9f6385c5e4113df"", ""name"": ""Don Bosco School of excellence"", ""location"": ""Egmore"", ""lunchTime"": ""13:00"", ""createdAt"": ""2025-08-07T13:04:45.601Z"", ""updatedAt"": ""2025-08-07T13:04:45.601Z"", ""__v"": 0 }, { ""_id"": ""6894a489a9f6385c5e4113e2"", ""name"": ""Don Bosco Matriculation Higher secondary School"", ""location"": ""Egmore"", ""lunchTime"": ""13:00"", ""createdAt"": ""2025-08-07T13:05:13.349Z"", ""updatedAt"": ""2025-08-07T13:05:13.349Z"", ""__v"": 0 }, { ""_id"": ""6894a584a9f6385c5e41140b"", ""name"": ""Bhavans Rajaji Vidyashram"", ""location"": ""Kilpauk"", ""lunchTime"": ""13:00"", ""createdAt"": ""2025-08-07T13:09:24.251Z"", ""updatedAt"": ""2025-08-07T13:09:24.251Z"", ""__v"": 0 } ... ]",
+,,,,,,,
+Get All Schools,GET,/api/schools/get-all-schools,"Fetches the complete list of schools with their names, locations, and lunch times.",❌ No,json {},"json [ { ""_id"": ""6894a43fa9f6385c5e4113da"", ""name"": ""DAV Girls Senior Secondary School"", ""location"": ""Gopalapuram"", ""lunchTime"": ""13:00"", ""createdAt"": ""2025-08-07T13:03:59.339Z"", ""updatedAt"": ""2025-08-07T13:03:59.339Z"", ""__v"": 0 }, { ""_id"": ""6894a46da9f6385c5e4113df"", ""name"": ""Don Bosco School of excellence"", ""location"": ""Egmore"", ""lunchTime"": ""13:00"", ""createdAt"": ""2025-08-07T13:04:45.601Z"", ""updatedAt"": ""2025-08-07T13:04:45.601Z"", ""__v"": 0 }, { ""_id"": ""6894a489a9f6385c5e4113e2"", ""name"": ""Don Bosco Matriculation Higher secondary School"", ""location"": ""Egmore"", ""lunchTime"": ""13:00"", ""createdAt"": ""2025-08-07T13:05:13.349Z"", ""updatedAt"": ""2025-08-07T13:05:13.349Z"", ""__v"": 0 }, { ""_id"": ""6894a584a9f6385c5e41140b"", ""name"": ""Bhavans Rajaji Vidyashram"", ""location"": ""Kilpauk"", ""lunchTime"": ""13:00"", ""createdAt"": ""2025-08-07T13:09:24.251Z"", ""updatedAt"": ""2025-08-07T13:09:24.251Z"", ""__v"": 0 } ... ]",
+,,,,,,,
+Get All Holidays,GET,/api/holidays/get-all-holidays,Fetches the complete list of holidays with their names and dates for all academic years.,❌ No,json {},"json { ""success"": true, ""data"": [ { ""_id"": ""6894a754a9f6385c5e411473"", ""date"": ""2025-01-01T00:00:00.000Z"", ""name"": ""New Year's Day"", ""createdAt"": ""2025-08-07T13:17:08.543Z"", ""updatedAt"": ""2025-08-07T13:17:22.186Z"", ""__v"": 0 }, { ""_id"": ""6894a781a9f6385c5e41148f"", ""date"": ""2025-01-14T00:00:00.000Z"", ""name"": ""Pongal (Thai Pongal)"", ""createdAt"": ""2025-08-07T13:17:53.948Z"", ""updatedAt"": ""2025-08-07T13:17:53.948Z"", ""__v"": 0 }, { ""_id"": ""6894a79aa9f6385c5e41149a"", ""date"": ""2025-01-15T00:00:00.000Z"", ""name"": ""Thiruvalluvar Day"", ""createdAt"": ""2025-08-07T13:18:18.865Z"", ""updatedAt"": ""2025-08-07T13:18:18.865Z"", ""__v"": 0 }, { ""_id"": ""6894a7aca9f6385c5e4114a4"", ""date"": ""2025-01-16T00:00:00.000Z"", ""name"": ""Uzhavar Thirunal (Farmers’ Day)"", ""createdAt"": ""2025-08-07T13:18:36.924Z"", ""updatedAt"": ""2025-08-07T13:18:36.924Z"", ""__v"": 0 }, { ""_id"": ""6894a7c1a9f6385c5e4114ae"", ""date"": ""2025-01-26T00:00:00.000Z"", ""name"": ""Republic Day"", ""createdAt"": ""2025-08-07T13:18:57.878Z"", ""updatedAt"": ""2025-08-07T13:18:57.878Z"", ""__v"": 0 } ... ] }",
+,,,,,,,
+Step Form — Subscription Plan,POST,/api/customer/stepForm-Register,Saves the user’s selected subscription plan and associates it with the child details during step 3 of registration.,✅ Yes (Token required after OTP verification),"json { ""step"": 3, ""path"": ""step-Form-SubscriptionPlan"", ""payload"": { ""selectedPlan"": ""3"", ""workingDays"": 66, ""totalPrice"": 12540, ""startDate"": ""2025-11-12"", ""endDate"": ""2026-02-19"", ""children"": [ ""6911de713834f882548cde82"" ] }, ""_id"": ""6911d0363834f882548cde1f"" }","```json { ""success"": true, ""data"": { ""parentDetails"": { ""country"": ""India"", ""fatherFirstName"": ""sdfg"", ""fatherLastName"": ""g"", ""motherFirstName"": ""dfghj"", ""motherLastName"": ""h"", ""mobile"": ""6777778888"", ""email"": ""test123@gmail.com"", ""address"": ""123,dfg,sdfg"", ""pincode"": ""600001"", ""city"": ""sdfgh"", ""state"": ""dfgh"" }, ""step"": 3, ""subscriptions"":  { ""paymentMethod"": ""CCAvenue"", ""status"": ""active"", ""children"": [ { ""allergies"": """", ""_id"": ""6911de713834f882548cde82"", ""childFirstName"": ""edfgh"", ""childLastName"": ""gh"", ""dob"": ""2025-10-28T00:00:00.000Z"", ""lunchTime"": ""11:00 AM - 12:00 PM"", ""school"": ""ST Francis Xavier English Medium Matriculation School"", ""location"": ""Alwarpet"", ""childClass"": ""Class 5"", ""section"": ""C"", ""user"": ""6911d0363834f882548cde1f"", ""__v"": 0 } ], ""_id"": ""6911e2b63834f882548cde92"", ""user"": ""6911d0363834f882548cde1f"", ""planId"": ""3"", ""startDate"": ""2025-11-12T00:00:00.000Z"", ""endDate"": ""2026-02-19T00:00:00.000Z"", ""workingDays"": 66, ""price"": 12540, ""]()_",
+,,,,,,,
+CCAvenue — Local Payment Success,POST,https://dev-api.lunchbowl.co.in/api/ccavenue/local-success,"Handles local CCAvenue test/sandbox payment success responses, updates subscription and payment details for the user.",✅ Yes (Requires valid user/session context),"json { ""orderId"": ""LB176283605962634"", ""transactionId"": ""LOCAL_TXN"", ""userId"": ""6912bdd7a3bfaeee7dbb5516"" }","json { ""success"": true, ""data"": { ""parentDetails"": { ""country"": ""India"", ""fatherFirstName"": ""dfg"", ""fatherLastName"": ""fgh"", ""motherFirstName"": ""dfgh"", ""motherLastName"": ""fgh"", ""mobile"": ""6777777888"", ""email"": ""shivarexfdgh.c@gmail.com"", ""address"": ""123,gfd,jhgf"", ""pincode"": ""600004"", ""city"": ""Chennai"", ""state"": ""Tamil Nadu"" }, ""step"": 4, ""subscriptions"": [ { ""paymentMethod"": ""CCAvenue"", ""status"": ""active"", ""children"": [ ""6912be06a3bfaeee7dbb552c"" ], ""_id"": ""6912be19a3bfaeee7dbb5534"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""planId"": ""1"", ""startDate"": ""2025-11-13T00:00:00.000Z"", ""endDate"": ""2025-12-12T00:00:00.000Z"", ""workingDays"": 22, ""price"": 4400, ""__v"": 0, ""orderId"": ""LB176283605962634"", ""transactionId"": ""LOCAL_TXN"", ""paymentDate"": ""2025-11-11T04:40:58.626Z"" } ], ""subscriptionCount"": 1, ""_id"": ""6912bdf0a3aa593f2e7ab6bb"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 1, ""paymentStatus"": ""Success"" } }",
+,,,,,,,
+Step Check,POST,/api/customer/Step-Check,Checks the user’s current step in the registration or onboarding process and retrieves their trial status.,✅ Yes (Token required after OTP verification),"json { ""_id"": ""6912bdd7a3bfaeee7dbb5516"", ""path"": ""Step-Check"" }","json { ""success"": true, ""data"": { ""step"": 4, ""freeTrial"": false } }",
+,,,,,,,
+Holiday Payments,POST,/api/ccavenue/holiday-payments,Retrieves holiday-based payment records or pending holiday adjustments for a specific user and date.,✅ Yes (Token required),"json { ""date"": ""2025-11-13"", ""userId"": ""6912bdd7a3bfaeee7dbb5516"" }",json [],
+,,,,,,,
+Save Menu Calendar,POST,/api/customer/save-Menu-Calendar,Saves the user’s selected meal plan and menu calendar details (date-wise meals for each child under a plan).,✅ Yes (Token required),"json { ""_id"": ""6912bdd7a3bfaeee7dbb5516"", ""path"": ""save-meals"", ""data"": { ""userId"": ""6912bdd7a3bfaeee7dbb5516"", ""planId"": ""6912be19a3bfaeee7dbb5534"", ""children"": [ { ""childId"": ""6912be06a3bfaeee7dbb552c"", ""meals"": [ { ""mealDate"": ""2025-11-13T00:00:00.000Z"", ""mealName"": ""Spaghetti with Pink Sauce Pasta & Garlic Bread"" } ] } ] } }","json { ""success"": true, ""message"": ""Meal plans saved successfully"", ""data"": { ""_id"": ""6912c4bc3834f882548ce0a4"", ""userId"": ""6912bdd7a3bfaeee7dbb5516"", ""plans"": [ { ""planId"": ""6912be19a3bfaeee7dbb5534"", ""children"": [ { ""childId"": ""6912be06a3bfaeee7dbb552c"", ""meals"": [ { ""_id"": ""6912c4bc3834f882548ce0a5"", ""mealDate"": ""2025-11-13T00:00:00.000Z"", ""mealName"": ""Spaghetti with Pink Sauce Pasta & Garlic Bread"" } ] } ] } ], ""createdAt"": ""2025-11-11T05:08:12.615Z"", ""updatedAt"": ""2025-11-11T05:08:12.615Z"", ""__v"": 0 } }",
+,,,,,,,
+Get Menu Calendar,POST,/api/customer/get-Menu-Calendar,"Fetches the user’s saved meal plans and menu calendar details, including active plans, subscribed children, and their associated school details.",✅ Yes (Token required),"json { ""_id"": ""6912bdd7a3bfaeee7dbb5516"", ""path"": ""get-Menu-Calendar"" }","json { ""success"": true, ""data"": { ""plans"": [ { ""id"": ""6912be19a3bfaeee7dbb5534"", ""planId"": ""1"", ""startDate"": ""2025-11-13T00:00:00.000Z"", ""endDate"": ""2025-12-12T00:00:00.000Z"", ""price"": 4400, ""status"": ""active"", ""children"": [ { ""id"": ""6912be06a3bfaeee7dbb552c"", ""firstName"": ""dfg"", ""lastName"": ""gh"", ""dob"": ""2025-10-27T00:00:00.000Z"", ""lunchTime"": ""11:00 AM - 12:00 PM"", ""school"": ""Maharishi Vidyamandir Senior Secondary School"", ""location"": ""Chetpet"", ""childClass"": ""Class 6"", ""section"": ""E"", ""allergies"": """" } ] } ] } }",
+,,,,,,,
+Get Saved Meals,POST,/api/customer/get-saved-meals,"Retrieves all meals saved by the user for their subscribed plans and children, organized by plan ID, date, and child ID.",✅ Yes (Token required),"json { ""_id"": ""6912bdd7a3bfaeee7dbb5516"", ""path"": ""get-saved-meals"" }","json { ""success"": true, ""data"": { ""6912be19a3bfaeee7dbb5534"": { ""2025-11-13"": { ""6912be06a3bfaeee7dbb552c"": ""Spaghetti with Pink Sauce Pasta & Garlic Bread"" } } } }",
+,,,,,,,
+Account Details,POST,/api/customer/account-details,"Fetches the full account details of the logged-in user, including parent details, active subscriptions, child details, and payment information.",✅ Yes (Token required),"json { ""userId"": ""6912bdd7a3bfaeee7dbb5516"" }","{
+    ""success"": true,
+    ""data"": {
+        ""parentDetails"": {
+            ""country"": ""India"",
+            ""fatherFirstName"": ""sdfghfd"",
+            ""fatherLastName"": ""g"",
+            ""motherFirstName"": ""dfghjgfdsdfg"",
+            ""motherLastName"": ""g"",
+            ""mobile"": ""8765678765"",
+            ""email"": ""csivarexfdsvfsvdf.odi@gmail.com"",
+            ""address"": ""23sdfgh,gfdfgh,jhgfg"",
+            ""pincode"": ""600004"",
+            ""city"": ""Chennai"",
+            ""state"": ""Tamil Nadu""
+        },
+        ""wallet"": {
+            ""points"": 400,
+            ""history"": [
+                {
+                    ""_id"": ""69b9637d4d05d615b80cb956"",
+                    ""change"": 200,
+                    ""reason"": ""Meal deleted"",
+                    ""childName"": ""dfgh dfgh"",
+                    ""mealName"": ""Cheese Paratha and Kadai Paneer"",
+                    ""date"": ""2026-03-17T14:21:49.868Z""
+                },
+                {
+                    ""_id"": ""69b9639b4d05d615b80cb996"",
+                    ""change"": 200,
+                    ""reason"": ""Meal deleted"",
+                    ""childName"": ""dfgh dfgh"",
+                    ""mealName"": ""Tomato Rice and Baby Potato Fry"",
+                    ""date"": ""2026-03-17T14:22:19.567Z""
+                }
+            ]
+        },
+        ""step"": 4,
+        ""subscriptions"": [
+            {
+                ""paymentMethod"": ""CCAvenue"",
+                ""status"": ""active"",
+                ""children"": [
+                    {
+                        ""allergies"": """",
+                        ""_id"": ""69b958034d05d615b80cb8e5"",
+                        ""childFirstName"": ""dfgh"",
+                        ""childLastName"": ""dfgh"",
+                        ""dob"": ""2026-03-02T00:00:00.000Z"",
+                        ""lunchTime"": ""11:00 AM - 12:00 PM"",
+                        ""school"": ""FIITJEE Global School"",
+                        ""location"": ""Vengambakkam"",
+                        ""childClass"": ""Class 4"",
+                        ""section"": ""D"",
+                        ""user"": ""69abaf58ed1fc32b3078c33f"",
+                        ""__v"": 0
+                    }
+                ],
+                ""_id"": ""69b958114d05d615b80cb8f4"",
+                ""user"": ""69abaf58ed1fc32b3078c33f"",
+                ""planId"": ""1"",
+                ""startDate"": ""2026-03-19T00:00:00.000Z"",
+                ""endDate"": ""2026-04-21T00:00:00.000Z"",
+                ""workingDays"": 22,
+                ""price"": 4400,
+                ""__v"": 0,
+                ""orderId"": ""LB1773754387679347"",
+                ""paymentDate"": ""2026-03-17T13:33:07.839Z"",
+                ""transactionId"": ""LOCAL_TXN""
+            }
+        ],
+        ""subscriptionCount"": 1,
+        ""_id"": ""69b957e729b4837ac5689f80"",
+        ""user"": null,
+        ""__v"": 3,
+        ""paymentStatus"": ""Success""
+    },
+    ""pagination"": {
+        ""currentPage"": 1,
+        ""totalPages"": 1,
+        ""limit"": 10,
+        ""totalRecords"": 2
+    }
+}",
+,,,,,,,
+Get All Children,POST,/api/customer/get-all-children,"Retrieves all child profiles added by the user, along with details of any active subscription plans.",✅ Yes (Token required),"json { ""userId"": ""6912bdd7a3bfaeee7dbb5516"", ""path"": ""Add-Child"" }","json { ""success"": true, ""children"": [ { ""allergies"": """", ""_id"": ""6912be06a3bfaeee7dbb552c"", ""childFirstName"": ""dfg"", ""childLastName"": ""gh"", ""dob"": ""2025-10-27T00:00:00.000Z"", ""lunchTime"": ""11:00 AM - 12:00 PM"", ""school"": ""Maharishi Vidyamandir Senior Secondary School"", ""location"": ""Chetpet"", ""childClass"": ""Class 6"", ""section"": ""E"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 0 } ], ""activeSubscription"": { ""_id"": ""6912be19a3bfaeee7dbb5534"", ""paymentMethod"": ""CCAvenue"", ""status"": ""active"", ""children"": [ { ""_id"": ""6912be06a3bfaeee7dbb552c"", ""allergies"": """", ""childFirstName"": ""dfg"", ""childLastName"": ""gh"", ""dob"": ""2025-10-27T00:00:00.000Z"", ""lunchTime"": ""11:00 AM - 12:00 PM"", ""school"": ""Maharishi Vidyamandir Senior Secondary School"", ""location"": ""Chetpet"", ""childClass"": ""Class 6"", ""section"": ""E"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 0 } ], ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""planId"": ""1"", ""startDate"": ""2025-11-13T00:00:00.000Z"", ""endDate"": ""2025-12-12T00:00:00.000Z"", ""workingDays"": 22, ""price"": 4400, ""__v"": 0, ""orderId"": ""LB176283605962634"", ""paymentDate"": ""2025-11-11T04:40:58.626Z"", ""transactionId"": ""LOCAL_TXN"" } }",
+,,,,,,,
+Get User Form Data,GET,/api/customer/form/:userId,"Fetches the full form data for a specific user, including subscription plan details, user information, and parent details.",✅ Yes (Token required),"json { ""userId"": ""6912bdd7a3bfaeee7dbb5516"" }","json { ""success"": true, ""data"": { ""subscriptionPlan"": { ""_id"": ""6912be19a3bfaeee7dbb5534"", ""paymentMethod"": ""CCAvenue"", ""status"": ""active"", ""children"": [ ""6912be06a3bfaeee7dbb552c"" ], ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""planId"": ""1"", ""startDate"": ""2025-11-13T00:00:00.000Z"", ""endDate"": ""2025-12-12T00:00:00.000Z"", ""workingDays"": 22, ""price"": 4400, ""__v"": 0, ""orderId"": ""LB176283605962634"", ""paymentDate"": ""2025-11-11T04:40:58.626Z"", ""transactionId"": ""LOCAL_TXN"" }, ""user"": { ""_id"": ""6912bdd7a3bfaeee7dbb5516"", ""freeTrial"": false, ""name"": ""sdfg g"", ""phone"": ""6777777888"", ""email"": ""shivarexfdgh.c@gmail.com"", ""createdAt"": ""2025-11-11T04:38:47.563Z"", ""updatedAt"": ""2025-11-11T04:38:47.563Z"", ""__v"": 0 }, ""parentDetails"": { ""fatherFirstName"": ""dfg"", ""fatherLastName"": ""fgh"", ""motherFirstName"": ""dfgh"", ""motherLastName"": ""fgh"", ""mobile"": ""6777777888"", ""email"": ""shivarexfdgh.c@gmail.com"", ""address"": ""123,gfd,jhgf"", ""country"": ""India"", ""pincode"": ""600004"", ""city"": ""Chennai"", ""state"": ""Tamil Nadu"" } } }",
+,,,,,,,
+CCAvenue — Local Add Child Payment,POST,/api/ccavenue/local-success/local-add-childPayment,Handles local CCAvenue payments for adding a new child under an existing subscription plan. Updates user’s active subscription and payment details.,✅ Yes (Token required),"json { ""userId"": ""6912bdd7a3bfaeee7dbb5516"", ""childrenData"": [ { ""childFirstName"": ""Dhinesh JR"", ""childLastName"": ""D"", ""dob"": ""2025-10-28"", ""lunchTime"": ""11:00 AM - 12:00 PM"", ""school"": ""Chinmaya Vidyalaya"", ""location"": ""Kilpauk"", ""childClass"": ""Class 5"", ""section"": ""E"", ""allergies"": """", ""isExisting"": false } ], ""paymentInfo"": { ""orderId"": ""LB1762838893268766"", ""transactionId"": ""TXN1762838893878"", ""subscriptionId"": ""6912be19a3bfaeee7dbb5534"", ""paymentAmount"": 4400 } }","json { ""success"": true, ""message"": ""Local add child payment processed successfully"", ""data"": { ""parentDetails"": { ""country"": ""India"", ""fatherFirstName"": ""dfg"", ""fatherLastName"": ""fgh"", ""motherFirstName"": ""dfgh"", ""motherLastName"": ""fgh"", ""mobile"": ""6777777888"", ""email"": ""shivarexfdgh.c@gmail.com"", ""address"": ""123,gfd,jhgf"", ""pincode"": ""600004"", ""city"": ""Chennai"", ""state"": ""Tamil Nadu"" }, ""step"": 4, ""subscriptions"": [ { ""paymentMethod"": ""CCAvenue"", ""status"": ""active"", ""children"": [ { ""allergies"": """", ""_id"": ""6912be06a3bfaeee7dbb552c"", ""childFirstName"": ""dfg"", ""childLastName"": ""gh"", ""dob"": ""2025-10-27T00:00:00.000Z"", ""lunchTime"": ""11:00 AM - 12:00 PM"", ""school"": ""Maharishi Vidyamandir Senior Secondary School"", ""location"": ""Chetpet"", ""childClass"": ""Class 6"", ""section"": ""E"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 0 }, { ""allergies"": """", ""_id"": ""6912c96d3834f882548ce19c"", ""childFirstName"": ""Dhinesh JR"", ""childLastName"": ""D"", ""dob"": ""2025-10-28T00:00:00.000Z"", ""lunchTime"": ""11:00 AM - 12:00 PM"", ""school"": ""Chinmaya Vidyalaya"", ""location"": ""Kilpauk"", ""childClass"": ""Class 5"", ""section"": ""E"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 0 } ], ""_id"": ""6912be19a3bfaeee7dbb5534"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""planId"": ""1"", ""startDate"": ""2025-11-13T00:00:00.000Z"", ""endDate"": ""2025-12-12T00:00:00.000Z"", ""workingDays"": 22, ""price"": 4400, ""__v"": 1, ""orderId"": ""LB1762838893268766"", ""paymentDate"": ""2025-11-11T05:28:14.003Z"", ""transactionId"": ""TXN1762838893878"" } ], ""subscriptionCount"": 2, ""_id"": ""6912bdf0a3aa593f2e7ab6bb"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 1, ""paymentStatus"": ""Success"" } }",
+,,,,,,,
+Step Form — Add Multiple Children,POST,/api/customer/stepForm-Register,Handles the registration step for adding multiple child details under a single parent record.,✅ Yes (Token required),"json { ""path"": ""step-Form-ChildDetails"", ""step"": 2, ""_id"": ""6912bdd7a3bfaeee7dbb5516"" }","json { ""success"": true, ""data"": [ ""6912be06a3bfaeee7dbb552c"", ""6912c96d3834f882548ce19c"" ] }",
+,,,,,,,
+Step Form — Renew Subscription Plan,POST,/api/customer/stepForm-Register,"Handles the renewal process of an existing subscription plan for one or more children, creating a new pending payment subscription entry.",✅ Yes (Token required),"json { ""path"": ""step-Form-Renew-SubscriptionPlan"", ""payload"": { ""selectedPlan"": ""1"", ""workingDays"": 22, ""totalPrice"": 4400, ""startDate"": ""2025-12-15"", ""endDate"": ""2026-01-20"", ""children"": [ ""6912c96d3834f882548ce19c"" ] }, ""_id"": ""6912bdd7a3bfaeee7dbb5516"" }","json { ""success"": true, ""data"": { ""parentDetails"": { ""country"": ""India"", ""fatherFirstName"": ""dfg"", ""fatherLastName"": ""fgh"", ""motherFirstName"": ""dfgh"", ""motherLastName"": ""fgh"", ""mobile"": ""6777777888"", ""email"": ""shivarexfdgh.c@gmail.com"", ""address"": ""123,gfd,jhgf"", ""pincode"": ""600004"", ""city"": ""Chennai"", ""state"": ""Tamil Nadu"" }, ""step"": 4, ""subscriptions"": [ { ""paymentMethod"": ""CCAvenue"", ""status"": ""active"", ""children"": [ { ""allergies"": """", ""_id"": ""6912be06a3bfaeee7dbb552c"", ""childFirstName"": ""dfg"", ""childLastName"": ""gh"", ""dob"": ""2025-10-27T00:00:00.000Z"", ""lunchTime"": ""11:00 AM - 12:00 PM"", ""school"": ""Maharishi Vidyamandir Senior Secondary School"", ""location"": ""Chetpet"", ""childClass"": ""Class 6"", ""section"": ""E"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 0 }, { ""allergies"": """", ""_id"": ""6912c96d3834f882548ce19c"", ""childFirstName"": ""Dhinesh JR"", ""childLastName"": ""D"", ""dob"": ""2025-10-28T00:00:00.000Z"", ""lunchTime"": ""11:00 AM - 12:00 PM"", ""school"": ""Chinmaya Vidyalaya"", ""location"": ""Kilpauk"", ""childClass"": ""Class 5"", ""section"": ""E"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 0 } ], ""_id"": ""6912be19a3bfaeee7dbb5534"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""planId"": ""1"", ""startDate"": ""2025-11-13T00:00:00.000Z"", ""endDate"": ""2025-12-12T00:00:00.000Z"", ""workingDays"": 22, ""price"": 4400, ""__v"": 1, ""orderId"": ""LB1762838893268766"", ""paymentDate"": ""2025-11-11T05:28:14.003Z"", ""transactionId"": ""TXN1762838893878"" }, { ""paymentMethod"": ""CCAvenue"", ""status"": ""pending_payment"", ""children"": [ { ""allergies"": """", ""_id"": ""6912c96d3834f882548ce19c"", ""childFirstName"": ""Dhinesh JR"", ""childLastName"": ""D"", ""dob"": ""2025-10-28T00:00:00.000Z"", ""lunchTime"": ""11:00 AM - 12:00 PM"", ""school"": ""Chinmaya Vidyalaya"", ""location"": ""Kilpauk"", ""childClass"": ""Class 5"", ""section"": ""E"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 0 } ], ""_id"": ""6912d21a3834f882548ce268"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""planId"": ""1"", ""startDate"": ""2025-12-15T00:00:00.000Z"", ""endDate"": ""2026-01-20T00:00:00.000Z"", ""workingDays"": 22, ""price"": 4400, ""__v"": 0 } ], ""subscriptionCount"": 2, ""_id"": ""6912bdf0a3aa593f2e7ab6bb"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 1, ""paymentStatus"": ""Success"" } }",
+,,,,,,,
+CCAvenue — Renewal Payment Simulation,POST,/api/ccavenue/local-success,Simulates a successful renewal payment for a user's subscription. Updates the status of the renewed plan to upcoming and adds it to the user’s active subscriptions.,✅ Yes (Token required),"json { ""userId"": ""6912bdd7a3bfaeee7dbb5516"", ""orderId"": ""RENEW1762842251065212"", ""transactionId"": ""LOCAL_TXN"" }","json { ""success"": true, ""message"": ""Renewal payment simulated successfully"", ""data"": { ""parentDetails"": { ""country"": ""India"", ""fatherFirstName"": ""dfg"", ""fatherLastName"": ""fgh"", ""motherFirstName"": ""dfgh"", ""motherLastName"": ""fgh"", ""mobile"": ""6777777888"", ""email"": ""shivarexfdgh.c@gmail.com"", ""address"": ""123,gfd,jhgf"", ""pincode"": ""600004"", ""city"": ""Chennai"", ""state"": ""Tamil Nadu"" }, ""step"": 4, ""subscriptions"": [ { ""paymentMethod"": ""CCAvenue"", ""status"": ""active"", ""children"": [ ""6912be06a3bfaeee7dbb552c"", ""6912c96d3834f882548ce19c"" ], ""_id"": ""6912be19a3bfaeee7dbb5534"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""planId"": ""1"", ""startDate"": ""2025-11-13T00:00:00.000Z"", ""endDate"": ""2025-12-12T00:00:00.000Z"", ""workingDays"": 22, ""price"": 4400, ""__v"": 1, ""orderId"": ""LB1762838893268766"", ""paymentDate"": ""2025-11-11T05:28:14.003Z"", ""transactionId"": ""TXN1762838893878"" }, { ""paymentMethod"": ""CCAvenue"", ""status"": ""upcoming"", ""children"": [ ""6912c96d3834f882548ce19c"" ], ""_id"": ""6912d21a3834f882548ce268"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""planId"": ""1"", ""startDate"": ""2025-12-15T00:00:00.000Z"", ""endDate"": ""2026-01-20T00:00:00.000Z"", ""workingDays"": 22, ""price"": 4400, ""__v"": 0, ""orderId"": ""RENEW1762842251065212"", ""transactionId"": ""LOCAL_TXN"", ""paymentDate"": ""2025-11-11T06:24:11.171Z"" } ], ""subscriptionCount"": 3, ""_id"": ""6912bdf0a3aa593f2e7ab6bb"", ""user"": ""6912bdd7a3bfaeee7dbb5516"", ""__v"": 2, ""paymentStatus"": ""Success"" } }",
+,,,,,,,
+Get All Payments,POST,/api/customer/get-payments,"Retrieves all payment transactions made by the user, including subscription, add-child, and renewal payments, along with total paid amount.",✅ Yes (Token required),"json { ""userId"": ""6912bdd7a3bfaeee7dbb5516"" }","json { ""success"": true, ""payments"": [ { ""currency"": ""INR"", ""paidFor"": ""SUBSCRIPTION"", ""_id"": ""6912be5aa3bfaeee7dbb553e"", ""order_id"": ""LB176283605962634"", ""tracking_id"": ""LOCAL_TXN"", ""amount"": 4400, ""order_status"": ""Success"", ""payment_mode"": ""CCAvenue"", ""card_name"": """", ""bank_ref_no"": """", ""billing_name"": ""dfg fgh"", ""billing_email"": ""shivarexfdgh.c@gmail.com"", ""payment_date"": ""2025-11-11T04:40:58.638Z"", ""merchant_param1"": ""6912bdd7a3bfaeee7dbb5516"" }, { ""currency"": ""INR"", ""paidFor"": ""ADD_CHILD"", ""_id"": ""6912c96e3834f882548ce1a0"", ""order_id"": ""LB1762838893268766"", ""tracking_id"": ""TXN1762838893878"", ""amount"": 4400, ""order_status"": ""Success"", ""payment_mode"": ""CCAvenue"", ""card_name"": """", ""bank_ref_no"": """", ""billing_name"": ""dfg fgh"", ""billing_email"": ""shivarexfdgh.c@gmail.com"", ""payment_date"": ""2025-11-11T05:28:14.084Z"", ""merchant_param1"": ""6912bdd7a3bfaeee7dbb5516"" }, { ""currency"": ""INR"", ""paidFor"": ""RENEW_SUBSCRIPTION"", ""_id"": ""6912d68b3834f882548ce275"", ""order_id"": ""RENEW1762842251065212"", ""tracking_id"": ""LOCAL_TXN"", ""amount"": 4400, ""order_status"": ""Success"", ""payment_mode"": ""CCAvenue"", ""card_name"": """", ""bank_ref_no"": """", ""billing_name"": ""dfg fgh"", ""billing_email"": ""shivarexfdgh.c@gmail.com"", ""payment_date"": ""2025-11-11T06:24:11.305Z"", ""merchant_param1"": ""6912bdd7a3bfaeee7dbb5516"" } ], ""total_payments"": 0, ""total_amount"": 13200 }",
+,,,,,,,
+delete meal,post,api/customer/delete-meal,to delete the selected meal and add 200 points in the waltet,yes,"{
+    ""userId"": ""69abaf58ed1fc32b3078c33f"",
+    ""subscriptionId"": ""69b958114d05d615b80cb8f4"",
+    ""childId"": ""69b958034d05d615b80cb8e5"",
+    ""date"": ""2026-03-20""
+}","{
+    ""success"": true,
+    ""message"": ""Meal deleted successfully"",
+    ""data"": {
+        ""_id"": ""69b958314d05d615b80cb93d"",
+        ""userId"": ""69abaf58ed1fc32b3078c33f"",
+        ""plans"": [
+            {
+                ""planId"": ""69b958114d05d615b80cb8f4"",
+                ""children"": [
+                    {
+                        ""childId"": ""69b958034d05d615b80cb8e5"",
+                        ""meals"": [
+                            {
+                                ""deleted"": true,
+                                ""_id"": ""69b958314d05d615b80cb93e"",
+                                ""mealDate"": ""2026-03-19T00:00:00.000Z"",
+                                ""mealName"": ""Cheese Paratha and Kadai Paneer""
+                            },
+                            {
+                                ""deleted"": true,
+                                ""_id"": ""69b958314d05d615b80cb93f"",
+                                ""mealDate"": ""2026-03-20T00:00:00.000Z"",
+                                ""mealName"": ""Tomato Rice and Baby Potato Fry""
+                            },
+                            {
+                                ""deleted"": false,
+                                ""_id"": ""69b958314d05d615b80cb940"",
+                                ""mealDate"": ""2026-03-23T00:00:00.000Z"",
+                                ""mealName"": ""Hummus Platter, Pita and Veggies""
+                            },
+                            {
+                                ""deleted"": false,
+                                ""_id"": ""69b958314d05d615b80cb941"",
+                                ""mealDate"": ""2026-03-24T00:00:00.000Z"",
+                                ""mealName"": ""Pav Bhaji""
+                            },
+                            {
+                                ""deleted"": false,
+                                ""_id"": ""69b958314d05d615b80cb942"",
+                                ""mealDate"": ""2026-03-25T00:00:00.000Z"",
+                                ""mealName"": ""Wheat Pesto Spaghetti Pasta and Garlic Bread""
+                            },
+                            {
+                                ""deleted"": false,
+                                ""_id"": ""69b958314d05d615b80cb943"",
+                                ""mealDate"": ""2026-03-26T00:00:00.000Z"",
+                                ""mealName"": ""Thai Red Curry with Herb Rice""
+                            },
+                            {
+                                ""deleted"": false,
+                                ""_id"": ""69b958314d05d615b80cb944"",
+                                ""mealDate"": ""2026-03-27T00:00:00.000Z"",
+                                ""mealName"": ""Paneer Pulav & Chatpata Raita""
+                            },
+                            {
+                                ""deleted"": false,
+                                ""_id"": ""69b958314d05d615b80cb945"",
+                                ""mealDate"": ""2026-03-30T00:00:00.000Z"",
+                                ""mealName"": ""Cheese Paratha and Kadai Paneer""
+                            },
+                            {
+                                ""deleted"": false,
+                                ""_id"": ""69b958314d05d615b80cb946"",
+                                ""mealDate"": ""2026-03-31T00:00:00.000Z"",
+                                ""mealName"": ""Veg Fried Rice – Dragon Paneer""
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        ""createdAt"": ""2026-03-17T13:33:37.818Z"",
+        ""updatedAt"": ""2026-03-17T14:22:19.637Z"",
+        ""__v"": 0
+    }
+}",
