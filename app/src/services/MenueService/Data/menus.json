@@ -1,0 +1,334 @@
+{
+  "meal_plan": [
+    {
+      "day": "Day 1",
+      "meals": [
+        "Phulka Channa Masala",
+        "Veg Noodle- Veg in Hot Garlic Sauce",
+        "Veg Alfredo Pasta + Garlic Bread",
+        "Veg Biriyani+ Raita",
+        "Paneer Steak- Spinach Mexican Rice"
+      ]
+    },
+    {
+      "day": "Day 2",
+      "meals": [
+        "Arabbiata Pasta + Garlic Bread",
+        "Veg Spring Roll- Pan Fried noodles with veggies",
+        "Creamy Curd Rice with Potato Roast",
+        "Saffron and Nuts Rice with Kadai Veg",
+        "Mint Paratha with Kashmiri Khofta with salad"
+      ]
+    },
+    {
+      "day": "Day 3",
+      "meals": [
+        "Veg Coleslaw toasted sandwich with Potato Wedges",
+        "Phulka Paneer Butter Masala",
+        "Veg Hakka Noodles with Mixed Veg Manchurian Gravy",
+        "Spagetti veg bolognese with cauliflower fantasy",
+        "Coconut Pulav with Crispy Bhindi and Peanut Fry"
+      ]
+    },
+    {
+      "day": "Day 4",
+      "meals": [
+        "Methi Aloo Parata- Curd- Veg Pickle",
+        "Ghee-Cashew Pulao+ Paneer Curry",
+        "Pasta with Peanut Sauce Veg Fritters",
+        "Paneer Steak- Spinach Mexican Rice",
+        "Steamy Rice - Dal Makhani"
+      ]
+    },
+    {
+      "day": "Day 5",
+      "meals": [
+        "Veg Biriyani+ Raita",
+        "Veg Katti Roll with Katta Meeta Sauce",
+        "Creamy Veg Augratin with Gralicbread sticks",
+        "Ghee Paratha with Kaaju Paneer",
+        "Amul butter Pav with Peas,capsicum and aloo bhaji"
+      ]
+    },
+    {
+      "day": "Day 6",
+      "meals": [
+        "Phulka Channa Masala",
+        "Veg Alfredo Pasta + Garlic Bread",
+        "Thai Red Curry with Butter Rice",
+        "Creamy Curd Rice with Potato Roast",
+        "Mint Cashew Pulao with veg raita"
+      ]
+    },
+    {
+      "day": "Day 7",
+      "meals": [
+        "Ragi Phulka + Green Gram Dhal Butter Gravy",
+        "Creamy Millet Veg Pasta with Garlic Bread Sticks",
+        "Saffron and Nuts Rice with Kadai Veg",
+        "Ghee Paratha with Kaaju Paneer",
+        "Paneer Steak- Spinach Mexican Rice"
+      ]
+    },
+    {
+      "day": "Day 8",
+      "meals": [
+        "Methi Aloo Parata- Curd- Veg Pickle",
+        "Spagetti veg bolognese with cauliflower fantasy",
+        "Veg Biriyani+ Raita",
+        "Aglio E Olio Veg Pasta with cheesy garlic Bread",
+        "Veg Katti Roll with Katta Meeta Sauce"
+      ]
+    },
+    {
+      "day": "Day 9",
+      "meals": [
+        "Paneer Katti Roll with Katta Meeta Sauce",
+        "Thai Green Curry with Butter Rice",
+        "Arabbiata Pasta + Garlic Bread",
+        "Saffron and Nuts Rice with Kadai Veg",
+        "Burnt Garlic Veg Fried RIce - Veg in Black Bean Sauce"
+      ]
+    },
+    {
+      "day": "Day 10",
+      "meals": [
+        "Veg Noodle- Veg in Hot Garlic Sauce",
+        "Phulka Paneer Butter Masala",
+        "Thai Green Curry with Butter Rice",
+        "Spagetti veg bolognese with cauliflower fantasy",
+        "Sambar Rice with Baby Potato Roast"
+      ]
+    },
+    {
+      "day": "Day 11",
+      "meals": [
+        "Creamy Veg Augratin with Gralicbread sticks",
+        "Paneer Katti Roll with Katta Meeta Sauce",
+        "Thai Red Curry with Butter Rice",
+        "Mint Paratha with Kashmiri Khofta with salad",
+        "Veg Noodle- Veg in Hot Garlic Sauce"
+      ]
+    },
+    {
+      "day": "Day 12",
+      "meals": [
+        "Phulka Channa Masala",
+        "Ghee-Cashew Pulao+ Paneer Curry",
+        "Creamy Veg Augratin with Gralicbread sticks",
+        "Veg Hakka Noodles with Mixed Veg Manchurian Gravy",
+        "Creamy Curd Rice with Potato Roast"
+      ]
+    },
+    {
+      "day": "Day 13",
+      "meals": [
+        "Ragi Phulka + Green Gram Dhal Butter Gravy",
+        "Arabbiata Pasta + Garlic Bread",
+        "Sambar Rice with Baby Potato Roast",
+        "Paneer Steak- Spinach Mexican Rice",
+        "Paneer Katti Roll with Katta Meeta Sauce"
+      ]
+    },
+    {
+      "day": "Day 14",
+      "meals": [
+        "Veg Alfredo Pasta + Garlic Bread",
+        "Millet Chapati with Paneer Lababdar",
+        "Creamy Curd Rice with Potato Roast",
+        "Paneer Katti Roll with Katta Meeta Sauce",
+        "Burnt Garlic Veg Fried RIce - Veg in Black Bean Sauce"
+      ]
+    },
+    {
+      "day": "Day 15",
+      "meals": [
+        "Methi Aloo Parata- Curd- Veg Pickle",
+        "Veg Hakka Noodles with Mixed Veg Manchurian Gravy",
+        "Pasta with Peanut Sauce Veg Fritters",
+        "Creamy Curd Rice with Potato Roast",
+        "Amul butter Pav with Peas,capsicum and aloo bhaji"
+      ]
+    },
+    {
+      "day": "Day 16",
+      "meals": [
+        "Veg Spring Roll- Pan Fried noodles with veggies",
+        "Mint Paratha with Kashmiri Khofta with salad",
+        "Creamy Millet Veg Pasta with Garlic Bread Sticks",
+        "Steamy Rice - Dal Makhani",
+        "Veg Biriyani+ Raita"
+      ]
+    },
+    {
+      "day": "Day 17",
+      "meals": [
+        "Burnt Garlic Veg Fried RIce - Veg in Black Bean Sauce",
+        "Phulka Paneer Butter Masala",
+        "Saffron and Nuts Rice with Kadai Veg",
+        "Spagetti veg bolognese with cauliflower fantasy",
+        "Veg Katti Roll with Katta Meeta Sauce"
+      ]
+    },
+    {
+      "day": "Day 18",
+      "meals": [
+        "Mint Cashew Pulao with veg raita",
+        "Steamy Rice - Dal Makhani",
+        "Arabbiata Pasta + Garlic Bread",
+        "Veg Noodle- Veg in Hot Garlic Sauce",
+        "Phulka Paneer Butter Masala"
+      ]
+    },
+    {
+      "day": "Day 19",
+      "meals": [
+        "Ragi Phulka + Green Gram Dhal Butter Gravy",
+        "Spagetti veg bolognese with cauliflower fantasy",
+        "Saffron and Nuts Rice with Kadai Veg",
+        "Veg Coleslaw toasted sandwich with Potato Wedges",
+        "Burnt Garlic Veg Fried RIce - Veg in Black Bean Sauce"
+      ]
+    },
+    {
+      "day": "Day 20",
+      "meals": [
+        "Phulka Channa Masala",
+        "Aglio E Olio Veg Pasta with cheesy garlic Bread",
+        "Coconut Pulav with Crispy Bhindi and Peanut Fry",
+        "Veg Noodle- Veg in Hot Garlic Sauce",
+        "Paneer Steak- Spinach Mexican Rice"
+      ]
+    },
+    {
+      "day": "Day 21",
+      "meals": [
+        "Methi Aloo Parata- Curd- Veg Pickle",
+        "Veg Hakka Noodles with Mixed Veg Manchurian Gravy",
+        "Thai Green Curry with Butter Rice",
+        "Pasta with Peanut Sauce Veg Fritters",
+        "Steamy Rice - Dal Makhani"
+      ]
+    },
+    {
+      "day": "Day 22",
+      "meals": [
+        "Thai Red Curry with Butter Rice",
+        "Paneer Katti Roll with Katta Meeta Sauce",
+        "Mint Cashew Pulao with veg raita",
+        "Creamy Veg Augratin with Gralicbread sticks",
+        "Veg Noodle- Veg in Hot Garlic Sauce"
+      ]
+    },
+    {
+      "day": "Day 23",
+      "meals": [
+        "Veg Noodle- Veg in Hot Garlic Sauce",
+        "Veg Biriyani+ Raita",
+        "Veg Coleslaw toasted sandwich with Potato Wedges",
+        "Paneer Steak- Spinach Mexican Rice",
+        "Phulka Channa Masala"
+      ]
+    },
+    {
+      "day": "Day 24",
+      "meals": [
+        "Mint Paratha with Kashmiri Khofta with salad",
+        "Steamy Rice - Dal Makhani",
+        "Creamy Millet Veg Pasta with Garlic Bread Sticks",
+        "Creamy Veg Augratin with Gralicbread sticks",
+        "Amul butter Pav with Peas,capsicum and aloo bhaji"
+      ]
+    },
+    {
+      "day": "Day 25",
+      "meals": [
+        "Creamy Curd Rice with Potato Roast",
+        "Phulka Paneer Butter Masala",
+        "Mint Cashew Pulao with veg raita",
+        "Veg Alfredo Pasta + Garlic Bread",
+        "Veg Hakka Noodles with Mixed Veg Manchurian Gravy"
+      ]
+    },
+    {
+      "day": "Day 26",
+      "meals": [
+        "Sambar Rice with Baby Potato Roast",
+        "Thai Red Curry with Butter Rice",
+        "Veg Katti Roll with Katta Meeta Sauce",
+        "Veg Hakka Noodles with Mixed Veg Manchurian Gravy",
+        "Pasta with Peanut Sauce Veg Fritters"
+      ]
+    },
+    {
+      "day": "Day 27",
+      "meals": [
+        "Phulka Channa Masala",
+        "Veg Spring Roll- Pan Fried noodles with veggies",
+        "Ghee-Cashew Pulao+ Paneer Curry",
+        "Veg Alfredo Pasta + Garlic Bread",
+        "Creamy Curd Rice with Potato Roast"
+      ]
+    },
+    {
+      "day": "Day 28",
+      "meals": [
+        "Aglio E Olio Veg Pasta with cheesy garlic Bread",
+        "Millet Chapati with Paneer Lababdar",
+        "Ghee Paratha with Kaaju Paneer",
+        "Coconut Pulav with Crispy Bhindi and Peanut Fry",
+        "Veg Noodle- Veg in Hot Garlic Sauce"
+      ]
+    },
+    {
+      "day": "Day 29",
+      "meals": [
+        "Methi Aloo Parata- Curd- Veg Pickle",
+        "Arabbiata Pasta + Garlic Bread",
+        "Saffron and Nuts Rice with Kadai Veg",
+        "Veg Noodle- Veg in Hot Garlic Sauce",
+        "Thai Green Curry with Butter Rice"
+      ]
+    },
+    {
+      "day": "Day 30",
+      "meals": [
+        "Ghee Paratha with Kaaju Paneer",
+        "Pasta with Peanut Sauce Veg Fritters",
+        "Veg Katti Roll with Katta Meeta Sauce",
+        "Coconut Pulav with Crispy Bhindi and Peanut Fry",
+        "Amul butter Pav with Peas,capsicum and aloo bhaji"
+      ]
+    },
+    {
+      "day": "Day 31",
+      "meals": [
+        "Veg Spring Roll- Pan Fried noodles with veggies",
+        "Phulka Paneer Butter Masala",
+        "Aglio E Olio Veg Pasta with cheesy garlic Bread",
+        "Creamy Curd Rice with Potato Roast",
+        "Paneer Steak- Spinach Mexican Rice"
+      ]
+    },
+    {
+      "day": "Day 32",
+      "meals": [
+        "Steamy Rice - Dal Makhani",
+        "Millet Chapati with Paneer Lababdar",
+        "Veg Coleslaw toasted sandwich with Potato Wedges",
+        "Mint Cashew Pulao with veg raita",
+        "Paneer Katti Roll with Katta Meeta Sauce"
+      ]
+    },
+    {
+      "day": "Day 33",
+      "meals": [
+        "Phulka Channa Masala",
+        "Burnt Garlic Veg Fried RIce - Veg in Black Bean Sauce",
+        "Ghee-Cashew Pulao+ Paneer Curry",
+        "Veg Alfredo Pasta + Garlic Bread",
+        "Creamy Curd Rice with Potato Roast"
+      ]
+    }
+  ]
+}

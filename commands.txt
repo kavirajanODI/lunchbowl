@@ -1,0 +1,107 @@
+Backend
+cd /var/www/html/backend
+pm2 start npm --name backend -- run dev
+
+Store
+cd /var/www/html/store-without-stripe
+npm run build
+pm2 start npm --name store -- run start
+
+Dashboard
+cd /var/www/html/dashtar
+pm2 start npm --name dashboard -- run dev
+
+
+Dev Environment
+Backend
+cd /var/www/dev/backend
+npm install
+pm2 start npm --name "Dev Backend" -- run dev
+
+Dev Store
+cd /var/www/dev/store-without-stripe
+npm install
+npm run build
+pm2 start npm --name "Dev Store" -- run start -- -p 3001
+
+Dev Dashboard
+cd /var/www/dev/dashtar
+npm install
+pm2 start npm --name "Dev dashboard" -- run dev
+
+
+Pro Environment
+Backend
+cd /var/www/pro/backend
+npm install
+pm2 start npm --name "Pro Backend" -- run dev
+
+Pro Store
+cd /var/www/pro/store-without-stripe
+npm install
+npm run build
+pm2 start npm --name "Pro Store" -- run start -- -p 3001
+
+Pro Dashboard
+cd /var/www/pro/dashtar
+npm install
+pm2 start npm --name "Pro Dashboard" -- run dev
+
+
+db.createUser({
+  user: "lunchBowlAdmin",
+  pwd: "duewd8Y@HDU2FFUISs088",
+  roles: [ { role: "root", db: "admin" } ]
+})
+
+
+
+dev.lunchbowl.co.in
+dev.api.lunchbowl.co.in
+dev.dashboard.lunchbowl.co.in
+dev-api.lunchbowl.co.in
+dev-dashboard.lunchbowl.co.in
+
+
+git pull origin main && \
+cd ecr-projects-page/next-app && \
+npm run build && \
+pm2 reload all && \
+sudo service nginx reload
+
+
+
+https://dev.lunchbowl.co.in/
+https://dev-api.lunchbowl.co.in/
+https://dev-dashboard.lunchbowl.co.in/
+
+
+https://lunchbowl.co.in/
+https://api.lunchbowl.co.in/
+https://dashboard.lunchbowl.co.in/dashboard
+
+
+mongodump --uri "mongodb+srv://lunchbowl:root@lunchbowl.dpbkmdh.mongodb.net/lunchBowl?retryWrites=true&w=majority&appName=lunchbowl" \
+  --db lunchBowl \
+  --out /var/www/pro/db
+mongorestore --uri "mongodb://lunchBowlAdmin:duewd8Y%40HDU2FFUISs088@168.231.122.130:27017/lunchbowl"   --authenticationDatabase admin   /var/www/pro/db/lunchBowl
+
+mongosh "mongodb://lunchBowlAdmin:duewd8Y%40HDU2FFUISs088@168.231.122.130:27017/lunchbowl?authSource=admin"
+
+
+mongodump \
+  --uri "mongodb://lunchBowlAdmin:duewd8Y%40HDU2FFUISs088@168.231.122.130:27017/lunchbowl_live?authSource=admin" \
+  --out /var/www/pro/db
+
+
+mongorestore \
+  --uri "mongodb://lunchBowlAdmin:duewd8Y%40HDU2FFUISs088@168.231.122.130:27017/lunchbowlPro?authSource=admin" \
+  /var/www/pro/db/lunchbowl_live
+
+
+
+
+we need
+https://pro.lunchbowl.co.in/
+https://pro-api.lunchbowl.co.in/
+https://pro-dashboard.lunchbowl.co.in/
