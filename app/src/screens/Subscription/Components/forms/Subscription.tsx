@@ -1,5 +1,4 @@
 import CheckBox from '@react-native-community/checkbox';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import {useFocusEffect} from '@react-navigation/native';
 import {Colors} from 'assets/styles/colors';
 import PrimaryButton from 'components/buttons/PrimaryButton';
@@ -13,7 +12,9 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import HolidayService from 'services/MyPlansApi/HolidayService';
 import RegistrationService from 'services/RegistartionService/registartion';
 import {Holiday} from 'src/model/calendarModels';
@@ -24,6 +25,8 @@ type Plan = {
   days: number;
   price: number;
 };
+
+const PER_DAY_COST = 200;
 
 const addWorkingDays = (
   start: Date,
@@ -50,20 +53,22 @@ const addWorkingDays = (
     }
   }
 
-  return temp; // final working day
+  return temp;
 };
 
-const isWorkingDay = (date: Date): boolean => {
+const isWorkingDay = (date: Date, holidays: Holiday[] = []): boolean => {
   const day = date.getDay();
-  return day !== 0 && day !== 6; // not Sun(0) or Sat(6)
+  if (day === 0 || day === 6) return false;
+  const holidaySet = new Set(
+    holidays.map(h => new Date(h.date).toISOString().split('T')[0]),
+  );
+  return !holidaySet.has(date.toISOString().split('T')[0]);
 };
 
-const getValidStartDate = (base: Date, prepDays: number = 2): Date => {
+const getValidStartDate = (base: Date, prepDays: number = 2, holidays: Holiday[] = []): Date => {
   let newDate = new Date(base);
-  newDate.setDate(newDate.getDate() + prepDays); // add preparation days
-
-  // if holiday → keep moving forward until working day
-  while (!isWorkingDay(newDate)) {
+  newDate.setDate(newDate.getDate() + prepDays);
+  while (!isWorkingDay(newDate, holidays)) {
     newDate.setDate(newDate.getDate() + 1);
   }
   return newDate;
@@ -76,8 +81,6 @@ const getWorkingDaysBetween = (
 ): number => {
   let count = 0;
   let temp = new Date(start);
-
-  // Convert holidays into a Set for quick lookup (YYYY-MM-DD format)
   const holidaySet = new Set(
     holidays.map(h => new Date(h.date).toISOString().split('T')[0]),
   );
@@ -85,20 +88,58 @@ const getWorkingDaysBetween = (
   while (temp <= end) {
     const day = temp.getDay();
     const dateStr = temp.toISOString().split('T')[0];
-
     if (day !== 0 && day !== 6 && !holidaySet.has(dateStr)) {
       count++;
     }
-
     temp.setDate(temp.getDate() + 1);
   }
   return count;
 };
 
+/** Returns the last working day of the given year/month (0-indexed month). */
+const getLastWorkingDayOfMonth = (
+  year: number,
+  month: number,
+  holidays: Holiday[] = [],
+): Date => {
+  const holidaySet = new Set(
+    holidays.map(h => new Date(h.date).toISOString().split('T')[0]),
+  );
+  // day 0 of next month = last day of this month
+  let temp = new Date(year, month + 1, 0);
+  while (
+    temp.getDay() === 0 ||
+    temp.getDay() === 6 ||
+    holidaySet.has(temp.toISOString().split('T')[0])
+  ) {
+    temp.setDate(temp.getDate() - 1);
+  }
+  return temp;
+};
+
+/**
+ * Auto-calculates the end date for a custom plan:
+ *  - If ≥ 3 working days remain in the start month → last working day of that month
+ *  - Otherwise → last working day of the following month
+ */
+const calculateCustomEndDate = (start: Date, holidays: Holiday[]): Date => {
+  const endOfThisMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+  const workingDaysLeft = getWorkingDaysBetween(start, endOfThisMonth, holidays);
+
+  if (workingDaysLeft >= 3) {
+    return getLastWorkingDayOfMonth(start.getFullYear(), start.getMonth(), holidays);
+  }
+
+  const nextMonth = start.getMonth() + 1;
+  const nextYear = nextMonth > 11 ? start.getFullYear() + 1 : start.getFullYear();
+  const actualNextMonth = nextMonth > 11 ? 0 : nextMonth;
+  return getLastWorkingDayOfMonth(nextYear, actualNextMonth, holidays);
+};
+
 export default function SubscriptionPlan({
   selectedPlan,
   setSelectedPlan,
-  childCount,
+  childrenData,
   prevStep,
   nextStep,
   isRenewal,
@@ -109,12 +150,30 @@ export default function SubscriptionPlan({
   const [error, setError] = useState<string | null>(null);
   const [isChecked, setIsChecked] = useState(false);
   const [showStart, setShowStart] = useState(false);
-  const [showEnd, setShowEnd] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const {userId, authToken} = useAuth();
-  const [PER_DAY_COST, setPerDayCost] = useState(200);
+  const [customDateError, setCustomDateError] = useState<string | null>(null);
+  const {userId} = useAuth();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+
+  // Child selector: default all children selected
+  const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (childrenData && childrenData.length > 0) {
+      setSelectedChildIds(
+        childrenData.map((c: any) => c._id).filter(Boolean),
+      );
+    }
+  }, [childrenData]);
+
+  const selectedCount = selectedChildIds.length;
+
+  const toggleChild = (id: string) => {
+    setSelectedChildIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
+  };
 
   //####################### PLAN DISCOUNT  ######################
 
@@ -192,29 +251,10 @@ export default function SubscriptionPlan({
     }
   };
 
-  //######### GET PERDAY PRICE API CALL ############################
-
-  const getPerDayCost = async (authToken: string) => {
-    try {
-      const response: any = await RegistrationService.getPerDayCost(authToken);
-      if (response?.data?.perDayCost) {
-        setPerDayCost(response.data.perDayCost);
-      } else {
-        setPerDayCost(200); // fallback
-      }
-    } catch (error) {
-      console.error('Error fetching per-day cost:', error);
-      setPerDayCost(200); // fallback
-    }
-  };
-
   useFocusEffect(
     useCallback(() => {
       GetHolidays();
-      if (authToken) {
-        getPerDayCost(authToken);
-      }
-    }, [authToken]),
+    }, []),
   );
 
   useEffect(() => {
@@ -240,12 +280,12 @@ export default function SubscriptionPlan({
       eDate = endDate.toISOString().split('T')[0];
 
       workingDays = getWorkingDaysBetween(startDate, endDate, holidays);
-      totalPrice = workingDays * PER_DAY_COST * childCount;
+      totalPrice = workingDays * PER_DAY_COST * selectedCount;
       planId = 'byDate';
     } else if (selectedPlan) {
       // Predefined plan (1, 3, 6 months)
       workingDays = selectedPlan.days;
-      totalPrice = selectedPlan.price * childCount;
+      totalPrice = selectedPlan.price * selectedCount;
       planId = `${selectedPlan.days}-days`;
 
       sDate = selectedPlan.startDate?.toISOString().split('T')[0] ?? null;
@@ -261,7 +301,8 @@ export default function SubscriptionPlan({
         totalPrice,
         startDate: sDate,
         endDate: eDate,
-        numberOfChildren: childCount,
+        numberOfChildren: selectedCount,
+        children: selectedChildIds,
       },
       _id: userId,
     };
@@ -287,13 +328,56 @@ export default function SubscriptionPlan({
     }
   };
 
+  const isPlanSelected = selectedPlan != null || (isChecked && startDate != null && endDate != null);
+  const isNextButtonDisabled = selectedCount === 0 || !isPlanSelected;
+
   return (
-    <View>
+    <View style={{flex: 1}}>
       <LoadingModal loading={loading} setLoading={setLoading} />
       {error && <ErrorMessage error={error} onClose={handleCloseError} />}
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{paddingBottom: 24}}>
+        {/* Child Selector */}
+        {childrenData && childrenData.length > 0 && (
+          <View style={styles.childSelectorCard}>
+            <Text style={styles.childSelectorTitle}>
+              Select Children for this Plan
+            </Text>
+            {childrenData.map((child: any) => {
+              const id = child._id;
+              const isSelected = selectedChildIds.includes(id);
+              const name =
+                `${child.childFirstName || ''} ${child.childLastName || ''}`.trim() ||
+                'Child';
+              return (
+                <TouchableOpacity
+                  key={id}
+                  onPress={() => toggleChild(id)}
+                  style={styles.childSelectorRow}
+                  activeOpacity={0.7}>
+                  <CheckBox
+                    value={isSelected}
+                    onValueChange={() => toggleChild(id)}
+                    tintColors={{
+                      true: Colors.primaryOrange,
+                      false: Colors.Storke,
+                    }}
+                  />
+                  <Text style={styles.childSelectorName}>{name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            {selectedCount === 0 && (
+              <Text style={styles.childSelectorWarn}>
+                Please select at least one child.
+              </Text>
+            )}
+          </View>
+        )}
+
         {plans.map(plan => {
-          const totalAmount = plan.price * childCount;
+          const totalAmount = plan.price * selectedCount;
 
           return (
             <TouchableOpacity
@@ -304,6 +388,9 @@ export default function SubscriptionPlan({
               ]}
               onPress={() => {
                 setIsChecked(false);
+                setStartDate(null);
+                setEndDate(null);
+                setCustomDateError(null);
                 setSelectedPlan(plan);
               }}>
               <View style={styles.radioCircle}>
@@ -320,7 +407,7 @@ export default function SubscriptionPlan({
                   {plan.days} Working Days - Rs. {plan.price.toLocaleString()}
                 </Text>
                 <Text style={{fontSize: 13, color: '#666'}}>
-                  For {childCount} {childCount > 1 ? 'children' : 'child'}
+                  For {selectedCount} {selectedCount > 1 ? 'children' : 'child'}
                 </Text>
                 <Text
                   style={{
@@ -336,7 +423,6 @@ export default function SubscriptionPlan({
         })}
 
         {/* Subscription By Date (Pre Book) */}
-
         <View style={styles.container}>
           <View style={styles.headerRow}>
             <CheckBox
@@ -345,6 +431,14 @@ export default function SubscriptionPlan({
                 setIsChecked(val);
                 if (val) {
                   setSelectedPlan(null);
+                  const minStart = getValidStartDate(new Date(), 2, holidays);
+                  setStartDate(minStart);
+                  setEndDate(calculateCustomEndDate(minStart, holidays));
+                  setCustomDateError(null);
+                } else {
+                  setStartDate(null);
+                  setEndDate(null);
+                  setCustomDateError(null);
                 }
               }}
               tintColors={{true: '#007BFF', false: '#ccc'}}
@@ -360,138 +454,138 @@ export default function SubscriptionPlan({
               <TouchableOpacity
                 style={styles.dateBox}
                 onPress={() => setShowStart(true)}>
+                <Text style={styles.dateLabel}>Start Date</Text>
                 <Text style={styles.dateText}>
-                  {startDate ? startDate.toDateString() : 'Start Date'}
+                  {startDate ? startDate.toDateString() : 'Select'}
                 </Text>
               </TouchableOpacity>
 
-              {/* End Date */}
-              <TouchableOpacity
-                style={styles.dateBox}
-                onPress={() => setShowEnd(true)}>
+              <View style={[styles.dateBox, styles.dateBoxReadOnly]}>
+                <Text style={styles.dateLabel}>End Date (auto)</Text>
                 <Text style={styles.dateText}>
-                  {endDate ? endDate.toDateString() : 'End Date'}
+                  {endDate ? endDate.toDateString() : '—'}
                 </Text>
-              </TouchableOpacity>
+              </View>
             </View>
           )}
 
-          {/* Date Pickers */}
+          {customDateError ? (
+            <Text style={styles.customDateError}>{customDateError}</Text>
+          ) : null}
+
           {showStart && (
             <DateTimePicker
-              value={startDate || new Date()}
+              value={startDate || getValidStartDate(new Date(), 2, holidays)}
               mode="date"
-              display="calendar"
+              display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+              minimumDate={getValidStartDate(new Date(), 2, holidays)}
               onChange={(e, date) => {
                 setShowStart(false);
-                if (date) setStartDate(date);
+                if (!date) return;
+                const minDate = getValidStartDate(new Date(), 2, holidays);
+                const picked = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                const min = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+                if (picked < min) {
+                  setCustomDateError(
+                    `Start date must be at least 2 working days from today (${min.toDateString()})`,
+                  );
+                  return;
+                }
+                if (!isWorkingDay(picked, holidays)) {
+                  setCustomDateError('Please select a working day (no weekends or holidays).');
+                  return;
+                }
+                setCustomDateError(null);
+                setStartDate(picked);
+                setEndDate(calculateCustomEndDate(picked, holidays));
               }}
             />
           )}
+        </View>
 
-          {showEnd && (
-            <DateTimePicker
-              value={endDate || new Date()}
-              mode="date"
-              display="calendar"
-              onChange={(e, date) => {
-                setShowEnd(false);
-                if (date) setEndDate(date);
-              }}
-            />
-          )}
+        {/* Selected Plan Details */}
+        {(selectedPlan || (isChecked && startDate && endDate)) && (
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>Plan Details</Text>
+
+            {selectedPlan && (
+              <>
+                <Text style={styles.summaryText}>
+                  Working Days: {selectedPlan.days}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Start Date: {selectedPlan.startDate?.toDateString()}
+                </Text>
+                <Text style={styles.summaryText}>
+                  End Date: {selectedPlan.endDate?.toDateString()}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Base Price per Child: Rs.{' '}
+                  {selectedPlan.basePrice?.toLocaleString()}
+                </Text>
+                {selectedPlan.discountPercent > 0 && (
+                  <Text style={styles.summaryText}>
+                    Discount: {selectedPlan.discountPercent}% (-Rs.
+                    {selectedPlan.discountAmount?.toLocaleString()})
+                  </Text>
+                )}
+                <Text style={styles.summaryText}>
+                  Final Price per Child: Rs.{' '}
+                  {selectedPlan.price.toLocaleString()}
+                </Text>
+                <Text style={styles.summaryTotal}>
+                  Total for {selectedCount}{' '}
+                  {selectedCount > 1 ? 'children' : 'child'}:{' '}
+                  Rs. {(selectedPlan.price * selectedCount).toLocaleString()}
+                </Text>
+              </>
+            )}
+
+            {isChecked && startDate && endDate && (
+              <>
+                <Text style={styles.summaryText}>
+                  Start Date: {startDate.toDateString()}
+                </Text>
+                <Text style={styles.summaryText}>
+                  End Date: {endDate.toDateString()}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Working Days:{' '}
+                  {getWorkingDaysBetween(startDate, endDate, holidays)}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Price per Child: Rs.{' '}
+                  {(
+                    getWorkingDaysBetween(startDate, endDate, holidays) *
+                    PER_DAY_COST
+                  ).toLocaleString()}
+                </Text>
+                <Text style={styles.summaryTotal}>
+                  Total for {selectedCount}{' '}
+                  {selectedCount > 1 ? 'children' : 'child'}:{' '}
+                  Rs.{' '}
+                  {(
+                    getWorkingDaysBetween(startDate, endDate, holidays) *
+                    PER_DAY_COST *
+                    selectedCount
+                  ).toLocaleString()}
+                </Text>
+              </>
+            )}
+          </View>
+        )}
+
+        {/* Footer Buttons — inside ScrollView so they're always reachable */}
+        <View style={styles.btnRow}>
+          <PrimaryButton title="BACK" onPress={prevStep} style={styles.backBtn} />
+          <PrimaryButton
+            title="NEXT"
+            onPress={handleNext}
+            disabled={isNextButtonDisabled}
+            style={styles.nextBtn}
+          />
         </View>
       </ScrollView>
-
-      {/* Selected Plan Details */}
-      {(selectedPlan || (isChecked && startDate && endDate)) && (
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Plan Details</Text>
-
-          {selectedPlan && (
-            <>
-              <Text style={styles.summaryText}>
-                Working Days: {selectedPlan.days}
-              </Text>
-              <Text style={styles.summaryText}>
-                Start Date: {selectedPlan.startDate?.toDateString()}
-              </Text>
-              <Text style={styles.summaryText}>
-                End Date: {selectedPlan.endDate?.toDateString()}
-              </Text>
-
-              {/* Show base price */}
-              <Text style={styles.summaryText}>
-                Base Price per Child: Rs.{' '}
-                {selectedPlan.basePrice?.toLocaleString()}
-              </Text>
-
-              {/* If discount applied */}
-              {selectedPlan.discountPercent > 0 && (
-                <Text style={styles.summaryText}>
-                  Discount: {selectedPlan.discountPercent}% (-Rs.
-                  {selectedPlan.discountAmount?.toLocaleString()})
-                </Text>
-              )}
-
-              {/* Final price per child */}
-              <Text style={styles.summaryText}>
-                Final Price per Child: Rs. {selectedPlan.price.toLocaleString()}
-              </Text>
-
-              {/* Total for children */}
-              <Text style={styles.summaryTotal}>
-                Total for {childCount} {childCount > 1 ? 'children' : 'child'}:
-                Rs. {(selectedPlan.price * childCount).toLocaleString()}
-              </Text>
-            </>
-          )}
-
-          {isChecked && startDate && endDate && (
-            <>
-              <Text style={styles.summaryText}>
-                Start Date: {startDate.toDateString()}
-              </Text>
-              <Text style={styles.summaryText}>
-                End Date: {endDate.toDateString()}
-              </Text>
-
-              <Text style={styles.summaryText}>
-                Working Days:{' '}
-                {getWorkingDaysBetween(startDate, endDate, holidays)}
-              </Text>
-
-              <Text style={styles.summaryText}>
-                Price per Child: Rs.{' '}
-                {(
-                  getWorkingDaysBetween(startDate, endDate, holidays) *
-                  PER_DAY_COST
-                ).toLocaleString()}
-              </Text>
-
-              <Text style={styles.summaryTotal}>
-                Total for {childCount} {childCount > 1 ? 'children' : 'child'}:
-                Rs.{' '}
-                {(
-                  getWorkingDaysBetween(startDate, endDate, holidays) *
-                  PER_DAY_COST *
-                  childCount
-                ).toLocaleString()}
-              </Text>
-            </>
-          )}
-        </View>
-      )}
-
-      {/* Footer Buttons */}
-      <View style={styles.btnRow}>
-        <PrimaryButton title="BACK" onPress={prevStep} style={styles.backBtn} />
-        <PrimaryButton
-          title="NEXT"
-          onPress={handleNext}
-          style={styles.nextBtn}
-        />
-      </View>
     </View>
   );
 }
@@ -530,9 +624,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
+  dateBoxReadOnly: {
+    opacity: 0.7,
+  },
+  dateLabel: {
+    fontSize: 11,
+    color: Colors.bodyText,
+    marginBottom: 2,
+  },
   dateText: {
     color: Colors.default,
     fontSize: 14,
+  },
+  customDateError: {
+    fontSize: 12,
+    color: Colors.red,
+    marginTop: 6,
   },
   planCard: {
     flexDirection: 'row',
@@ -608,5 +715,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.primaryOrange,
     marginTop: 6,
+  },
+  childSelectorCard: {
+    borderWidth: 1,
+    borderColor: Colors.lightRed,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: Colors.white,
+  },
+  childSelectorTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.bodyText,
+    marginBottom: 8,
+  },
+  childSelectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  childSelectorName: {
+    fontSize: 15,
+    marginLeft: 8,
+    color: Colors.black,
+  },
+  childSelectorWarn: {
+    fontSize: 13,
+    color: Colors.red,
+    marginTop: 4,
   },
 });

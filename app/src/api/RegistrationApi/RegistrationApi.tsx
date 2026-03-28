@@ -23,10 +23,8 @@ class RegistrationApi {
     );
   }
 
-  async getPerDayCost(registrationId: string) {
-    return await httpAxiosClient.get(
-      `${this.getPlanPrice}/${registrationId}`,
-    );
+  async getPerDayCost() {
+    return await httpAxiosClient.get(`${this.getPlanPrice}`);
   }
 
 
@@ -112,6 +110,14 @@ class RegistrationApi {
       userId,
       childId,
     });
+  }
+
+  async localPaymentSuccess(payload: {
+    userId: string;
+    orderId: string;
+    transactionId: string;
+  }) {
+    return await httpAxiosClient.post('/customer/local-success', payload);
   }
 }
 

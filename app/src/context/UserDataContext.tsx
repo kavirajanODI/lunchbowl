@@ -75,7 +75,17 @@ export const UserProfileProvider: React.FC<{children: React.ReactNode}> = ({
       setLoading(true);
       const response: any = await UserService.getRegisteredUSerData(userId);
       if (response && response.data) {
-        setProfileData(response.data);
+        const data = response.data;
+        // account-details returns subscriptions[] (array of Subscription docs).
+        // Find the active one (or fall back to the last) and expose it as
+        // subscriptionPlan so that MyPlanScreen and RegistrationContext can
+        // use profileData.subscriptionPlan without breaking.
+        const subs: any[] = Array.isArray(data.subscriptions) ? data.subscriptions : [];
+        const activeSub =
+          subs.find((s: any) => s.status === 'active') ??
+          subs[subs.length - 1] ??
+          null;
+        setProfileData({...data, subscriptionPlan: activeSub});
       }
     } catch (error) {
       console.error('Error fetching profile data:', error);
