@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from 'context/AuthContext';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import RegistrationService from 'services/RegistartionService/registartion';
+import UserService from 'services/userService';
 
 type RegistrationContextType = {
   currentStep: number | null;
@@ -33,22 +34,37 @@ export const RegistrationProvider = ({ children }: any) => {
       return;
     }
     try {
-      const res: any = await RegistrationService.registrationCheck({ _id: userId, path: 'Step-Check' });
-      const fetchedStep = Number(res?.data?.step);
-      setCurrentStep(fetchedStep);
-      await AsyncStorage.setItem('@registrationStep', String(fetchedStep));
+      // Call Step-Check and account-details in parallel
+      const [stepRes, profileRes]: any[] = await Promise.all([
+        RegistrationService.registrationCheck({ _id: userId, path: 'Step-Check' }),
+        UserService.getRegisteredUSerData(userId),
+      ]);
 
-      // Persist subscription end date for expiry check.
-      // The API returns subscriptions as an array; fall back to subscriptionPlan for
-      // older/alternative response shapes.
-      const subscriptions: any[] = res?.data?.subscriptions || [];
+      // Determine effective step: if the user has already paid, treat as step 4
+      // regardless of what the Step-Check API returns (which may still have step:1
+      // if the DB was not updated properly after payment).
+      const apiStep = Number(stepRes?.data?.step ?? 1);
+      const paymentStatus: string = profileRes?.data?.paymentStatus ?? '';
+      const effectiveStep = paymentStatus === 'Success' ? Math.max(apiStep, 4) : apiStep;
+
+      setCurrentStep(effectiveStep);
+      await AsyncStorage.setItem('@registrationStep', String(effectiveStep));
+
+      // Derive subscription end date from the profile (account-details) response,
+      // which always returns populated subscriptions. Fall back to Step-Check
+      // subscriptions for forward-compatibility.
+      const profileSubs: any[] = profileRes?.data?.subscriptions || [];
+      const stepSubs: any[] = stepRes?.data?.subscriptions || [];
+      const subscriptions = profileSubs.length > 0 ? profileSubs : stepSubs;
+
       const activeSub =
         subscriptions.find((s: any) => s.status === 'active') ||
         subscriptions[subscriptions.length - 1] ||
         null;
       const endDate: string | null =
         activeSub?.endDate ||
-        res?.data?.subscriptionPlan?.endDate ||
+        profileRes?.data?.subscriptionPlan?.endDate ||
+        stepRes?.data?.subscriptionPlan?.endDate ||
         null;
       setSubscriptionEndDate(endDate);
       if (endDate) {

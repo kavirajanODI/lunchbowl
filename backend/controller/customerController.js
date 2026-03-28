@@ -873,13 +873,9 @@ const stepFormRegister = async (req, res) => {
     }
 
     if (path === "step-Form-ParentDetails") {
-      // Only advance the step; never let it go backwards (e.g. a re-opened form
-      // should not overwrite step=4 back to step=1).
-      const existing = await Form.findOne({ user: _id });
-      const safeStep = existing && existing.step > step ? existing.step : step;
       const form = await Form.findOneAndUpdate(
         { user: _id },
-        { parentDetails: formData, step: safeStep },
+        { parentDetails: formData, step },
         { new: true, upsert: true }
       );
       return res.json({ success: true, data: form });
@@ -1609,27 +1605,20 @@ const stepCheck = async (req, res) => {
       });
     }
 
-    const form = await Form.findOne({ user: mongoose.Types.ObjectId(_id) }).populate("subscriptions");
+    const form = await Form.findOne({ user: mongoose.Types.ObjectId(_id) });
 
     const customer = await Customer.findById(_id);
 
     const freeTrial = customer ? customer.freeTrial : false;
 
-    // If form not found, return step 1 as default; if found use stored step.
-    // If payment has already been completed, ensure step is at least 4 so the
-    // app routes the user to PlanCalendar rather than back to Registration.
-    let step = form ? form.step : 1;
-    if (form && form.paymentStatus === "Success" && step < 4) {
-      step = 4;
-    }
-
-    const subscriptions = form ? (form.subscriptions || []) : [];
+    // If form not found, return step 1 as default
+    // If found, return the form's step
+    const step = form ? form.step : 1;
 
     res.status(200).json({
       success: true, data: {
         step,
         freeTrial,
-        subscriptions,
       },
     });
   } catch (error) {
