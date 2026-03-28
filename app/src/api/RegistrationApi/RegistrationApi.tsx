@@ -23,10 +23,8 @@ class RegistrationApi {
     );
   }
 
-  async getPerDayCost(registrationId: string) {
-    return await httpAxiosClient.get(
-      `${this.getPlanPrice}/${registrationId}`,
-    );
+  async getPerDayCost() {
+    return await httpAxiosClient.get(`${this.getPlanPrice}`);
   }
 
 

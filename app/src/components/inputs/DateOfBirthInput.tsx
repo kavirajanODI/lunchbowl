@@ -1,5 +1,5 @@
 
-import React, {useState, useMemo, useEffect} from 'react';
+import React, {useState, useMemo} from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {Colors} from 'assets/styles/colors';
-import ConfigService from 'services/ConfigService/ChildAge';
+
+const MIN_AGE = 3;
+const MAX_AGE = 18;
 
 type Props = {
   value?: string;
@@ -21,28 +23,6 @@ type Props = {
 export default function DateOfBirthInput({value, onChange, error}: Props) {
   const [showPicker, setShowPicker] = useState(false);
   const [date, setDate] = useState<Date | null>(null);
-
-  const [minAge, setMinAge] = useState<number>(3);
-  const [maxAge, setMaxAge] = useState<number>(18);
-
-  // fetch age limits from API
-  const getAgeLimits = async () => {
-    try {
-      const response: any = await ConfigService.GetChildAges();
-      if (response && response.data) {
-        setMinAge(response.data.minAge);
-        setMaxAge(response.data.maxAge);
-      } else {
-        console.error('Invalid data format', response);
-      }
-    } catch (error) {
-      console.error('Error fetching age limits:', error);
-    }
-  };
-
-  useEffect(() => {
-    getAgeLimits();
-  }, []);
 
   const age = useMemo(() => {
     if (!date) return null;
@@ -72,12 +52,12 @@ export default function DateOfBirthInput({value, onChange, error}: Props) {
         years--;
       }
 
-      if (years < minAge) {
-        Alert.alert('Invalid Date', `Child must be at least ${minAge} years old.`);
+      if (years < MIN_AGE) {
+        Alert.alert('Invalid Date', `Child must be at least ${MIN_AGE} years old.`);
         return;
       }
-      if (years > maxAge) {
-        Alert.alert('Invalid Date', `Child age cannot be more than ${maxAge} years.`);
+      if (years > MAX_AGE) {
+        Alert.alert('Invalid Date', `Child age cannot be more than ${MAX_AGE} years.`);
         return;
       }
 

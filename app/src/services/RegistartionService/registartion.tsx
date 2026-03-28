@@ -87,23 +87,19 @@ class RegistrationService {
     }
   }
 
-    static async getPerDayCost(
-    token: any,
-  ): Promise<ApiResponseModel> {
+    static async getPerDayCost(): Promise<ApiResponseModel> {
     try {
-      const response = await RegistrationApi.getPerDayCost(token        
-      );
+      const response = await RegistrationApi.getPerDayCost();
       return response.data as ApiResponseModel;
     } catch (error: any) {
       return {
         success: false,
-        message: 'Error creating registration',
+        message: 'Error fetching per day cost',
         data: null,
         error: this.handleApiError(error),
       };
     }
   }
-  // getPerDayCost
 
   static async createChildRegistration(
     registrationData: any,

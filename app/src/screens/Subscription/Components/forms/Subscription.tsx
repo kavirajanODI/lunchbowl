@@ -99,6 +99,7 @@ export default function SubscriptionPlan({
   selectedPlan,
   setSelectedPlan,
   childCount,
+  childIds,
   prevStep,
   nextStep,
   isRenewal,
@@ -112,7 +113,7 @@ export default function SubscriptionPlan({
   const [showEnd, setShowEnd] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const {userId, authToken} = useAuth();
+  const {userId} = useAuth();
   const [PER_DAY_COST, setPerDayCost] = useState(200);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
 
@@ -194,9 +195,9 @@ export default function SubscriptionPlan({
 
   //######### GET PERDAY PRICE API CALL ############################
 
-  const getPerDayCost = async (authToken: string) => {
+  const getPerDayCost = async () => {
     try {
-      const response: any = await RegistrationService.getPerDayCost(authToken);
+      const response: any = await RegistrationService.getPerDayCost();
       if (response?.data?.perDayCost) {
         setPerDayCost(response.data.perDayCost);
       } else {
@@ -211,10 +212,8 @@ export default function SubscriptionPlan({
   useFocusEffect(
     useCallback(() => {
       GetHolidays();
-      if (authToken) {
-        getPerDayCost(authToken);
-      }
-    }, [authToken]),
+      getPerDayCost();
+    }, []),
   );
 
   useEffect(() => {
@@ -262,6 +261,7 @@ export default function SubscriptionPlan({
         startDate: sDate,
         endDate: eDate,
         numberOfChildren: childCount,
+        children: childIds || [],
       },
       _id: userId,
     };
