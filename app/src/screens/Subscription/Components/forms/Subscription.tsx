@@ -127,7 +127,7 @@ export default function SubscriptionPlan({
     }
   }, [childrenData]);
 
-  const selectedCount = selectedChildIds.length || 1;
+  const selectedCount = selectedChildIds.length;
 
   const toggleChild = (id: string) => {
     setSelectedChildIds(prev =>

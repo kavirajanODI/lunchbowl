@@ -4,7 +4,7 @@ import { LoadingModal } from 'components/LoadingModal/LoadingModal';
 import PaginationDots from 'components/paginations.tsx/PrimaryPagination';
 import Typography from 'components/Text/Typography';
 import { useAuth } from 'context/AuthContext';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
 import RegistrationService from 'services/RegistartionService/registartion';
@@ -26,8 +26,14 @@ type Step = 1 | 2 | 3 | 4;
 
 export default function Registration({ navigation }: any) {
   const { userId } = useAuth();
-const { profileData, refreshProfileData } = useUserProfile();
-const { childrenList, refreshChildren } = useChildData();
+  const { profileData, refreshProfileData } = useUserProfile();
+  const { childrenList, refreshChildren } = useChildData();
+
+  // Prevents childrenList useEffect from overwriting local form state after a save
+  const hasLoadedChildren = useRef(false);
+
+  // Children enriched with DB IDs — used as the source of truth for step 3
+  const [savedChildrenForPlan, setSavedChildrenForPlan] = useState<any[]>([]);
 
   // ########################### PARENT STATES ##############################
 
@@ -73,7 +79,10 @@ const { childrenList, refreshChildren } = useChildData();
 
 
  useEffect(() => {
-    if (childrenList.length > 0) {
+    // Only populate form state once from API — prevent subsequent refreshChildren()
+    // calls from overwriting local form state with accumulated DB records.
+    if (childrenList.length > 0 && !hasLoadedChildren.current) {
+      hasLoadedChildren.current = true;
       const formattedChildren = childrenList.map(child => ({
         childFirstName: child.childFirstName.trim() || '',
         childLastName: child.childLastName.trim() || '',
@@ -84,8 +93,11 @@ const { childrenList, refreshChildren } = useChildData();
         childClass: child.childClass || '',
         section: child.section || '',
         allergies: child.allergies || '',
+        _id: (child as any)._id || '',
       }));
       setChildren(formattedChildren);
+      // If the user is resuming at step 3+, use the loaded list for the plan selector
+      setSavedChildrenForPlan(formattedChildren);
     }
   }, [childrenList]);
 
@@ -296,8 +308,27 @@ const { childrenList, refreshChildren } = useChildData();
       };
       const response: any = await RegistrationService.createChildRegistration(payloadChildData);
       if (response && response.data) {
+        // response.data is an array of the newly-created child IDs
+        const savedIds: string[] = Array.isArray(response.data) ? response.data : [];
+
+        if (savedIds.length !== children.length) {
+          // ID count mismatch — use what we have and leave unmatched children without IDs
+          console.warn(
+            `Children ID mismatch: expected ${children.length}, got ${savedIds.length}`,
+          );
+        }
+
+        // Build the plan-selector list from local form state + saved IDs.
+        // This ensures step 3 only shows the children just submitted, not all
+        // accumulated records from previous sessions in the DB.
+        const enrichedChildren = children.map((child, i) => ({
+          ...child,
+          _id: savedIds[i] || '',
+        }));
+        setSavedChildrenForPlan(enrichedChildren);
+
         await refreshChildren();
-        console.log('Children saved:', response.data);
+        console.log('Children saved:', savedIds);
         nextStep();
       } else {
         console.error('Invalid child response', response);
@@ -387,7 +418,7 @@ const { childrenList, refreshChildren } = useChildData();
             setSelectedPlan={setSelectedPlan}
             prevStep={prevStep}
             nextStep={nextStep}
-            childrenData={childrenList}
+            childrenData={savedChildrenForPlan}
             isRenewal={false}
           />
         )}
