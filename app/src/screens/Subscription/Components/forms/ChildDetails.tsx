@@ -76,7 +76,7 @@ export default function ChildrenDetails({
         child.location?.trim() &&
         child.lunchTime?.trim() &&
         child.childClass?.trim() &&
-        child.childSection?.trim(),
+        child.section?.trim(),
     );
   }, [children]);
 
@@ -128,7 +128,7 @@ export default function ChildrenDetails({
                         height={wp('5%')}
                       />
                       <Text style={styles.removeButtonText}>
-                        Remove {child.childName}
+                        Remove {child.childFirstName}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -221,9 +221,9 @@ export default function ChildrenDetails({
                   <PrimaryDropdown
                     options={sectionOptions}
                     placeholder="Select Section"
-                    selectedValue={child.childSection}
+                    selectedValue={child.section}
                     onValueChange={(val: string | number) =>
-                      handleChildChange(index, 'childSection', String(val))
+                      handleChildChange(index, 'section', String(val))
                     }
                   />
                 </View>

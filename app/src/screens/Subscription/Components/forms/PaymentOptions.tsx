@@ -10,13 +10,16 @@ import {useAuth} from 'context/AuthContext';
 import {
   encryptRequest,
   createPaymentRequest,
+  generateOrderId,
 } from '../../../../utils/paymentUtils';
 import ccavenueConfig from '../../../../config/ccavenueConfig';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
+import httpAxiosClient from '../../../../config/httpclient';
 
 export default function PaymentOptions({prevStep, navigation}: any) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const {userId} = useAuth();
 
   const handlePayment = async () => {
@@ -56,14 +59,46 @@ export default function PaymentOptions({prevStep, navigation}: any) {
         accessCode: ccavenueConfig.access_code,
         endpoint: ccavenueConfig.endpoint,
       });
-
-      // Alert.alert(
-      //   'Payment Ready',
-      //   `Encrypted: ${encryptedData.substring(0, 20)}...`,
-      // );
     } catch (err) {
       console.error('Payment error:', err);
       Alert.alert('Error', 'Payment failed, please try again');
+    }
+  };
+
+  const handleTestPayment = async () => {
+    try {
+      setLoading(true);
+      if (!userId) throw new Error('User ID not found. Please login again.');
+
+      const orderId = generateOrderId();
+      const transactionId = `TEST_TXN_${Date.now()}`;
+
+      const response: any = await httpAxiosClient.post(
+        '/ccavenue/local-success',
+        {userId, orderId, transactionId},
+      );
+
+      const result = response?.data;
+      if (result?.success) {
+        Alert.alert(
+          'Test Payment Successful',
+          `Transaction ID: ${transactionId}`,
+          [{text: 'OK', onPress: () => navigation.navigate('HomeScreen')}],
+        );
+      } else {
+        Alert.alert(
+          'Test Payment Failed',
+          result?.message || 'Simulation failed',
+        );
+      }
+    } catch (err: any) {
+      console.error('Test payment error:', err);
+      Alert.alert(
+        'Error',
+        err?.response?.data?.message || 'Test payment failed, please try again',
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -98,6 +133,13 @@ export default function PaymentOptions({prevStep, navigation}: any) {
           style={{flex: 1}}
         />
       </View>
+
+      <PrimaryButton
+        title="TEST PAYMENT"
+        onPress={handleTestPayment}
+        disabled={loading}
+        style={localStyles.testPaymentButton}
+      />
     </View>
   );
 }
@@ -124,5 +166,9 @@ const localStyles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     marginTop: hp(2),
+  },
+  testPaymentButton: {
+    marginTop: hp(2),
+    backgroundColor: Colors.primaryOrange,
   },
 });

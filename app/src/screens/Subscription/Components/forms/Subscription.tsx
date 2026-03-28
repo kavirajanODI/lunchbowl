@@ -255,13 +255,12 @@ export default function SubscriptionPlan({
     const payload: any = {
       step: 3,
       path: isRenewal ? 'step-Form-Renew-SubscriptionPlan' : 'step-Form-SubscriptionPlan',
-      payload: {
-        selectedPlan: planId,
+      formData: {
+        planType: planId,
         workingDays,
-        totalPrice,
+        price: totalPrice,
         startDate: sDate,
         endDate: eDate,
-        numberOfChildren: childCount,
       },
       _id: userId,
     };

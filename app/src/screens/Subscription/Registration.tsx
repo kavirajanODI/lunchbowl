@@ -158,7 +158,8 @@ console.log("profileData from ---------",profileData)
     setChildren([
       ...children,
       {
-        childName: '',
+        childFirstName: '',
+        childLastName: '',
         dob: '',
         school: '',
         location: '',
@@ -266,8 +267,6 @@ console.log("profileData from ---------",profileData)
   // ################### SUBMIT CHILDREN DETAILS ##############################
 
   const submitChildrenDetails = async () => {
-    setLoading(true);
-
     const errors = validateChildrenDetails(children);
     if (Object.keys(errors).length > 0) {
       setChildrenErrors(errors);
@@ -276,42 +275,25 @@ console.log("profileData from ---------",profileData)
 
     setChildrenErrors({});
     try {
-      const formattedChildren = children.map(child => {
-        
-        return {
-          childFirstName: child.childFirstName,
-          childLastName:  child.childLastName,
-          dob: parseDate(child.dob),
-          lunchTime: child.lunchTime,
-          school: child.school,
-          location: child.location,
-          childClass: child.childClass,
-          section: child.section,
-          allergies: child.allergies,
-
-
-          allergies: 'dsfdfsdfsdf',
-          _id: '69130af0ee650804b2bfdca7',
-          childFirstName: 'asoka',
-          childLastName: 'asdsd',
-          dob: '2025-10-02',
-          lunchTime: '11:00 AM - 12:00 PM',
-          school: 'ST Francis Xavier English Medium Matriculation School',
-          location: 'Alwarpet',
-          childClass: 'Class 5',
-          section: 'E',
-          user: '6912bf2ca3bfaeee7dbb5566',
-          __v: 0,
-        };
-      });
+      setLoading(true);
+      const formattedChildren = children.map(child => ({
+        childFirstName: child.childFirstName,
+        childLastName: child.childLastName,
+        dob: parseDate(child.dob),
+        lunchTime: child.lunchTime,
+        school: child.school,
+        location: child.location,
+        childClass: child.childClass,
+        section: child.section,
+        allergies: child.allergies,
+      }));
 
       const payloadChildData = {
         formData: formattedChildren,
         step: 2,
         path: 'step-Form-ChildDetails',
-        _id:  '6912bf2ca3bfaeee7dbb5566',
+        _id: userId,
       };
-    console.log("childe data send from server $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$",payloadChildData)
       const response: any = await RegistrationService.createChildRegistration(payloadChildData);
       if (response && response.data) {
         await refreshChildren();
