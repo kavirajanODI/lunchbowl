@@ -248,7 +248,7 @@ console.log("profileData from ---------",profileData)
           country,
           children: [],
         },
-        step: 1,
+        step: 2,
         path: 'step-Form-ParentDetails',
         _id: userId || '',
       };
@@ -296,7 +296,7 @@ console.log("profileData from ---------",profileData)
 
       const payloadChildData = {
         formData: formattedChildren,
-        step: 2,
+        step: 3,
         path: 'step-Form-ChildDetails',
         _id: userId || '',
       };
