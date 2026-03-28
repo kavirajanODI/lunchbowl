@@ -37,14 +37,27 @@ export const FoodProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setLoading(true);
       const response = await FoodService.getAllFoods('get-saved-meals', userId);
-      const menuSelections = response?.data?.menuSelections;
+      // API response: { success, data: { [planId]: { [date]: { [childId]: { mealName, deleted } } } } }
+      const data = response?.data;
 
-      if (menuSelections && typeof menuSelections === 'object') {
+      if (data && typeof data === 'object') {
         const meals: Meal[] = [];
 
-        Object.entries(menuSelections).forEach(([date, childMeals]) => {
-          Object.entries(childMeals as Record<string, string>).forEach(([childId, mealName]) => {
-            meals.push({ childId, date, food: mealName });
+        Object.values(data).forEach((planDates: any) => {
+          if (!planDates || typeof planDates !== 'object') return;
+          Object.entries(planDates).forEach(([date, childMeals]) => {
+            if (!childMeals || typeof childMeals !== 'object') return;
+            Object.entries(childMeals as Record<string, any>).forEach(
+              ([childId, mealInfo]) => {
+                const mealName =
+                  typeof mealInfo === 'string'
+                    ? mealInfo
+                    : mealInfo?.mealName ?? '';
+                if (!mealInfo?.deleted) {
+                  meals.push({childId, date, food: mealName});
+                }
+              },
+            );
           });
         });
 

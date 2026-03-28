@@ -83,7 +83,7 @@ const MenuSelectionScreen = ({
   );
 
   const [loading, setLoading] = useState(false);
-  const {childrenData} = useMenu();
+  const {childrenData, planId} = useMenu();
   const {userId} = useAuth();
   const [applySameDish, setApplySameDish] = useState(false);
 
@@ -194,6 +194,7 @@ const MenuSelectionScreen = ({
             path: 'save-meals',
             data: {
               userId,
+              planId,
               children: childrenData.map((child, childIndex) => ({
                 childId: child.id,
                 meals: [
@@ -219,10 +220,11 @@ const MenuSelectionScreen = ({
             return;
           }
           childrenPayload = {
-            _id: '6899c82df8872394d8f40ba3',
+            _id: userId,
             path: 'save-meals',
             data: {
               userId,
+              planId,
               children: childrenData.map(child => ({
                 childId: child.id,
                 meals: selectedDietitianPlan.meals.map((meal: string) => ({

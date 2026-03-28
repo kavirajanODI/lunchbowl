@@ -16,6 +16,7 @@ interface MenuContextType {
   childrenData: Child[];
   startDate: string;
   endDate: string;
+  planId: string;
   fetchChildren: (data: RequestData) => Promise<void>;
 }
 
@@ -29,6 +30,7 @@ const MenuContext = createContext<MenuContextType | undefined>(undefined);
 export const MenuProvider = ({children}: {children: ReactNode}) => {
   const {userId} = useAuth();
   const [childrenData, setChildrenData] = useState<Child[]>([]);
+  const [planId, setPlanId] = useState<string>('');
 
   const [startDate, setStartDate] = useState<string>('2025-09-10');
   const [endDate, setEndDate] = useState<string>('2025-09-19');
@@ -36,13 +38,13 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
   const fetchChildren = async (data: RequestData) => {
     try {
       const response = await MenuService.getChildren(data);
-      console.log(
-        '📌 Full response:sdfsdfffff========================================================================================',
-        response,
-      );
+      console.log('📌 Full response:', response);
 
-      if (response.success && response.data && response.data.children) {
-        const formattedChildren = response.data.children.map((child: any) => ({
+      const plans = response?.data?.plans;
+      if (response.success && Array.isArray(plans) && plans.length > 0) {
+        const plan = plans[0];
+
+        const formattedChildren = (plan.children || []).map((child: any) => ({
           id: child.id,
           name: `${child.firstName?.trim() || ''} ${
             child.lastName?.trim() || ''
@@ -57,20 +59,13 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
           return `${year}-${month}-${day}`;
         };
 
-        setStartDate(formatDate(response.data.startDate));
-        console.log(
-          'start dae...////////////////////////',
-          response.data.startDate,
-        ),
-          console.log(
-            'start dae...////////////////////////',
-            response.data.endDate,
-          ),
-          setEndDate(formatDate(response.data.endDate));
+        setStartDate(formatDate(plan.startDate));
+        setEndDate(formatDate(plan.endDate));
+        setPlanId(plan.id);
         console.log('📌 Formatted children:', formattedChildren);
         setChildrenData(formattedChildren);
       } else {
-        console.error('No children data found or response was not successful.');
+        console.error('No plans data found or response was not successful.');
       }
     } catch (error) {
       console.error('Error fetching children:', error);
@@ -88,7 +83,7 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
 
   return (
     <MenuContext.Provider
-      value={{childrenData, startDate, endDate, fetchChildren}}>
+      value={{childrenData, startDate, endDate, planId, fetchChildren}}>
       {children}
     </MenuContext.Provider>
   );
