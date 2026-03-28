@@ -1139,6 +1139,15 @@ const localPaymentSuccess = async (req, res) => {
     subscriptionToUpdate.paymentDate = new Date();
     subscriptionToUpdate.paymentMethod = "CCAvenue";
 
+    // Activate the subscription (match the renew flow logic:
+    // "upcoming" only if another subscription is already active)
+    const hasOtherActive = form.subscriptions.some(
+      (sub) =>
+        sub._id.toString() !== subscriptionToUpdate._id.toString() &&
+        sub.status === "active"
+    );
+    subscriptionToUpdate.status = hasOtherActive ? "upcoming" : "active";
+
     await subscriptionToUpdate.save();
 
     // Update form
@@ -1605,20 +1614,31 @@ const stepCheck = async (req, res) => {
       });
     }
 
-    const form = await Form.findOne({ user: mongoose.Types.ObjectId(_id) });
+    const form = await Form.findOne({ user: mongoose.Types.ObjectId(_id) })
+      .populate("subscriptions")
+      .lean();
 
     const customer = await Customer.findById(_id);
 
     const freeTrial = customer ? customer.freeTrial : false;
 
-    // If form not found, return step 1 as default
-    // If found, return the form's step
     const step = form ? form.step : 1;
 
+    // Expose populated subscriptions so RegistrationContext can derive
+    // subscriptionEndDate without a separate API call.
+    const subscriptions = form ? (form.subscriptions || []) : [];
+    const activeSub =
+      subscriptions.find((s) => s.status === "active") ||
+      subscriptions[subscriptions.length - 1] ||
+      null;
+
     res.status(200).json({
-      success: true, data: {
+      success: true,
+      data: {
         step,
         freeTrial,
+        subscriptions,
+        subscriptionPlan: activeSub || {},
       },
     });
   } catch (error) {
