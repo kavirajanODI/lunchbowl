@@ -1,5 +1,5 @@
 
-import React, {useState, useMemo, useEffect} from 'react';
+import React, {useState, useMemo} from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {Colors} from 'assets/styles/colors';
-import ConfigService from 'services/ConfigService/ChildAge';
 
 type Props = {
   value?: string;
@@ -22,27 +21,8 @@ export default function DateOfBirthInput({value, onChange, error}: Props) {
   const [showPicker, setShowPicker] = useState(false);
   const [date, setDate] = useState<Date | null>(null);
 
-  const [minAge, setMinAge] = useState<number>(3);
-  const [maxAge, setMaxAge] = useState<number>(18);
-
-  // fetch age limits from API
-  const getAgeLimits = async () => {
-    try {
-      const response: any = await ConfigService.GetChildAges();
-      if (response && response.data) {
-        setMinAge(response.data.minAge);
-        setMaxAge(response.data.maxAge);
-      } else {
-        console.error('Invalid data format', response);
-      }
-    } catch (error) {
-      console.error('Error fetching age limits:', error);
-    }
-  };
-
-  useEffect(() => {
-    getAgeLimits();
-  }, []);
+  const minAge = 3;
+  const maxAge = 18;
 
   const age = useMemo(() => {
     if (!date) return null;

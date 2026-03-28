@@ -41,8 +41,10 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
         response,
       );
 
-      if (response.success && response.data && response.data.children) {
-        const formattedChildren = response.data.children.map((child: any) => ({
+    if (response.success && response.data && Array.isArray(response.data.plans) && response.data.plans.length > 0) {
+        const activePlan = response.data.plans.find((p: any) => p.status === 'active') || response.data.plans[0];
+
+        const formattedChildren = (activePlan.children || []).map((child: any) => ({
           id: child.id,
           name: `${child.firstName?.trim() || ''} ${
             child.lastName?.trim() || ''
@@ -57,16 +59,16 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
           return `${year}-${month}-${day}`;
         };
 
-        setStartDate(formatDate(response.data.startDate));
+        setStartDate(formatDate(activePlan.startDate));
         console.log(
           'start dae...////////////////////////',
-          response.data.startDate,
+          activePlan.startDate,
         ),
           console.log(
             'start dae...////////////////////////',
-            response.data.endDate,
+            activePlan.endDate,
           ),
-          setEndDate(formatDate(response.data.endDate));
+          setEndDate(formatDate(activePlan.endDate));
         console.log('📌 Formatted children:', formattedChildren);
         setChildrenData(formattedChildren);
       } else {

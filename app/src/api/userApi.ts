@@ -21,7 +21,7 @@ async getUserData(userId: string) {
   async getChildData(userId: string) {
     return await httpAxiosClient.post(
       `${this.childEndpoint}`,
-      { userId }
+      { userId, path: 'Add-Child' }
     )
   }
 
