@@ -111,6 +111,14 @@ class RegistrationApi {
       childId,
     });
   }
+
+  async localPaymentSuccess(payload: {
+    userId: string;
+    orderId: string;
+    transactionId: string;
+  }) {
+    return await httpAxiosClient.post('/customer/local-success', payload);
+  }
 }
 
 export default new RegistrationApi();

@@ -62,29 +62,37 @@ export default function PaymentOptions({prevStep, navigation}: any) {
     }
   };
 
-  const handleTestPayment = () => {
-    const mockResponse = {
-      success: true,
-      data: {
-        paymentStatus: 'Success',
-        transactionId: `TEST_TXN_${Date.now()}`,
-        orderId: `TEST_ORDER_${Date.now()}`,
-        amount: 0,
-        currency: 'INR',
-        message: 'Test payment successful',
-      },
-    };
-    console.log('Test payment mock response:', mockResponse);
-    Alert.alert(
-      'Test Payment Successful',
-      `Transaction ID: ${mockResponse.data.transactionId}\nStatus: ${mockResponse.data.paymentStatus}`,
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('Dashboard'),
-        },
-      ],
-    );
+  const handleTestPayment = async () => {
+    try {
+      if (!userId) throw new Error('User ID not found. Please login again.');
+
+      const orderId = `LB${Date.now()}${Math.floor(Math.random() * 1000)}`;
+      const transactionId = `TEST_TXN_${Date.now()}`;
+
+      const result: any = await RegistrationService.localPaymentSuccess({
+        userId,
+        orderId,
+        transactionId,
+      });
+
+      if (!result?.success) {
+        throw new Error(result?.message || 'Test payment failed');
+      }
+
+      Alert.alert(
+        'Test Payment Successful',
+        `Transaction ID: ${transactionId}\nStatus: Success`,
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.replace('PlanCalendar'),
+          },
+        ],
+      );
+    } catch (err: any) {
+      console.error('Test payment error:', err);
+      Alert.alert('Error', err?.message || 'Test payment failed, please try again');
+    }
   };
 
   return (

@@ -260,6 +260,24 @@ class RegistrationService {
     }
   }
 
+  static async localPaymentSuccess(payload: {
+    userId: string;
+    orderId: string;
+    transactionId: string;
+  }): Promise<ApiResponseModel> {
+    try {
+      const response = await RegistrationApi.localPaymentSuccess(payload);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error processing test payment',
+        data: null,
+        error: this.handleApiError(error),
+      };
+    }
+  }
+
   private static handleApiError(error: any): string {
     if (error.response) {
       return `Error: ${
