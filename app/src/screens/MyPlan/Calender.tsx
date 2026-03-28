@@ -100,6 +100,13 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
       ]
     : [];
 
+  // ############### GUARD: redirect to Registration if no active subscription ####
+  useEffect(() => {
+    if (!loading && subscriptionPlan.length === 0) {
+      navigation.replace('Registartion');
+    }
+  }, [loading, subscriptionPlan.length]);
+
   // ############### SHACK TO VIEW SOME INFOS  ######################
   useEffect(() => {
     const subscription = Shake.addListener(() => {
