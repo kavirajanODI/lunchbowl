@@ -387,8 +387,8 @@ const { childrenList, refreshChildren } = useChildData();
             setSelectedPlan={setSelectedPlan}
             prevStep={prevStep}
             nextStep={nextStep}
-            childCount={children.length}
-            childIds={childrenList.map((c: any) => c._id).filter(Boolean)}
+            childrenData={childrenList}
+            isRenewal={false}
           />
         )}
 
