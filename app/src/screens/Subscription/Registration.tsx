@@ -79,8 +79,9 @@ export default function Registration({ navigation }: any) {
 
 
  useEffect(() => {
-    // Only populate form state once from API — prevent subsequent refreshChildren()
-    // calls from overwriting local form state with accumulated DB records.
+    // Only run once per mount to set up savedChildrenForPlan for step-3+ resume.
+    // Never overwrite the `children` form state from DB records — accumulated
+    // historical DB children must NOT appear in the step-2 form.
     if (childrenList.length > 0 && !hasLoadedChildren.current) {
       hasLoadedChildren.current = true;
       const formattedChildren = childrenList.map(child => ({
@@ -95,8 +96,9 @@ export default function Registration({ navigation }: any) {
         allergies: child.allergies || '',
         _id: (child as any)._id || '',
       }));
-      setChildren(formattedChildren);
-      // If the user is resuming at step 3+, use the loaded list for the plan selector
+      // Populate savedChildrenForPlan so step 3 works on app resume.
+      // Do NOT call setChildren() here — the form always starts with a fresh
+      // blank entry to prevent accumulated historical records from appearing.
       setSavedChildrenForPlan(formattedChildren);
     }
   }, [childrenList]);
@@ -284,6 +286,29 @@ export default function Registration({ navigation }: any) {
     }
 
     setChildrenErrors({});
+
+    // If children have already been saved in this session and the form content
+    // (first/last name) hasn't changed, skip the API and advance directly.
+    // This prevents duplicate DB records when the user goes back from step 3
+    // and presses NEXT again without editing children.
+    if (
+      savedChildrenForPlan.length === children.length &&
+      savedChildrenForPlan.length > 0
+    ) {
+      const allMatch = children.every((child, i) => {
+        const saved = savedChildrenForPlan[i];
+        return (
+          saved &&
+          saved.childFirstName.trim() === child.childFirstName.trim() &&
+          saved.childLastName.trim() === child.childLastName.trim()
+        );
+      });
+      if (allMatch) {
+        nextStep();
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const formattedChildren = children.map(child => {

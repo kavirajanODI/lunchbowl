@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
     },
 
     formsContainer: {
+        flex: 1,
         marginHorizontal: 20,
     },
     stepTitle: {
