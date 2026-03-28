@@ -4,7 +4,7 @@ import { LoadingModal } from 'components/LoadingModal/LoadingModal';
 import PaginationDots from 'components/paginations.tsx/PrimaryPagination';
 import Typography from 'components/Text/Typography';
 import { useAuth } from 'context/AuthContext';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
 import RegistrationService from 'services/RegistartionService/registartion';
@@ -26,10 +26,14 @@ type Step = 1 | 2 | 3 | 4;
 
 export default function Registration({ navigation }: any) {
   const { userId } = useAuth();
-const { profileData, refreshProfileData } = useUserProfile();
-const { childrenList, refreshChildren } = useChildData();
+  const { profileData, refreshProfileData } = useUserProfile();
+  const { childrenList, refreshChildren } = useChildData();
 
-console.log("profileData from ---------",profileData)
+  // Prevents childrenList useEffect from overwriting local form state after a save
+  const hasLoadedChildren = useRef(false);
+
+  // Children enriched with DB IDs — used as the source of truth for step 3
+  const [savedChildrenForPlan, setSavedChildrenForPlan] = useState<any[]>([]);
 
   // ########################### PARENT STATES ##############################
 
@@ -75,7 +79,11 @@ console.log("profileData from ---------",profileData)
 
 
  useEffect(() => {
-    if (childrenList.length > 0) {
+    // Only run once per mount to set up savedChildrenForPlan for step-3+ resume.
+    // Never overwrite the `children` form state from DB records — accumulated
+    // historical DB children must NOT appear in the step-2 form.
+    if (childrenList.length > 0 && !hasLoadedChildren.current) {
+      hasLoadedChildren.current = true;
       const formattedChildren = childrenList.map(child => ({
         childFirstName: child.childFirstName.trim() || '',
         childLastName: child.childLastName.trim() || '',
@@ -86,8 +94,12 @@ console.log("profileData from ---------",profileData)
         childClass: child.childClass || '',
         section: child.section || '',
         allergies: child.allergies || '',
+        _id: (child as any)._id || '',
       }));
-      setChildren(formattedChildren);
+      // Populate savedChildrenForPlan so step 3 works on app resume.
+      // Do NOT call setChildren() here — the form always starts with a fresh
+      // blank entry to prevent accumulated historical records from appearing.
+      setSavedChildrenForPlan(formattedChildren);
     }
   }, [childrenList]);
 
@@ -158,7 +170,8 @@ console.log("profileData from ---------",profileData)
     setChildren([
       ...children,
       {
-        childName: '',
+        childFirstName: '',
+        childLastName: '',
         dob: '',
         school: '',
         location: '',
@@ -266,8 +279,6 @@ console.log("profileData from ---------",profileData)
   // ################### SUBMIT CHILDREN DETAILS ##############################
 
   const submitChildrenDetails = async () => {
-    setLoading(true);
-
     const errors = validateChildrenDetails(children);
     if (Object.keys(errors).length > 0) {
       setChildrenErrors(errors);
@@ -275,12 +286,35 @@ console.log("profileData from ---------",profileData)
     }
 
     setChildrenErrors({});
+
+    // If children have already been saved in this session and the form content
+    // (first/last name) hasn't changed, skip the API and advance directly.
+    // This prevents duplicate DB records when the user goes back from step 3
+    // and presses NEXT again without editing children.
+    if (
+      savedChildrenForPlan.length === children.length &&
+      savedChildrenForPlan.length > 0
+    ) {
+      const allMatch = children.every((child, i) => {
+        const saved = savedChildrenForPlan[i];
+        return (
+          saved &&
+          saved.childFirstName.trim() === child.childFirstName.trim() &&
+          saved.childLastName.trim() === child.childLastName.trim()
+        );
+      });
+      if (allMatch) {
+        nextStep();
+        return;
+      }
+    }
+
+    setLoading(true);
     try {
       const formattedChildren = children.map(child => {
-        
         return {
           childFirstName: child.childFirstName,
-          childLastName:  child.childLastName,
+          childLastName: child.childLastName,
           dob: parseDate(child.dob),
           lunchTime: child.lunchTime,
           school: child.school,
@@ -288,20 +322,6 @@ console.log("profileData from ---------",profileData)
           childClass: child.childClass,
           section: child.section,
           allergies: child.allergies,
-
-
-          allergies: 'dsfdfsdfsdf',
-          _id: '69130af0ee650804b2bfdca7',
-          childFirstName: 'asoka',
-          childLastName: 'asdsd',
-          dob: '2025-10-02',
-          lunchTime: '11:00 AM - 12:00 PM',
-          school: 'ST Francis Xavier English Medium Matriculation School',
-          location: 'Alwarpet',
-          childClass: 'Class 5',
-          section: 'E',
-          user: '6912bf2ca3bfaeee7dbb5566',
-          __v: 0,
         };
       });
 
@@ -309,13 +329,31 @@ console.log("profileData from ---------",profileData)
         formData: formattedChildren,
         step: 2,
         path: 'step-Form-ChildDetails',
-        _id:  '6912bf2ca3bfaeee7dbb5566',
+        _id: userId || '',
       };
-    console.log("childe data send from server $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$",payloadChildData)
       const response: any = await RegistrationService.createChildRegistration(payloadChildData);
       if (response && response.data) {
+        // response.data is an array of the newly-created child IDs
+        const savedIds: string[] = Array.isArray(response.data) ? response.data : [];
+
+        if (savedIds.length !== children.length) {
+          // ID count mismatch — use what we have and leave unmatched children without IDs
+          console.warn(
+            `Children ID mismatch: expected ${children.length}, got ${savedIds.length}`,
+          );
+        }
+
+        // Build the plan-selector list from local form state + saved IDs.
+        // This ensures step 3 only shows the children just submitted, not all
+        // accumulated records from previous sessions in the DB.
+        const enrichedChildren = children.map((child, i) => ({
+          ...child,
+          _id: savedIds[i] || '',
+        }));
+        setSavedChildrenForPlan(enrichedChildren);
+
         await refreshChildren();
-        console.log('Children saved:', response.data);
+        console.log('Children saved:', savedIds);
         nextStep();
       } else {
         console.error('Invalid child response', response);
@@ -405,7 +443,8 @@ console.log("profileData from ---------",profileData)
             setSelectedPlan={setSelectedPlan}
             prevStep={prevStep}
             nextStep={nextStep}
-            childCount={children.length}
+            childrenData={savedChildrenForPlan}
+            isRenewal={false}
           />
         )}
 

@@ -56,14 +56,42 @@ export default function PaymentOptions({prevStep, navigation}: any) {
         accessCode: ccavenueConfig.access_code,
         endpoint: ccavenueConfig.endpoint,
       });
-
-      // Alert.alert(
-      //   'Payment Ready',
-      //   `Encrypted: ${encryptedData.substring(0, 20)}...`,
-      // );
     } catch (err) {
       console.error('Payment error:', err);
       Alert.alert('Error', 'Payment failed, please try again');
+    }
+  };
+
+  const handleTestPayment = async () => {
+    try {
+      if (!userId) throw new Error('User ID not found. Please login again.');
+
+      const orderId = `LB${Date.now()}${Math.floor(Math.random() * 1000)}`;
+      const transactionId = `TEST_TXN_${Date.now()}`;
+
+      const result: any = await RegistrationService.localPaymentSuccess({
+        userId,
+        orderId,
+        transactionId,
+      });
+
+      if (!result?.success) {
+        throw new Error(result?.message || 'Test payment failed');
+      }
+
+      Alert.alert(
+        'Test Payment Successful',
+        `Transaction ID: ${transactionId}\nStatus: Success`,
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.replace('PlanCalendar'),
+          },
+        ],
+      );
+    } catch (err: any) {
+      console.error('Test payment error:', err);
+      Alert.alert('Error', err?.message || 'Test payment failed, please try again');
     }
   };
 
@@ -98,6 +126,14 @@ export default function PaymentOptions({prevStep, navigation}: any) {
           style={{flex: 1}}
         />
       </View>
+
+      <View style={localStyles.testButtonContainer}>
+        <TouchableOpacity
+          style={localStyles.testButton}
+          onPress={handleTestPayment}>
+          <Text style={localStyles.testButtonText}>TEST PAYMENT</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -124,5 +160,22 @@ const localStyles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     marginTop: hp(2),
+  },
+  testButtonContainer: {
+    marginTop: hp(2),
+    alignItems: 'center',
+  },
+  testButton: {
+    paddingVertical: hp(1.5),
+    paddingHorizontal: wp(8),
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primaryOrange,
+    backgroundColor: Colors.white,
+  },
+  testButtonText: {
+    fontSize: hp(1.8),
+    fontFamily: Fonts.Urbanist.semiBold,
+    color: Colors.primaryOrange,
   },
 });

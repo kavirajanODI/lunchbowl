@@ -87,23 +87,19 @@ class RegistrationService {
     }
   }
 
-    static async getPerDayCost(
-    token: any,
-  ): Promise<ApiResponseModel> {
+    static async getPerDayCost(): Promise<ApiResponseModel> {
     try {
-      const response = await RegistrationApi.getPerDayCost(token        
-      );
+      const response = await RegistrationApi.getPerDayCost();
       return response.data as ApiResponseModel;
     } catch (error: any) {
       return {
         success: false,
-        message: 'Error creating registration',
+        message: 'Error fetching per day cost',
         data: null,
         error: this.handleApiError(error),
       };
     }
   }
-  // getPerDayCost
 
   static async createChildRegistration(
     registrationData: any,
@@ -258,6 +254,24 @@ class RegistrationService {
       return {
         success: false,
         message: 'Error fetching all registrations',
+        data: null,
+        error: this.handleApiError(error),
+      };
+    }
+  }
+
+  static async localPaymentSuccess(payload: {
+    userId: string;
+    orderId: string;
+    transactionId: string;
+  }): Promise<ApiResponseModel> {
+    try {
+      const response = await RegistrationApi.localPaymentSuccess(payload);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error processing test payment',
         data: null,
         error: this.handleApiError(error),
       };

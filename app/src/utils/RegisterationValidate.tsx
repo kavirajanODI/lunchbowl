@@ -121,7 +121,8 @@ export const validateParentDetails = (data: {
 
 export const validateChildrenDetails = (
   children: {
-    childName: string;
+    childFirstName: string;
+    childLastName: string;
     dob: string;
     school: string;
     location: string;
@@ -131,19 +132,22 @@ export const validateChildrenDetails = (
   const errors: ValidationErrors = {};
 
   children.forEach((child, idx) => {
-    if (!child.childName.trim()) {
-      errors[`childName_${idx}`] = 'Child name is required.';
+    if (!child.childFirstName?.trim()) {
+      errors[`childFirstName_${idx}`] = "Child's first name is required.";
     }
-    if (!child.dob.trim()) {
+    if (!child.childLastName?.trim()) {
+      errors[`childLastName_${idx}`] = "Child's last name is required.";
+    }
+    if (!child.dob?.trim()) {
       errors[`dob_${idx}`] = 'Date of Birth is required.';
     }
-    if (!child.school.trim()) {
+    if (!child.school?.trim()) {
       errors[`school_${idx}`] = 'School is required.';
     }
-    if (!child.location.trim()) {
+    if (!child.location?.trim()) {
       errors[`location_${idx}`] = 'Location is required.';
     }
-    if (!child.lunchTime.trim()) {
+    if (!child.lunchTime?.trim()) {
       errors[`lunchTime_${idx}`] = 'Lunch Time is required.';
     }
   });
