@@ -14,9 +14,14 @@ import {
 import ccavenueConfig from '../../../../config/ccavenueConfig';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
+import PaymentApi from 'api/PaymentApi/paymentApi';
+
+const generateOrderId = () =>
+  `LB${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
 export default function PaymentOptions({prevStep, navigation}: any) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [testLoading, setTestLoading] = useState(false);
   const {userId} = useAuth();
 
   const handlePayment = async () => {
@@ -67,6 +72,38 @@ export default function PaymentOptions({prevStep, navigation}: any) {
     }
   };
 
+  const handleTestPayment = async () => {
+    if (!userId) {
+      Alert.alert('Error', 'User ID not found. Please login again.');
+      return;
+    }
+    try {
+      setTestLoading(true);
+      const orderId = generateOrderId();
+      const transactionId = `TEST_TXN_${Date.now()}`;
+
+      const response: any = await PaymentApi.localPaymentSuccess({
+        userId,
+        orderId,
+        transactionId,
+      });
+
+      if (response?.data?.success) {
+        navigation.navigate('PlanCalendar');
+      } else {
+        Alert.alert(
+          'Error',
+          response?.data?.message || 'Test payment simulation failed',
+        );
+      }
+    } catch (err) {
+      console.error('Test payment error:', err);
+      Alert.alert('Error', 'Test payment failed, please try again');
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
   return (
     <View>
       <View style={localStyles.cardContainer}>
@@ -98,6 +135,15 @@ export default function PaymentOptions({prevStep, navigation}: any) {
           style={{flex: 1}}
         />
       </View>
+
+      <View style={localStyles.testButtonRow}>
+        <PrimaryButton
+          title="TEST PAYMENT"
+          onPress={handleTestPayment}
+          disabled={testLoading}
+          style={{width: wp('90%')}}
+        />
+      </View>
     </View>
   );
 }
@@ -123,6 +169,10 @@ const localStyles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
+    marginTop: hp(2),
+  },
+  testButtonRow: {
+    alignItems: 'center',
     marginTop: hp(2),
   },
 });

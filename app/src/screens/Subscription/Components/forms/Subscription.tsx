@@ -99,6 +99,7 @@ export default function SubscriptionPlan({
   selectedPlan,
   setSelectedPlan,
   childCount,
+  childIds,
   prevStep,
   nextStep,
   isRenewal,
@@ -157,6 +158,7 @@ export default function SubscriptionPlan({
 
       return {
         days: requiredDays,
+        months: m,
         price: finalPrice,
         basePrice,
         discountPercent,
@@ -246,11 +248,18 @@ export default function SubscriptionPlan({
       // Predefined plan (1, 3, 6 months)
       workingDays = selectedPlan.days;
       totalPrice = selectedPlan.price * childCount;
-      planId = `${selectedPlan.days}-days`;
+      planId = String(selectedPlan.months);
 
       sDate = selectedPlan.startDate?.toISOString().split('T')[0] ?? null;
       eDate = selectedPlan.endDate?.toISOString().split('T')[0] ?? null;
     }
+
+    if (!planId) {
+      setError('Please select a subscription plan.');
+      return;
+    }
+
+    const resolvedChildIds = (childIds && childIds.length > 0) ? childIds : [];
 
     const payload: any = {
       step: 3,
@@ -261,7 +270,7 @@ export default function SubscriptionPlan({
         totalPrice,
         startDate: sDate,
         endDate: eDate,
-        numberOfChildren: childCount,
+        children: resolvedChildIds,
       },
       _id: userId,
     };
