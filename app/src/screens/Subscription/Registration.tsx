@@ -4,7 +4,7 @@ import { LoadingModal } from 'components/LoadingModal/LoadingModal';
 import PaginationDots from 'components/paginations.tsx/PrimaryPagination';
 import Typography from 'components/Text/Typography';
 import { useAuth } from 'context/AuthContext';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
 import RegistrationService from 'services/RegistartionService/registartion';
@@ -46,6 +46,7 @@ console.log("profileData from ---------",profileData)
   const [country, setCountry] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const stepInitializedRef = useRef(false);
 
   // ########################### FEED DATA FROM CONTEXT #########################
 
@@ -67,9 +68,10 @@ console.log("profileData from ---------",profileData)
       setCountry(parent.country || '');
       setPincode(parent.pincode || '');
     }
-     if (profileData?.step) {
+     if (!stepInitializedRef.current && profileData?.step) {
       setStep(profileData.step as Step);
       setShowForm(true);
+      stepInitializedRef.current = true;
     }
   }, [profileData]);
 
@@ -77,8 +79,8 @@ console.log("profileData from ---------",profileData)
  useEffect(() => {
     if (childrenList.length > 0) {
       const formattedChildren = childrenList.map(child => ({
-        childFirstName: child.childFirstName.trim() || '',
-        childLastName: child.childLastName.trim() || '',
+        childFirstName: (child.childFirstName || '').trim(),
+        childLastName: (child.childLastName || '').trim(),
         dob: child.dob ? new Date(child.dob).toISOString().split('T')[0] : '',
         school: child.school || '',
         location: child.location || '',
