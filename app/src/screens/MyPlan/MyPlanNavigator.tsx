@@ -28,12 +28,11 @@ if (loading || currentStep === null) {
 // even if the step API returns an incomplete step value.
 const hasActiveSubscription = !!subscriptionEndDate && !isSubscriptionExpired;
 
-// Route to plan view if subscription active, renewal if expired, registration if incomplete
+// Route to plan view if subscription active, renewal if expired, registration otherwise
 const initialScreen =
   hasActiveSubscription ? 'PlanCalendar' :
   isSubscriptionExpired ? 'RenewSubscription' :
-  currentStep < 4 ? 'Registartion' :
-  'PlanCalendar';
+  'Registartion';
 
   return (
     <MenuProvider>
