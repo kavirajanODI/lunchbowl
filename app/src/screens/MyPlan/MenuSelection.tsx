@@ -110,7 +110,7 @@ const MenuSelectionScreen = ({
     'custom',
   );
   const [loading, setLoading] = useState(false);
-  const {childrenData, planId, endDate} = useMenu();
+  const {childrenData, planId, endDate, startDate} = useMenu();
   const {userId} = useAuth();
   const {profileData} = useUserProfile();
   const [applySameDish, setApplySameDish] = useState(false);
@@ -118,6 +118,10 @@ const MenuSelectionScreen = ({
 
   const [selectedDate, setSelectedDate] = useState(passedDate);
   const [selectedDishes, setSelectedDishes] = useState<string[]>([]);
+  // savedMeals: planId → dateKey (YYYY-MM-DD) → childId → mealName
+  const [savedMeals, setSavedMeals] = useState<
+    Record<string, Record<string, Record<string, string>>>
+  >({});
   // Per-child dietitian plan selection: childId → planKey '1' or '2'
   const [childPlanSelections, setChildPlanSelections] = useState<
     Record<string, string>
@@ -155,16 +159,45 @@ const MenuSelectionScreen = ({
     setChildPlanSelections({});
   }, [selectedTab]);
 
-  // Reset meal selections and flags whenever the selected date changes
-  useEffect(() => {
-    setSelectedDishes([]);
-    setApplySameDish(false);
-    setSaveForUpcoming(false);
-  }, [selectedDate]);
-
   const {holidays} = useDate();
 
+  // Fetch all saved meals once (or whenever userId/planId become available)
+  useEffect(() => {
+    if (!userId || !planId) return;
+    MenuService.getSavedMeals(userId, planId).then(res => {
+      if (res?.success && res.data) {
+        // data: { planId: { "YYYY-MM-DD": { childId: { mealName } } } }
+        const planData: Record<string, Record<string, string>> =
+          res.data[planId] || {};
+        // Flatten to dateKey → childId → mealName
+        const flat: Record<string, Record<string, string>> = {};
+        Object.keys(planData).forEach(dateKey => {
+          flat[dateKey] = {};
+          Object.keys(planData[dateKey]).forEach(childId => {
+            flat[dateKey][childId] = planData[dateKey][childId]?.mealName || '';
+          });
+        });
+        setSavedMeals(flat);
+      }
+    });
+  }, [userId, planId]);
+
+  // When selectedDate changes: pre-populate dropdowns from savedMeals
+  useEffect(() => {
+    const y = selectedDate.getFullYear();
+    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const d = String(selectedDate.getDate()).padStart(2, '0');
+    const dateKey = `${y}-${m}-${d}`;
+    const mealsForDate = savedMeals[dateKey] || {};
+    const dishes = childrenData.map(child => mealsForDate[child.id] || '');
+    setSelectedDishes(dishes);
+    setApplySameDish(false);
+    setSaveForUpcoming(false);
+  }, [selectedDate, savedMeals, childrenData]);
+
   // ############ DYNAMIC holiday/weekend check from live selectedDate ############
+  const isSunday = useMemo(() => selectedDate.getDay() === 0, [selectedDate]);
+
   const isCurrentDateWeekend = useMemo(() => {
     const dow = selectedDate.getDay();
     return dow === 0 || dow === 6;
@@ -178,8 +211,16 @@ const MenuSelectionScreen = ({
     return holidays.some(h => h.date === iso);
   }, [selectedDate, holidays]);
 
-  // True for custom plan when date is a holiday/weekend → show PAY button
-  const isHoliday = isCurrentDateHoliday || isCurrentDateWeekend;
+  // Sunday → show "Sunday - LunchBowl Holiday" banner only, no PAY/SAVE buttons
+  // Saturday or calendar holiday → show holiday PAY flow
+  // Regular working day → show normal SAVE flow
+  const isHoliday = !isSunday && (isCurrentDateHoliday || isCurrentDateWeekend);
+
+  // 48-hr lock: date is within 48 hours from now (past or imminent)
+  const isLocked = useMemo(
+    () => isWithin48Hours(selectedDate),
+    [selectedDate],
+  );
 
   // ₹200 per child for holiday meals
   const holidayFeePerChild = 200;
@@ -196,14 +237,36 @@ const MenuSelectionScreen = ({
   const formatMonth = (date: Date) =>
     date.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
 
+  // Clamp navigation to subscription bounds
+  const subscriptionStart = useMemo(
+    () => (startDate ? new Date(startDate) : null),
+    [startDate],
+  );
+  const subscriptionEnd = useMemo(
+    () => (endDate ? new Date(endDate) : null),
+    [endDate],
+  );
+
   const onPrevDate = () => {
     const prev = new Date(selectedDate);
     prev.setDate(prev.getDate() - 1);
+    prev.setHours(0, 0, 0, 0);
+    if (subscriptionStart) {
+      const start = new Date(subscriptionStart);
+      start.setHours(0, 0, 0, 0);
+      if (prev < start) return;
+    }
     setSelectedDate(prev);
   };
   const onNextDate = () => {
     const next = new Date(selectedDate);
     next.setDate(next.getDate() + 1);
+    next.setHours(0, 0, 0, 0);
+    if (subscriptionEnd) {
+      const end = new Date(subscriptionEnd);
+      end.setHours(0, 0, 0, 0);
+      if (next > end) return;
+    }
     setSelectedDate(next);
   };
   const onPrevMonth = () => {
@@ -531,7 +594,19 @@ const MenuSelectionScreen = ({
             </View>
           )}
 
-          {/* Holiday fee banner (custom plan only) */}
+          {/* Sunday banner – no payment/save flow */}
+          {selectedTab === 'custom' && isSunday && (
+            <View style={styles.sundayBanner}>
+              <Text style={styles.sundayBannerTitle}>
+                🗓 Sunday – LunchBowl Holiday
+              </Text>
+              <Text style={styles.sundayBannerNote}>
+                Meals are not available on Sundays. Enjoy your rest day!
+              </Text>
+            </View>
+          )}
+
+          {/* Holiday fee banner (custom plan only, non-Sunday) */}
           {selectedTab === 'custom' && isHoliday && (
             <View style={styles.holidayFeeBanner}>
               <Text style={styles.holidayFeeTitle}>
@@ -548,128 +623,150 @@ const MenuSelectionScreen = ({
             </View>
           )}
 
-          {!isHoliday && (
+          {/* 48-hr lock notice */}
+          {selectedTab === 'custom' && !isSunday && isLocked && (
+            <Text style={styles.lockedText}>
+              🔒 This date is locked for edits (within 48 hours).
+            </Text>
+          )}
+
+          {!isHoliday && !isSunday && (
             <Text style={styles.noteText}>
               Note: Choose your child's meals for the selected{' '}
               {selectedTab === 'custom' ? 'date' : 'month'}.
             </Text>
           )}
 
-          {/* Section Header */}
-          <View style={styles.menuHeader}>
-            <SectionTitle>Select your Child's Menu</SectionTitle>
-            <Tooltip
-              isVisible={showTip}
-              content={
-                <Text style={{color: Colors.black, fontSize: wp('3.5%')}}>
-                  {selectedTab === 'custom'
-                    ? 'Pick a meal for each child. Check "Apply Same" to use one meal for all.'
-                    : 'Select a Dietitian meal plan for each child independently.'}
-                </Text>
-              }
-              placement="bottom"
-              onClose={() => setShowTip(false)}>
-              <TouchableOpacity onPress={() => setShowTip(true)}>
-                <SvgXml xml={questionIcon} width={20} height={20} />
-              </TouchableOpacity>
-            </Tooltip>
-          </View>
+          {/* Section Header – hide on Sundays */}
+          {!isSunday && (
+            <View style={styles.menuHeader}>
+              <SectionTitle>Select your Child's Menu</SectionTitle>
+              <Tooltip
+                isVisible={showTip}
+                content={
+                  <Text style={{color: Colors.black, fontSize: wp('3.5%')}}>
+                    {selectedTab === 'custom'
+                      ? 'Pick a meal for each child. Check "Apply Same" to use one meal for all.'
+                      : 'Select a Dietitian meal plan for each child independently.'}
+                  </Text>
+                }
+                placement="bottom"
+                onClose={() => setShowTip(false)}>
+                <TouchableOpacity onPress={() => setShowTip(true)}>
+                  <SvgXml xml={questionIcon} width={20} height={20} />
+                </TouchableOpacity>
+              </Tooltip>
+            </View>
+          )}
 
-          {/* Menu card */}
-          <View style={styles.menuSelection}>
-            {selectedTab === 'custom' ? (
-              // ---------- Custom Plan ----------
-              <ScrollView
-                style={styles.formContainer}
-                keyboardShouldPersistTaps="handled">
-                {childrenData.map((child, index) => (
-                  <View key={child.id} style={styles.childForm}>
-                    <Text style={styles.childName}>{child.name}</Text>
-                    <PrimaryDropdown
-                      options={mealOptions}
-                      placeholder="Select your Child's Dish"
-                      selectedValue={selectedDishes[index] || ''}
-                      onValueChange={handleDishSelect(index)}
-                    />
-                    {index === 0 && childrenData.length > 1 && (
-                      <View style={styles.checkboxContainer}>
-                        <CheckBox
-                          value={applySameDish}
-                          onValueChange={v => setApplySameDish(v)}
-                          tintColors={{
-                            true: Colors.primaryOrange,
-                            false: Colors.default,
-                          }}
+          {/* Menu card – hide on Sundays */}
+          {!isSunday && (
+            <View style={styles.menuSelection}>
+              {selectedTab === 'custom' ? (
+                // ---------- Custom Plan ----------
+                <ScrollView
+                  style={styles.formContainer}
+                  keyboardShouldPersistTaps="handled">
+                  {childrenData.map((child, index) => (
+                    <View key={child.id} style={styles.childForm}>
+                      <Text style={styles.childName}>{child.name}</Text>
+                      {isLocked ? (
+                        // Read-only: show saved meal name when locked
+                        <View style={styles.lockedMealBox}>
+                          <Text style={styles.lockedMealText}>
+                            {selectedDishes[index]
+                              ? selectedDishes[index]
+                              : 'No meal saved for this date'}
+                          </Text>
+                        </View>
+                      ) : (
+                        <PrimaryDropdown
+                          options={mealOptions}
+                          placeholder="Select your Child's Dish"
+                          selectedValue={selectedDishes[index] || ''}
+                          onValueChange={handleDishSelect(index)}
                         />
-                        <Text style={styles.checkboxLabel}>
-                          Apply the Same dish for{' '}
-                          {childrenData
-                            .slice(1)
-                            .map(c => c.name)
-                            .join(', ')}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </ScrollView>
-            ) : (
-              // ---------- Dietitian Plan (per-child) ----------
-              <View style={{marginTop: hp('1%')}}>
-                {childrenData.map(child => (
-                  <View key={child.id} style={styles.childDietSection}>
-                    <Text style={styles.childName}>{child.name}</Text>
-                    {Object.entries(mealPlans).map(([key, plan]) => {
-                      const isSelected =
-                        (childPlanSelections[child.id] ?? '') === key;
-                      return (
-                        <TouchableOpacity
-                          key={key}
-                          style={[
-                            styles.planCard,
-                            isSelected && styles.selectedPlanCard,
-                          ]}
-                          onPress={() =>
-                            setChildPlanSelections(prev => ({
-                              ...prev,
-                              [child.id]: key,
-                            }))
-                          }>
-                          <View style={styles.planHeader}>
-                            <View style={styles.planInfo}>
-                              <View
-                                style={[
-                                  styles.radioOuter,
-                                  isSelected && styles.radioOuterSelected,
-                                ]}>
-                                {isSelected && (
-                                  <View style={styles.radioInner} />
-                                )}
+                      )}
+                      {!isLocked && index === 0 && childrenData.length > 1 && (
+                        <View style={styles.checkboxContainer}>
+                          <CheckBox
+                            value={applySameDish}
+                            onValueChange={v => setApplySameDish(v)}
+                            tintColors={{
+                              true: Colors.primaryOrange,
+                              false: Colors.default,
+                            }}
+                          />
+                          <Text style={styles.checkboxLabel}>
+                            Apply the Same dish for{' '}
+                            {childrenData
+                              .slice(1)
+                              .map(c => c.name)
+                              .join(', ')}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                // ---------- Dietitian Plan (per-child) ----------
+                <View style={{marginTop: hp('1%')}}>
+                  {childrenData.map(child => (
+                    <View key={child.id} style={styles.childDietSection}>
+                      <Text style={styles.childName}>{child.name}</Text>
+                      {Object.entries(mealPlans).map(([key, plan]) => {
+                        const isSelected =
+                          (childPlanSelections[child.id] ?? '') === key;
+                        return (
+                          <TouchableOpacity
+                            key={key}
+                            style={[
+                              styles.planCard,
+                              isSelected && styles.selectedPlanCard,
+                            ]}
+                            onPress={() =>
+                              setChildPlanSelections(prev => ({
+                                ...prev,
+                                [child.id]: key,
+                              }))
+                            }>
+                            <View style={styles.planHeader}>
+                              <View style={styles.planInfo}>
+                                <View
+                                  style={[
+                                    styles.radioOuter,
+                                    isSelected && styles.radioOuterSelected,
+                                  ]}>
+                                  {isSelected && (
+                                    <View style={styles.radioInner} />
+                                  )}
+                                </View>
+                                <Text
+                                  style={[
+                                    styles.planTitle,
+                                    isSelected && {color: Colors.primaryOrange},
+                                  ]}>
+                                  {plan.name}
+                                </Text>
                               </View>
-                              <Text
-                                style={[
-                                  styles.planTitle,
-                                  isSelected && {color: Colors.primaryOrange},
-                                ]}>
-                                {plan.name}
-                              </Text>
+                              <TouchableOpacity
+                                onPress={() => setViewPlanItem(plan)}>
+                                <Text style={styles.viewPlanText}>VIEW PLAN</Text>
+                              </TouchableOpacity>
                             </View>
-                            <TouchableOpacity
-                              onPress={() => setViewPlanItem(plan)}>
-                              <Text style={styles.viewPlanText}>VIEW PLAN</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
 
-          {/* Save for Upcoming Months – custom plan on non-holiday dates only */}
-          {selectedTab === 'custom' && !isHoliday && (
+          {/* Save for Upcoming Months – custom plan on non-holiday, non-locked, non-Sunday dates only */}
+          {selectedTab === 'custom' && !isHoliday && !isSunday && !isLocked && (
             <View style={styles.checkboxContainer}>
               <CheckBox
                 value={saveForUpcoming}
@@ -699,27 +796,33 @@ const MenuSelectionScreen = ({
           <SecondaryButton
             title="CANCEL"
             onPress={() => navigation.goBack()}
-            style={{width: wp('43%')}}
+            style={{width: isSunday ? wp('91%') : wp('43%')}}
           />
 
-          {!isHoliday || selectedTab === 'dietitian' ? (
-            <PrimaryButton
-              title={loading ? 'Saving...' : 'SAVE'}
-              onPress={SaveMenue}
-              disabled={loading}
-              style={{width: wp('43%')}}
-            />
-          ) : (
-            <PrimaryButton
-              title={`PAY ₹${holidayTotalFee}`}
-              onPress={handlePayNow}
-              style={{width: wp('43%')}}
-            />
+          {/* Sundays: no action button */}
+          {!isSunday && (
+            <>
+              {/* Locked dates: no save/pay */}
+              {isLocked ? null : !isHoliday || selectedTab === 'dietitian' ? (
+                <PrimaryButton
+                  title={loading ? 'Saving...' : 'SAVE'}
+                  onPress={SaveMenue}
+                  disabled={loading}
+                  style={{width: wp('43%')}}
+                />
+              ) : (
+                <PrimaryButton
+                  title={`PAY ₹${holidayTotalFee}`}
+                  onPress={handlePayNow}
+                  style={{width: wp('43%')}}
+                />
+              )}
+            </>
           )}
         </View>
 
         {/* Test / local payment button for holidays (dev mode) */}
-        {isHoliday && selectedTab === 'custom' && (
+        {isHoliday && selectedTab === 'custom' && !isLocked && (
           <View style={styles.testButtonContainer}>
             <TouchableOpacity
               style={styles.testButton}
@@ -936,6 +1039,48 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.Urbanist.semiBold,
     color: Colors.red,
     marginBottom: hp('1.5%'),
+  },
+  // Sunday banner
+  sundayBanner: {
+    backgroundColor: Colors.lightRed,
+    borderRadius: wp('2%'),
+    padding: wp('4%'),
+    marginBottom: hp('1.5%'),
+    borderWidth: 1,
+    borderColor: Colors.primaryOrange,
+    alignItems: 'center',
+  },
+  sundayBannerTitle: {
+    fontSize: wp('4%'),
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.primaryOrange,
+    marginBottom: hp('0.5%'),
+  },
+  sundayBannerNote: {
+    fontSize: wp('3.2%'),
+    color: Colors.bodyText,
+    textAlign: 'center',
+  },
+  // 48-hr lock
+  lockedText: {
+    fontSize: wp('3.2%'),
+    fontFamily: Fonts.Urbanist.semiBold,
+    color: Colors.bodyText,
+    marginBottom: hp('1%'),
+    marginLeft: wp('1%'),
+  },
+  lockedMealBox: {
+    borderWidth: 1,
+    borderColor: Colors.Storke,
+    borderRadius: wp('2%'),
+    paddingVertical: hp('1.5%'),
+    paddingHorizontal: wp('4%'),
+    backgroundColor: Colors.lightRed,
+  },
+  lockedMealText: {
+    fontSize: wp('3.8%'),
+    color: Colors.bodyText,
+    fontFamily: Fonts.Urbanist.regular,
   },
   // Dietitian plan cards
   planCard: {

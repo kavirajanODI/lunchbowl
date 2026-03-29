@@ -34,6 +34,11 @@ class Menus {
   async deleteMeal(payload: any) {
     return await httpAxiosClient.post('/customer/delete-meal', payload);
   }
-}
 
-export default new Menus();
+  async getSavedMeals(userId: string, planId?: string) {
+    return await httpAxiosClient.post('/customer/get-saved-meals', {
+      _id: userId,
+      ...(planId ? {planId} : {}),
+    });
+  }
+}

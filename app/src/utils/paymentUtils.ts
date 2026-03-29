@@ -106,10 +106,10 @@ export const createHolidayPaymentRequest = (
     planId,
   }));
 
-  const merchant_param3 = Buffer.from(
-    JSON.stringify(childrenArr),
-    'utf-8',
-  ).toString('base64');
+  // React Native has no Node.js Buffer — use CryptoJS (already imported)
+  const merchant_param3 = CryptoJS.enc.Base64.stringify(
+    CryptoJS.enc.Utf8.parse(JSON.stringify(childrenArr)),
+  );
 
   const billingName = [
     parentDetails?.fatherFirstName,
