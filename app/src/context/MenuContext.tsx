@@ -73,8 +73,10 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
         console.error('No plans data found or response was not successful.');
       }
 
-      const rawChildren: any[] = Array.isArray(resData.children)
-        ? resData.children
+      // Fetch children from the dedicated endpoint; account-details does not include them
+      const childrenResponse = await UserService.getChildInformation(id);
+      const rawChildren: any[] = Array.isArray(childrenResponse?.children)
+        ? childrenResponse.children
         : [];
       const formattedChildren = rawChildren.map((child: any) => ({
         id: child._id,
