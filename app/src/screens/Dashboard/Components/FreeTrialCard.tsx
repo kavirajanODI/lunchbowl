@@ -17,8 +17,13 @@ const FreeTrialCard: React.FC = () => {
   const {profileData} = useUserProfile();
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Hide if user has already availed trial meal OR has an active/any subscription
-  const hasAvailedTrial = user?.freeTrial === true;
+  // Hide if user has already availed trial meal OR has an active/any subscription.
+  // freeTrial is checked from two sources:
+  //   1. user (AuthContext) - populated at login
+  //   2. profileData.user (account-details response) - reflects DB state after same-session avail
+  const hasAvailedTrial =
+    user?.freeTrial === true ||
+    (profileData as any)?.user?.freeTrial === true;
   const hasSubscription = !!(profileData?.subscriptionPlan);
 
   if (hasAvailedTrial || hasSubscription) {

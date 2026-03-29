@@ -223,10 +223,11 @@ export default function TrialMealScreen({navigation}: any) {
         userId,
       };
 
-      const response: any = await RegistrationService.freeTrialEnquiry(payload);
-      if (!response?.success) {
-        Alert.alert('Error', response?.message || 'Failed to submit trial meal request.');
-        return;
+      // Submit enquiry best-effort; email failures on the server should not block payment
+      try {
+        await RegistrationService.freeTrialEnquiry(payload);
+      } catch (enquiryErr) {
+        console.warn('Trial enquiry submission error (continuing to payment):', enquiryErr);
       }
 
       // Proceed to CCAvenue payment
@@ -296,10 +297,11 @@ export default function TrialMealScreen({navigation}: any) {
         userId,
       };
 
-      const response: any = await RegistrationService.freeTrialEnquiry(payload);
-      if (!response?.success) {
-        Alert.alert('Error', response?.message || 'Failed to submit trial meal request.');
-        return;
+      // Submit enquiry best-effort; test payment succeeds regardless
+      try {
+        await RegistrationService.freeTrialEnquiry(payload);
+      } catch (enquiryErr) {
+        console.warn('Trial enquiry submission error (test payment continues):', enquiryErr);
       }
 
       const transactionId = `TEST_TXN_${Date.now()}`;
