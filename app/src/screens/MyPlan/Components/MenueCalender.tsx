@@ -59,20 +59,20 @@ export default function MenueCalendar({
   // --------------------
   let holdTimeout: NodeJS.Timeout;
 
-  // --------------------
-  // Early Return
-  // --------------------
-  if (!startDate || !endDate) return <Text>Loading calendar...</Text>;
-
   // ---------------------------
   // Better For AUTO FETCH DTA  WHEN NAVIGATION
   // ----------------------------
-  
+
   useFocusEffect(
     useCallback(() => {
       onViewFoodList();
     }, [onViewFoodList]),
   );
+
+  // --------------------
+  // Early Return (must be after all hooks)
+  // --------------------
+  if (!startDate || !endDate) return <Text>Loading calendar...</Text>;
 
   const handleDateSelect = (day: number) => {
     const dateStr = formatDate(currentYear, currentMonth, day);
