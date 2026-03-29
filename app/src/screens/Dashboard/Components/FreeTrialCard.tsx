@@ -8,59 +8,29 @@ import {
   widthPercentageToDP as wp,
 } from 'react-native-responsive-screen';
 import {useAuth} from 'context/AuthContext';
-import {encryptRequest, generateOrderId} from 'utils/paymentUtils';
-import ccavenueConfig from '../../../config/ccavenueConfig';
+import {useUserProfile} from 'context/UserDataContext';
 import FreeTrialModal from './FreeTrialModal';
-
-const FREE_TRIAL_AMOUNT = 150;
 
 const FreeTrialCard: React.FC = () => {
   const navigation = useNavigation<any>();
   const {isLoggedIn, user, userId} = useAuth();
+  const {profileData} = useUserProfile();
   const [modalVisible, setModalVisible] = useState(false);
 
-  function handleFreeTrialPress(): void {
+  // Hide if user has already availed trial meal OR has an active/any subscription
+  const hasAvailedTrial = user?.freeTrial === true;
+  const hasSubscription = !!(profileData?.subscriptionPlan);
+
+  if (hasAvailedTrial || hasSubscription) {
+    return null;
+  }
+
+  function handleTrialMealPress(): void {
     if (isLoggedIn && userId) {
-      proceedToPayment();
+      navigation.navigate('TrialMealScreen');
     } else {
       setModalVisible(true);
     }
-  }
-
-  function proceedToPayment(): void {
-    const orderId = generateOrderId();
-    const paymentData: Record<string, any> = {
-      merchant_id: ccavenueConfig.merchant_id,
-      order_id: orderId,
-      amount: FREE_TRIAL_AMOUNT,
-      currency: ccavenueConfig.currency,
-      redirect_url: ccavenueConfig.redirect_url,
-      cancel_url: ccavenueConfig.cancel_url,
-      language: ccavenueConfig.language,
-      billing_name: (user?.fullname || 'Customer').substring(0, 50),
-      billing_email: (user?.email || 'no-email@example.com').substring(0, 50),
-      billing_tel: (user?.phone_number || '0000000000').substring(0, 20),
-      billing_address: 'Free Trial',
-      billing_city: 'Chennai',
-      billing_state: 'Tamil Nadu',
-      billing_zip: '600001',
-      billing_country: 'India',
-      merchant_param1: userId || '',
-      merchant_param2: 'FREE_TRIAL',
-      merchant_param3: orderId,
-    };
-
-    const plainText = Object.entries(paymentData)
-      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-      .join('&');
-
-    const encryptedData = encryptRequest(plainText, ccavenueConfig.working_key);
-
-    navigation.navigate('WebViewScreen', {
-      encRequest: encryptedData,
-      accessCode: ccavenueConfig.access_code,
-      endpoint: ccavenueConfig.endpoint,
-    });
   }
 
   return (
@@ -70,8 +40,8 @@ const FreeTrialCard: React.FC = () => {
         children.
       </Text>
       <PrimaryButton
-        title="Get Free trial"
-        onPress={handleFreeTrialPress}
+        title="Get Trial Meal"
+        onPress={handleTrialMealPress}
         style={{width: '100%'}}
       />
       <FreeTrialModal
