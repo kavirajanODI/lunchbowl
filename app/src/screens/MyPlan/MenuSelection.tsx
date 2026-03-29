@@ -11,6 +11,7 @@ import SectionTitle from 'components/Titles/SectionHeading';
 import {useAuth} from 'context/AuthContext';
 import {useDate} from 'context/calenderContext';
 import {useMenu} from 'context/MenuContext';
+import {useUserProfile} from 'context/UserDataContext';
 import React, {useEffect, useMemo, useState} from 'react';
 import {
   Alert,
@@ -29,6 +30,7 @@ import {SvgXml} from 'react-native-svg';
 import Tooltip from 'react-native-walkthrough-tooltip';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
 import MenuService from 'services/MyPlansApi/MenuService';
+import HolidayService from 'services/MyPlansApi/HolidayService';
 import {BackIcon, ForwardIcon, questionIcon} from 'styles/svg-icons';
 import {utcToLocal} from 'utils/localTime';
 import {isWithin48Hours, validateMenuDate} from 'utils/MenuValidation';
@@ -110,6 +112,7 @@ const MenuSelectionScreen = ({
   const [loading, setLoading] = useState(false);
   const {childrenData, planId, endDate} = useMenu();
   const {userId} = useAuth();
+  const {profileData} = useUserProfile();
   const [applySameDish, setApplySameDish] = useState(false);
   const [saveForUpcoming, setSaveForUpcoming] = useState(false);
 
@@ -378,6 +381,7 @@ const MenuSelectionScreen = ({
         childrenPayload,
         userId,
         planId,
+        profileData?.parentDetails,
       );
 
       const plainText = Object.entries(paymentData)
@@ -398,6 +402,57 @@ const MenuSelectionScreen = ({
     } catch (err) {
       console.error('Payment error:', err);
       Alert.alert('Error', 'Payment failed, please try again');
+    }
+  };
+
+  const handleTestHolidayPayment = async () => {
+    try {
+      if (!userId) throw new Error('User ID not found. Please login again.');
+
+      const missingMeals = childrenData.filter((_, i) => !selectedDishes[i]);
+      if (missingMeals.length > 0) {
+        Alert.alert(
+          'Select Meals',
+          `Please select a meal for: ${missingMeals.map(c => c.name).join(', ')}`,
+        );
+        return;
+      }
+
+      const orderId = `LB-HOLIDAY-TEST-${Date.now()}`;
+      const transactionId = `TEST_HOLIDAY_TXN_${Date.now()}`;
+      const mealDateStr = selectedDate.toISOString().split('T')[0];
+
+      const childrenPayload = childrenData.map((child, i) => ({
+        childId: child.id,
+        mealName: selectedDishes[i],
+      }));
+
+      const result: any = await HolidayService.localHolidayPaymentSuccess({
+        userId,
+        orderId,
+        transactionId,
+        childrenData: childrenPayload,
+        selectedDate: mealDateStr,
+        planId,
+      });
+
+      if (!result?.success) {
+        throw new Error(result?.message || 'Test holiday payment failed');
+      }
+
+      Alert.alert(
+        'Test Payment Successful',
+        `Holiday meal booked!\nTransaction ID: ${transactionId}`,
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.replace('PlanCalendar'),
+          },
+        ],
+      );
+    } catch (err: any) {
+      console.error('Test holiday payment error:', err);
+      Alert.alert('Error', err?.message || 'Test holiday payment failed');
     }
   };
 
@@ -652,6 +707,17 @@ const MenuSelectionScreen = ({
             />
           )}
         </View>
+
+        {/* Test / local payment button for holidays (dev mode) */}
+        {isHoliday && selectedTab === 'custom' && (
+          <View style={styles.testButtonContainer}>
+            <TouchableOpacity
+              style={styles.testButton}
+              onPress={handleTestHolidayPayment}>
+              <Text style={styles.testButtonText}>TEST HOLIDAY PAYMENT</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <AlertModal
@@ -837,6 +903,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     columnGap: wp('4%'),
+  },
+  testButtonContainer: {
+    marginTop: hp('1.5%'),
+    alignItems: 'center',
+  },
+  testButton: {
+    paddingVertical: hp('1.5%'),
+    paddingHorizontal: wp('8%'),
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primaryOrange,
+    backgroundColor: Colors.white,
+  },
+  testButtonText: {
+    fontSize: wp('3.5%'),
+    fontFamily: Fonts.Urbanist.semiBold,
+    color: Colors.primaryOrange,
   },
   holidayWarningText: {
     fontSize: wp('3.5%'),

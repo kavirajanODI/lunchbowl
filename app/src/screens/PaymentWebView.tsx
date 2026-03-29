@@ -32,6 +32,11 @@ export default function PaymentWebView({navigation}: any) {
     }
   };
 
+  const handleCancel = () => {
+    // For all payment types, go back to PlanCalendar on cancel
+    navigation.replace('PlanCalendar');
+  };
+
   return (
     <View style={{flex: 1}}>
       <WebView
@@ -48,15 +53,26 @@ export default function PaymentWebView({navigation}: any) {
           <ActivityIndicator size="large" style={styles.loader} />
         )}
         onShouldStartLoadWithRequest={request => {
+          // CCAvenue posts to redirect_url / cancel_url — intercept both
           if (request.url.includes('ccavenue/response')) {
             handleSuccess();
             return false;
           }
           if (
             request.url.includes('cancel') ||
-            request.url.includes('subscriptionFailed')
+            request.url.includes('subscriptionFailed') ||
+            request.url.includes('payment/failed')
           ) {
-            navigation.replace('Registartion');
+            handleCancel();
+            return false;
+          }
+          // Web-hosted success/failure pages from the backend redirect
+          if (request.url.includes('lunchbowl.co.in/payment/success')) {
+            handleSuccess();
+            return false;
+          }
+          if (request.url.includes('lunchbowl.co.in/payment/failed')) {
+            handleCancel();
             return false;
           }
           return true;

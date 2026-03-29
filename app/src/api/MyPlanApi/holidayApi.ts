@@ -27,6 +27,17 @@ class Holidays {
   async getAllHolidays() {
     return await httpAxiosClient.get(this.holidayEndpoint);
   }
+
+  async localHolidayPaymentSuccess(payload: {
+    userId: string;
+    orderId: string;
+    transactionId: string;
+    childrenData: {childId: string; mealName: string}[];
+    selectedDate: string;
+    planId: string;
+  }) {
+    return await httpAxiosClient.post('/ccavenue/local-holiday-success', payload);
+  }
 }
 
 export default new Holidays();

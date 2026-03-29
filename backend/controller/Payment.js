@@ -1037,3 +1037,75 @@ exports.localAddChildPaymentController = async (req, res) => {
     });
   }
 };
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST / LOCAL  holiday payment (no CCAvenue — used in development / test mode)
+// POST /api/ccavenue/local-holiday-success
+// Body: { userId, orderId, transactionId, childrenData, selectedDate, planId }
+//   childrenData: [{ childId, mealName }]
+// ─────────────────────────────────────────────────────────────────────────────
+exports.localHolidayPaymentSuccess = async (req, res) => {
+  try {
+    const { userId, orderId, transactionId, childrenData, selectedDate, planId } = req.body;
+
+    if (!userId || !orderId || !childrenData || !selectedDate || !planId) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid userId" });
+    }
+    if (!Array.isArray(childrenData) || childrenData.length === 0) {
+      return res.status(400).json({ success: false, message: "childrenData must be a non-empty array" });
+    }
+
+    let userMeal = await UserMeal.findOne({ userId });
+    if (!userMeal) {
+      userMeal = new UserMeal({ userId, plans: [] });
+    }
+
+    for (const child of childrenData) {
+      const { childId, mealName } = child;
+      if (!childId || !mealName) continue;
+
+      // Record HolidayPayment
+      await HolidayPayment.create({
+        userId,
+        childId,
+        mealDate: selectedDate,
+        mealName,
+        amount: 200,
+        paymentStatus: "Paid",
+        transactionDetails: { tracking_id: transactionId, order_id: orderId, order_status: "Success" },
+      });
+
+      // Update UserMeal
+      let plan = userMeal.plans.find((p) => p.planId === planId);
+      if (!plan) {
+        plan = { planId, children: [] };
+        userMeal.plans.push(plan);
+      }
+
+      let childEntry = plan.children.find((c) => c.childId.equals(childId));
+      if (!childEntry) {
+        plan.children.push({ childId, meals: [{ mealDate: new Date(selectedDate), mealName }] });
+      } else {
+        const existingMeal = childEntry.meals.find(
+          (m) => new Date(m.mealDate).toISOString().slice(0, 10) === new Date(selectedDate).toISOString().slice(0, 10)
+        );
+        if (existingMeal) {
+          existingMeal.mealName = mealName;
+        } else {
+          childEntry.meals.push({ mealDate: new Date(selectedDate), mealName });
+        }
+      }
+    }
+
+    await userMeal.save();
+
+    return res.json({ success: true, message: "Local holiday payment processed successfully" });
+  } catch (err) {
+    console.error("❌ Local holiday payment error:", err);
+    return res.status(500).json({ success: false, message: "Internal Server Error", error: err.message });
+  }
+};

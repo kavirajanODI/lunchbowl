@@ -72,6 +72,27 @@ class HolidayService {
     }
   }
 
+  static async localHolidayPaymentSuccess(payload: {
+    userId: string;
+    orderId: string;
+    transactionId: string;
+    childrenData: {childId: string; mealName: string}[];
+    selectedDate: string;
+    planId: string;
+  }): Promise<ApiResponseModel> {
+    try {
+      const response = await holidaysApi.localHolidayPaymentSuccess(payload);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error processing test holiday payment',
+        data: null,
+        error: this.handleApiError(error),
+      };
+    }
+  }
+
   private static handleApiError(error: any): string {
     if (error.response) {
       return `Error: ${error.response.data?.message || 'An unexpected error occurred'}`;

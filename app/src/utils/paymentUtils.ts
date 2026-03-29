@@ -75,6 +75,17 @@ export const createHolidayPaymentRequest = (
   childrenPayload: {childId: string; mealName: string}[],
   userId: string,
   planId: string,
+  parentDetails?: {
+    fatherFirstName?: string;
+    fatherLastName?: string;
+    email?: string;
+    mobile?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    country?: string;
+  },
 ) => {
   const orderId = `LB-HOLIDAY-${Date.now()}`;
 
@@ -100,6 +111,14 @@ export const createHolidayPaymentRequest = (
     'utf-8',
   ).toString('base64');
 
+  const billingName = [
+    parentDetails?.fatherFirstName,
+    parentDetails?.fatherLastName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .substring(0, 50) || 'Parent';
+
   return {
     merchant_id: ccavenueConfig.merchant_id,
     order_id: orderId,
@@ -108,14 +127,14 @@ export const createHolidayPaymentRequest = (
     redirect_url: ccavenueConfig.holiday_redirect_url,
     cancel_url: ccavenueConfig.cancel_url,
     language: ccavenueConfig.language,
-    billing_name: 'Holiday Meal',
-    billing_email: 'no-email@lunchbowl.in',
-    billing_tel: '0000000000',
-    billing_address: 'Holiday Meal Booking',
-    billing_city: 'Chennai',
-    billing_state: 'TN',
-    billing_zip: '600001',
-    billing_country: 'India',
+    billing_name: billingName,
+    billing_email: (parentDetails?.email || 'no-email@lunchbowl.in').substring(0, 50),
+    billing_tel: (parentDetails?.mobile || '0000000000').substring(0, 20),
+    billing_address: (parentDetails?.address || 'Holiday Meal Booking').substring(0, 100),
+    billing_city: (parentDetails?.city || 'Chennai').substring(0, 50),
+    billing_state: (parentDetails?.state || 'TN').substring(0, 50),
+    billing_zip: (parentDetails?.pincode || '600001').substring(0, 10),
+    billing_country: (parentDetails?.country || 'India').substring(0, 50),
     merchant_param1: userId,
     merchant_param2: mealDateStr,
     merchant_param3,
