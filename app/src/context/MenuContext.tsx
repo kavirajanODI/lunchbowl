@@ -32,8 +32,8 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
   const [childrenData, setChildrenData] = useState<Child[]>([]);
   const [planId, setPlanId] = useState<string>('');
 
-  const [startDate, setStartDate] = useState<string>('2025-09-10');
-  const [endDate, setEndDate] = useState<string>('2025-09-19');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   const fetchChildren = async (data: RequestData) => {
     try {
