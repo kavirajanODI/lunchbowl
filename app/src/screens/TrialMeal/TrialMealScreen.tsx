@@ -9,6 +9,7 @@ import PrimaryDropdown from 'components/inputs/PrimaryDropdown';
 import ThemeInputPrimary from 'components/inputs/ThemeInputPrimary';
 import {LoadingModal} from 'components/LoadingModal/LoadingModal';
 import {useAuth} from 'context/AuthContext';
+import {useUserProfile} from 'context/UserDataContext';
 import React, {useEffect, useState} from 'react';
 import {
   Alert,
@@ -87,7 +88,8 @@ const formatDate = (d: Date): string => {
 };
 
 export default function TrialMealScreen({navigation}: any) {
-  const {user, userId} = useAuth();
+  const {user, userId, setUser} = useAuth();
+  const {refreshProfileData} = useUserProfile();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(false);
@@ -206,7 +208,8 @@ export default function TrialMealScreen({navigation}: any) {
 
     setLoading(true);
     try {
-      const payload = {
+      // Build the enquiry payload — it will be submitted AFTER successful payment
+      const trialMealPayload = {
         firstName: parentFirstName.trim(),
         lastName: parentLastName.trim(),
         email: email.trim(),
@@ -222,13 +225,6 @@ export default function TrialMealScreen({navigation}: any) {
         food: preferredFood || undefined,
         userId,
       };
-
-      // Submit enquiry best-effort; email failures on the server should not block payment
-      try {
-        await RegistrationService.freeTrialEnquiry(payload);
-      } catch (enquiryErr) {
-        console.warn('Trial enquiry submission error (continuing to payment):', enquiryErr);
-      }
 
       // Proceed to CCAvenue payment
       const orderId = generateOrderId();
@@ -263,6 +259,7 @@ export default function TrialMealScreen({navigation}: any) {
         accessCode: ccavenueConfig.access_code,
         endpoint: ccavenueConfig.endpoint,
         paymentType: 'trialMeal',
+        trialMealPayload,
       });
     } catch {
       Alert.alert('Error', 'Something went wrong. Please try again.');
@@ -297,12 +294,12 @@ export default function TrialMealScreen({navigation}: any) {
         userId,
       };
 
-      // Submit enquiry best-effort; test payment succeeds regardless
-      try {
-        await RegistrationService.freeTrialEnquiry(payload);
-      } catch (enquiryErr) {
-        console.warn('Trial enquiry submission error (test payment continues):', enquiryErr);
-      }
+      await RegistrationService.freeTrialEnquiry(payload);
+
+      // Update AuthContext so FreeTrialCard hides immediately
+      setUser((prev: any) => ({...prev, freeTrial: true}));
+      // Refresh profile so profileData.user.freeTrial is also up to date
+      refreshProfileData().catch(() => {});
 
       const transactionId = `TEST_TXN_${Date.now()}`;
       Alert.alert(
