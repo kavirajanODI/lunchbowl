@@ -155,6 +155,13 @@ const MenuSelectionScreen = ({
     setChildPlanSelections({});
   }, [selectedTab]);
 
+  // Reset meal selections and flags whenever the selected date changes
+  useEffect(() => {
+    setSelectedDishes([]);
+    setApplySameDish(false);
+    setSaveForUpcoming(false);
+  }, [selectedDate]);
+
   const {holidays} = useDate();
 
   // ############ DYNAMIC holiday/weekend check from live selectedDate ############
@@ -164,7 +171,10 @@ const MenuSelectionScreen = ({
   }, [selectedDate]);
 
   const isCurrentDateHoliday = useMemo(() => {
-    const iso = selectedDate.toISOString().split('T')[0];
+    const y = selectedDate.getFullYear();
+    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const d = String(selectedDate.getDate()).padStart(2, '0');
+    const iso = `${y}-${m}-${d}`;
     return holidays.some(h => h.date === iso);
   }, [selectedDate, holidays]);
 
