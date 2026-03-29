@@ -88,6 +88,37 @@ class MenuService {
     }
   }
 
+  static async deleteMeal(payload: any): Promise<ApiResponseModel> {
+    try {
+      const response = await menuApi.deleteMeal(payload);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error deleting meal',
+        data: null,
+        error: this.handleApiError(error),
+      };
+    }
+  }
+
+  static async getSavedMeals(
+    userId: string,
+    planId?: string,
+  ): Promise<ApiResponseModel> {
+    try {
+      const response = await menuApi.getSavedMeals(userId, planId);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error fetching saved meals',
+        data: null,
+        error: this.handleApiError(error),
+      };
+    }
+  }
+
   private static handleApiError(error: any): string {
     if (error.response) {
       return `Error: ${error.response.data?.message || 'An unexpected error occurred'}`;

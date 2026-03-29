@@ -4,6 +4,7 @@
     working_key: '2A561B005709D8B4BAF69D049B23546B',
     redirect_url: 'https://api.lunchbowl.co.in/api/ccavenue/response',
     cancel_url: 'https://api.lunchbowl.co.in/api/ccavenue/response',
+    holiday_redirect_url: 'https://api.lunchbowl.co.in/api/ccavenue/response/holiydayPayment',
     currency: 'INR',
     language: 'EN',
     endpoint:

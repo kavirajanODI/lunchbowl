@@ -5,7 +5,7 @@ import React, {
   ReactNode,
   useEffect,
 } from 'react';
-import MenuService from 'services/MyPlansApi/MenuService';
+import UserService from 'services/userService';
 import {useAuth} from './AuthContext';
 interface Child {
   id: string;
@@ -16,62 +16,76 @@ interface MenuContextType {
   childrenData: Child[];
   startDate: string;
   endDate: string;
+  planId: string;
   fetchChildren: (data: RequestData) => Promise<void>;
 }
 
 interface RequestData {
   _id: string | null;
-  path: string;
+  path?: string;
 }
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
+const toYMD = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${year}-${month}-${day}`;
+};
+
 export const MenuProvider = ({children}: {children: ReactNode}) => {
   const {userId} = useAuth();
   const [childrenData, setChildrenData] = useState<Child[]>([]);
+  const [planId, setPlanId] = useState<string>('');
 
-  const [startDate, setStartDate] = useState<string>('2025-09-10');
-  const [endDate, setEndDate] = useState<string>('2025-09-19');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   const fetchChildren = async (data: RequestData) => {
     try {
-      const response = await MenuService.getChildren(data);
-      console.log(
-        '📌 Full response:sdfsdfffff========================================================================================',
-        response,
-      );
+      const id = data._id;
+      if (!id) return;
+      const response = await UserService.getRegisteredUSerData(id);
+      console.log('📌 Full response:', response);
 
-      if (response.success && response.data && response.data.children) {
-        const formattedChildren = response.data.children.map((child: any) => ({
-          id: child.id,
-          name: `${child.firstName?.trim() || ''} ${
-            child.lastName?.trim() || ''
-          }`.trim(),
-        }));
-
-        const formatDate = (dateStr: string) => {
-          const date = new Date(dateStr);
-          const day = String(date.getDate()).padStart(2, '0');
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const year = date.getFullYear();
-          return `${year}-${month}-${day}`;
-        };
-
-        setStartDate(formatDate(response.data.startDate));
-        console.log(
-          'start dae...////////////////////////',
-          response.data.startDate,
-        ),
-          console.log(
-            'start dae...////////////////////////',
-            response.data.endDate,
-          ),
-          setEndDate(formatDate(response.data.endDate));
-        console.log('📌 Formatted children:', formattedChildren);
-        setChildrenData(formattedChildren);
-      } else {
-        console.error('No children data found or response was not successful.');
+      const resData = response?.data;
+      if (!resData) {
+        console.error('No plans data found or response was not successful.');
+        return;
       }
+
+      const subs: any[] = Array.isArray(resData.subscriptions)
+        ? resData.subscriptions
+        : [];
+      const activeSub =
+        subs.find((s: any) => s.status === 'active') ??
+        subs[subs.length - 1] ??
+        null;
+
+      if (activeSub) {
+        setStartDate(toYMD(activeSub.startDate));
+        setEndDate(toYMD(activeSub.endDate));
+        // Use the subscription document's MongoDB _id as the plan identifier
+        setPlanId((activeSub._id || activeSub.planId || '') as string);
+      } else {
+        console.error('No plans data found or response was not successful.');
+      }
+
+      // Fetch children from the dedicated endpoint; account-details does not include them
+      const childrenResponse = await UserService.getChildInformation(id);
+      const rawChildren: any[] = Array.isArray(childrenResponse?.children)
+        ? childrenResponse.children
+        : [];
+      const formattedChildren = rawChildren.map((child: any) => ({
+        id: child._id,
+        name: `${child.childFirstName?.trim() || ''} ${
+          child.childLastName?.trim() || ''
+        }`.trim(),
+      }));
+      console.log('📌 Formatted children:', formattedChildren);
+      setChildrenData(formattedChildren);
     } catch (error) {
       console.error('Error fetching children:', error);
     }
@@ -81,14 +95,13 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
     if (userId) {
       fetchChildren({
         _id: userId,
-        path: 'get-saved-meals',
       });
     }
   }, [userId]);
 
   return (
     <MenuContext.Provider
-      value={{childrenData, startDate, endDate, fetchChildren}}>
+      value={{childrenData, startDate, endDate, planId, fetchChildren}}>
       {children}
     </MenuContext.Provider>
   );

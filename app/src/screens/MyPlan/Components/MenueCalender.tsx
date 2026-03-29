@@ -59,20 +59,20 @@ export default function MenueCalendar({
   // --------------------
   let holdTimeout: NodeJS.Timeout;
 
-  // --------------------
-  // Early Return
-  // --------------------
-  if (!startDate || !endDate) return <Text>Loading calendar...</Text>;
-
   // ---------------------------
   // Better For AUTO FETCH DTA  WHEN NAVIGATION
   // ----------------------------
-  
+
   useFocusEffect(
     useCallback(() => {
       onViewFoodList();
     }, [onViewFoodList]),
   );
+
+  // --------------------
+  // Early Return (must be after all hooks)
+  // --------------------
+  if (!startDate || !endDate) return <Text>Loading calendar...</Text>;
 
   const handleDateSelect = (day: number) => {
     const dateStr = formatDate(currentYear, currentMonth, day);
@@ -148,10 +148,17 @@ export default function MenueCalendar({
           const dateStr = formatDate(currentYear, currentMonth, dayNumber);
           const selected = selectedDate === dateStr;
 
+          // Determine if this cell should appear greyed-out / non-interactive
+          const isSundayCell = index % 7 === 6;
+          const outOfPlan =
+            !isWithinRange(dayNumber, startDate, endDate, currentYear, currentMonth);
+          const isDisabled = isSundayCell || outOfPlan;
+
           return (
             <TouchableOpacity
               key={index}
-              style={styles.dayCell}
+              style={[styles.dayCell, isDisabled && styles.disabledCell]}
+              activeOpacity={isDisabled ? 1 : 0.7}
               onPress={() =>
                 handleDayPress({
                   dayNumber,
@@ -202,18 +209,19 @@ export default function MenueCalendar({
                   foodList,
                   isBookedDate,
                 )}
-                style={styles.dayCircle}>
+                style={[styles.dayCircle, isDisabled && styles.disabledCircle]}>
                 <Text
                   style={[
                     styles.dayText,
-                    selected && styles.selectedText,
-                    isBookedDate(
+                    isDisabled && styles.disabledText,
+                    selected && !isDisabled && styles.selectedText,
+                    !isDisabled && isBookedDate(
                       dayNumber,
                       currentYear,
                       currentMonth,
                       foodList,
                     ) && styles.bookedText,
-                    (isHoliday(
+                    !isDisabled && (isHoliday(
                       dayNumber,
                       holidays,
                       currentYear,
@@ -283,6 +291,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 6,
   },
+  disabledCell: {
+    opacity: 0.35,
+  },
   dayCircle: {
     width: '80%',
     aspectRatio: 1,
@@ -290,7 +301,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  disabledCircle: {
+    backgroundColor: Colors.default,
+  },
   dayText: {fontSize: 16, color: Colors.black},
+  disabledText: {color: Colors.bodyText},
   selectedText: {fontWeight: 'bold', color: Colors.green},
   holidayText: {color: Colors.red, fontWeight: 'bold'},
   tooltip: {

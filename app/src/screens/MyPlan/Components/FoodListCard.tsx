@@ -1,5 +1,11 @@
 import React, {useState} from 'react';
-import {StyleSheet, TouchableOpacity, View} from 'react-native';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {SvgXml} from 'react-native-svg';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
@@ -11,31 +17,128 @@ import {
   widthPercentageToDP as wp,
 } from 'react-native-responsive-screen';
 import BottomModal from 'components/Modal/BottomModal';
+import PrimaryDropdown from 'components/inputs/PrimaryDropdown';
+import PrimaryButton from 'components/buttons/PrimaryButton';
+import SecondaryButton from 'components/buttons/SecondaryButton';
+import MenuService from 'services/MyPlansApi/MenuService';
+import menus from 'services/MenueService/Data/menus.json';
+
+const allMeals = menus.meal_plan.flatMap(day => day.meals);
+const mealOptions = allMeals.map(meal => ({label: meal, value: meal}));
 
 interface Meal {
   date: string;
   food: string;
+  deleted?: boolean;
 }
 
 interface Props {
+  childId: string;
   childName: string;
+  subscriptionId: string;
+  startDate: string;
+  endDate: string;
   meals: Meal[];
+  userId: string;
+  planId: string;
+  onMealUpdated: () => Promise<void>;
 }
 
-const FoodListCard: React.FC<Props> = ({childName, meals}) => {
+const formatDisplayDate = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+};
+
+const FoodListCard: React.FC<Props> = ({
+  childId,
+  childName,
+  subscriptionId,
+  startDate,
+  endDate,
+  meals,
+  userId,
+  planId,
+  onMealUpdated,
+}) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
+  const [newMealName, setNewMealName] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const handleEdit = (meal: Meal) => {
     setSelectedMeal(meal);
+    setNewMealName(meal.food);
     setModalVisible(true);
   };
 
+  const handleSave = async () => {
+    if (!selectedMeal || !newMealName) return;
+    setSaving(true);
+    try {
+      await MenuService.saveMenuSelection({
+        _id: userId,
+        path: 'save-meals',
+        data: {
+          userId,
+          planId,
+          children: [
+            {
+              childId,
+              meals: [
+                {
+                  mealDate: new Date(selectedMeal.date).toISOString(),
+                  mealName: newMealName,
+                },
+              ],
+            },
+          ],
+        },
+      });
+      setModalVisible(false);
+      await onMealUpdated();
+    } catch (e) {
+      console.error('Save error:', e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedMeal) return;
+    setSaving(true);
+    try {
+      await MenuService.deleteMeal({
+        userId,
+        subscriptionId,
+        childId,
+        date: selectedMeal.date,
+      });
+      setModalVisible(false);
+      await onMealUpdated();
+    } catch (e) {
+      console.error('Delete error:', e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const dateRangeStr =
+    startDate && endDate
+      ? `(${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)})`
+      : '';
+
   return (
     <View style={styles.wrapper}>
-      <Typography style={styles.header} numberOfLines={1}>
-        {childName}
-      </Typography>
+      <View style={styles.headerBlock}>
+        <Typography style={styles.header} numberOfLines={1}>
+          {childName}
+        </Typography>
+        {!!dateRangeStr && (
+          <Text style={styles.dateRange}>{dateRangeStr}</Text>
+        )}
+      </View>
 
       <View style={styles.table}>
         <View style={styles.row}>
@@ -53,35 +156,76 @@ const FoodListCard: React.FC<Props> = ({childName, meals}) => {
           meals.map((item, index) => (
             <View key={index}>
               <View style={styles.row}>
-                <Typography style={styles.cell} numberOfLines={1}>
-                  {item.date}
+                <Typography
+                  style={[styles.cell, item.deleted && styles.deletedText]}
+                  numberOfLines={1}>
+                  {formatDisplayDate(item.date)}
                 </Typography>
                 <View style={styles.foodCell}>
-                  <Typography style={styles.foodText} numberOfLines={1}>
+                  <Typography
+                    style={[styles.foodText, item.deleted && styles.deletedText]}
+                    numberOfLines={1}>
                     {item.food}
                   </Typography>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => handleEdit(item)}>
-                    <SvgXml xml={EditIcon} width={wp('4%')} height={wp('4%')} />
-                  </TouchableOpacity>
+                  {item.deleted ? (
+                    <Text style={styles.cancelledBadge}>Cancelled</Text>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => handleEdit(item)}>
+                      <SvgXml
+                        xml={EditIcon}
+                        width={wp('4%')}
+                        height={wp('4%')}
+                      />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
-              {index < meals.length - 1 && <View style={styles.separator} />}
+              {index < meals.length - 1 && (
+                <View style={styles.separator} />
+              )}
             </View>
           ))
         )}
       </View>
 
-      <BottomModal visible={modalVisible} onClose={() => setModalVisible(false)}>
-        <Typography
-          style={{
-            fontSize: wp('4.5%'),
-            fontFamily: Fonts.Urbanist.bold,
-            marginBottom: hp('2%'),
-          }}>
-          Edit Meal
-        </Typography>
+      <BottomModal
+        visible={modalVisible}
+        onClose={() => !saving && setModalVisible(false)}>
+        <Typography style={styles.modalTitle}>Edit Meal</Typography>
+        <Text style={styles.modalDate}>
+          {selectedMeal ? formatDisplayDate(selectedMeal.date) : ''}
+        </Text>
+        <PrimaryDropdown
+          options={mealOptions}
+          placeholder="Select new meal"
+          selectedValue={newMealName}
+          onValueChange={v => setNewMealName(String(v))}
+        />
+        {saving ? (
+          <ActivityIndicator
+            color={Colors.primaryOrange}
+            style={{marginTop: hp('2%')}}
+          />
+        ) : (
+          <View style={styles.modalButtons}>
+            <SecondaryButton
+              title="Delete Meal"
+              onPress={handleDelete}
+              borderColor={Colors.red}
+              textColor={Colors.red}
+              style={{flex: 1, marginRight: wp('2%')}}
+              disabled={saving}
+            />
+            <PrimaryButton
+              title="Save"
+              onPress={handleSave}
+              style={{flex: 1}}
+              disabled={saving || !newMealName}
+            />
+          </View>
+        )}
       </BottomModal>
     </View>
   );
@@ -95,20 +239,30 @@ const styles = StyleSheet.create({
     marginVertical: hp('1%'),
     elevation: 0.5,
   },
+  headerBlock: {
+    backgroundColor: Colors.lightRed,
+    borderRadius: wp('2%'),
+    paddingHorizontal: wp('2%'),
+    paddingVertical: hp('0.8%'),
+    marginBottom: hp('0.5%'),
+  },
   header: {
     fontSize: wp('4.2%'),
-    backgroundColor: Colors.lightRed,
-    padding: wp('2%'),
-    borderRadius: wp('2%'),
     color: Colors.primaryOrange,
     fontFamily: Fonts.Urbanist.bold,
+  },
+  dateRange: {
+    fontSize: wp('3.2%'),
+    color: Colors.bodyText,
+    fontFamily: Fonts.Urbanist.regular,
+    marginTop: hp('0.2%'),
   },
   table: {
     marginTop: hp('1%'),
     paddingHorizontal: wp('4%'),
   },
   tableHeader: {
-    fontFamily: 'Urbanist-Bold',
+    fontFamily: Fonts.Urbanist.bold,
     fontSize: wp('3.5%'),
     color: Colors.black,
   },
@@ -130,6 +284,16 @@ const styles = StyleSheet.create({
     color: Colors.black,
     fontFamily: Fonts.Urbanist.regular,
   },
+  deletedText: {
+    textDecorationLine: 'line-through',
+    color: Colors.default,
+  },
+  cancelledBadge: {
+    fontSize: wp('2.8%'),
+    color: Colors.red,
+    fontFamily: Fonts.Urbanist.semiBold,
+    marginLeft: wp('1%'),
+  },
   editButton: {
     marginLeft: wp('2%'),
     justifyContent: 'center',
@@ -145,6 +309,25 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.Storke,
     marginVertical: hp('0.5%'),
   },
+  // Modal
+  modalTitle: {
+    fontSize: wp('4.5%'),
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.black,
+    marginBottom: hp('0.5%'),
+  },
+  modalDate: {
+    fontSize: wp('3.5%'),
+    color: Colors.primaryOrange,
+    fontFamily: Fonts.Urbanist.semiBold,
+    marginBottom: hp('1%'),
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    marginTop: hp('2%'),
+    gap: wp('2%'),
+  },
 });
 
 export default FoodListCard;
+
