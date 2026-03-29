@@ -42,3 +42,5 @@ class Menus {
     });
   }
 }
+
+export default new Menus();
