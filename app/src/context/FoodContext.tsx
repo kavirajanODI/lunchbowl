@@ -8,6 +8,7 @@ type Meal = {
   childId: string;
   date: string;
   food: string;
+  deleted?: boolean;
 };
 
 type ChildWithMeals = {
@@ -53,9 +54,13 @@ export const FoodProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   typeof mealInfo === 'string'
                     ? mealInfo
                     : mealInfo?.mealName ?? '';
-                if (!mealInfo?.deleted) {
-                  meals.push({childId, date, food: mealName});
-                }
+                // Include all meals; deleted ones shown with strikethrough in UI
+                meals.push({
+                  childId,
+                  date,
+                  food: mealName,
+                  deleted: mealInfo?.deleted ?? false,
+                });
               },
             );
           });

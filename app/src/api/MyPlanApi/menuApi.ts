@@ -30,6 +30,10 @@ class Menus {
   async getAllMenus(path: string, userId: string) {
     return await httpAxiosClient.get(this.menuEndpoint);
   }
+
+  async deleteMeal(payload: any) {
+    return await httpAxiosClient.post('/customer/delete-meal', payload);
+  }
 }
 
 export default new Menus();
