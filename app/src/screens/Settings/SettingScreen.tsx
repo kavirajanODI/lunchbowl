@@ -32,16 +32,19 @@ import {
 } from 'styles/svg-icons';
 
 const items = [
-  { id: '0', name: 'Child Info',         routeName: 'ParentChildInfoScreen', icon: NotificationBell },
-  { id: '1', name: 'Notifications',      routeName: 'NotificationScreen',    icon: NotificationBell },
-  { id: '2', name: 'Offers & Coupons',   routeName: 'OffersScreen',          icon: offers           },
-  { id: '3', name: 'History',            routeName: 'OrderHistory',          icon: history          },
-  { id: '4', name: 'Wallet & Payments',  routeName: 'WalletScreen',          icon: NotificationBell },
-  { id: '5', name: 'Change Password',    routeName: 'ChangePasswordScreen',  icon: NotificationBell },
-  { id: '6', name: 'About Us',           routeName: 'AboutUsScreen',         icon: aboutUs          },
-  { id: '7', name: "FAQ's",              routeName: 'FaqScreen',             icon: faq              },
-  { id: '8', name: 'T&C, Privacy Policy',routeName: 'TermsAndPolicyScreen',  icon: privacyPolicy    },
-  { id: '9', name: ' Help Center',       routeName: 'HelpCenterScreen',      icon: helpCenter       },
+  { id: '0',  name: 'Dashboard',          routeName: 'UserDashboardScreen',   icon: NotificationBell },
+  { id: '1',  name: 'Plans & Pricing',    routeName: 'PlansAndPricingScreen', icon: NotificationBell },
+  { id: '2',  name: 'Transaction History',routeName: 'TransactionHistoryScreen', icon: history       },
+  { id: '3',  name: 'Child Info',         routeName: 'ParentChildInfoScreen', icon: NotificationBell },
+  { id: '4',  name: 'Notifications',      routeName: 'NotificationScreen',    icon: NotificationBell },
+  { id: '5',  name: 'Offers & Coupons',   routeName: 'OffersScreen',          icon: offers           },
+  { id: '6',  name: 'History',            routeName: 'OrderHistory',          icon: history          },
+  { id: '7',  name: 'Wallet & Payments',  routeName: 'WalletScreen',          icon: NotificationBell },
+  { id: '8',  name: 'Change Password',    routeName: 'ChangePasswordScreen',  icon: NotificationBell },
+  { id: '9',  name: 'About Us',           routeName: 'AboutUsScreen',         icon: aboutUs          },
+  { id: '10', name: "FAQ's",              routeName: 'FaqScreen',             icon: faq              },
+  { id: '11', name: 'T&C, Privacy Policy',routeName: 'TermsAndPolicyScreen',  icon: privacyPolicy    },
+  { id: '12', name: ' Help Center',       routeName: 'HelpCenterScreen',      icon: helpCenter       },
 ];
 
 const SupportItems = [{ id: '1', name: 'Log out', routeName: 'LogOut', icon: logout }];

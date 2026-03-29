@@ -22,6 +22,10 @@ import TermsAndPolicyScreen from 'screens/Settings/PrivacyPolicy/PrivacyPolicy';
 import SettingsScreen from 'screens/Settings/SettingScreen';
 import WalletScreen from 'screens/Settings/Wallet/WalletScreen';
 import ChangePasswordScreen from 'screens/Settings/ChangePassword/ChangePasswordScreen';
+import UserDashboardScreen from 'screens/Settings/UserDashboard/UserDashboardScreen';
+import PlansAndPricingScreen from 'screens/Settings/PlansAndPricing/PlansAndPricingScreen';
+import TransactionHistoryScreen from 'screens/Settings/TransactionHistory/TransactionHistoryScreen';
+import TransactionDetailScreen from 'screens/Settings/TransactionHistory/TransactionDetailScreen';
 import {UserProfileProvider} from 'context/UserDataContext';
 
 const Stack = createStackNavigator();
@@ -135,6 +139,26 @@ const DashboardNavigator = () => {
           <Stack.Screen
             name="WebViewScreen"
             component={PaymentWebView}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="UserDashboardScreen"
+            component={UserDashboardScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="PlansAndPricingScreen"
+            component={PlansAndPricingScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="TransactionHistoryScreen"
+            component={TransactionHistoryScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="TransactionDetailScreen"
+            component={TransactionDetailScreen}
             options={{headerShown: false}}
           />
         </Stack.Navigator>
