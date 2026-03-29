@@ -5,7 +5,7 @@ import React, {
   ReactNode,
   useEffect,
 } from 'react';
-import MenuService from 'services/MyPlansApi/MenuService';
+import UserService from 'services/userService';
 import {useAuth} from './AuthContext';
 interface Child {
   id: string;
@@ -27,6 +27,14 @@ interface RequestData {
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
+const toYMD = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${year}-${month}-${day}`;
+};
+
 export const MenuProvider = ({children}: {children: ReactNode}) => {
   const {userId} = useAuth();
   const [childrenData, setChildrenData] = useState<Child[]>([]);
@@ -37,36 +45,45 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
 
   const fetchChildren = async (data: RequestData) => {
     try {
-      const response = await MenuService.getChildren(data);
+      const id = data._id;
+      if (!id) return;
+      const response = await UserService.getRegisteredUSerData(id);
       console.log('📌 Full response:', response);
 
-      const plans = response?.data?.plans;
-      if (response.success && Array.isArray(plans) && plans.length > 0) {
-        const plan = plans[0];
+      const resData = response?.data;
+      if (!resData) {
+        console.error('No plans data found or response was not successful.');
+        return;
+      }
 
-        const formattedChildren = (plan.children || []).map((child: any) => ({
-          id: child.id,
-          name: `${child.firstName?.trim() || ''} ${
-            child.lastName?.trim() || ''
-          }`.trim(),
-        }));
+      const subs: any[] = Array.isArray(resData.subscriptions)
+        ? resData.subscriptions
+        : [];
+      const activeSub =
+        subs.find((s: any) => s.status === 'active') ??
+        subs[subs.length - 1] ??
+        null;
 
-        const formatDate = (dateStr: string) => {
-          const date = new Date(dateStr);
-          const day = String(date.getDate()).padStart(2, '0');
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const year = date.getFullYear();
-          return `${year}-${month}-${day}`;
-        };
-
-        setStartDate(formatDate(plan.startDate));
-        setEndDate(formatDate(plan.endDate));
-        setPlanId(plan.id);
-        console.log('📌 Formatted children:', formattedChildren);
-        setChildrenData(formattedChildren);
+      if (activeSub) {
+        setStartDate(toYMD(activeSub.startDate));
+        setEndDate(toYMD(activeSub.endDate));
+        // Use the subscription document's MongoDB _id as the plan identifier
+        setPlanId((activeSub._id || activeSub.planId || '') as string);
       } else {
         console.error('No plans data found or response was not successful.');
       }
+
+      const rawChildren: any[] = Array.isArray(resData.children)
+        ? resData.children
+        : [];
+      const formattedChildren = rawChildren.map((child: any) => ({
+        id: child._id,
+        name: `${child.childFirstName?.trim() || ''} ${
+          child.childLastName?.trim() || ''
+        }`.trim(),
+      }));
+      console.log('📌 Formatted children:', formattedChildren);
+      setChildrenData(formattedChildren);
     } catch (error) {
       console.error('Error fetching children:', error);
     }
