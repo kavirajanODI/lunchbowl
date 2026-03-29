@@ -68,29 +68,58 @@ export const createFreeTrialPaymentRequest = (
   };
 };
 
-export const createHolidayPaymentRequest = (ccavenueConfig: any , selectedDate:any ,childrenData:any,userId:any) => {
+export const createHolidayPaymentRequest = (
+  ccavenueConfig: any,
+  selectedDate: any,
+  // childrenPayload is [{childId, mealName}], planId and userId provided separately
+  childrenPayload: {childId: string; mealName: string}[],
+  userId: string,
+  planId: string,
+) => {
+  const orderId = `LB-HOLIDAY-${Date.now()}`;
 
- const orderId = `LB-HOLIDAY-${Date.now()}`;
+  // ₹200 per child for holiday meal
+  const amount = 200 * childrenPayload.length;
+
+  const mealDateStr =
+    selectedDate instanceof Date
+      ? selectedDate.toISOString().split('T')[0]
+      : String(selectedDate);
+
+  // Backend expects base64-encoded JSON array:
+  // [{ childId, dish: { mealName }, mealDate, planId }]
+  const childrenArr = childrenPayload.map(c => ({
+    childId: c.childId,
+    dish: {mealName: c.mealName},
+    mealDate: mealDateStr,
+    planId,
+  }));
+
+  const merchant_param3 = Buffer.from(
+    JSON.stringify(childrenArr),
+    'utf-8',
+  ).toString('base64');
+
   return {
-     merchant_id: ccavenueConfig.merchant_id,
-        order_id: orderId,
-        amount: 1, 
-        currency: ccavenueConfig.currency,
-        redirect_url: ccavenueConfig.redirect_url,
-        cancel_url: ccavenueConfig.cancel_url,
-        language: ccavenueConfig.language,
-        billing_name: "Holiday Meal",
-        billing_email: "no-email@lunchbowl.in",
-        billing_tel: "0000000000",
-        billing_address: "Holiday Meal Booking",
-        billing_city: "Chennai",
-        billing_state: "TN",
-        billing_zip: "600001",
-        billing_country: "India",
-        merchant_param1: userId, 
-        merchant_param2: selectedDate,
-        merchant_param3: JSON.stringify(childrenData),
-        merchant_param4: "HOLIDAY_PAYMENT",
+    merchant_id: ccavenueConfig.merchant_id,
+    order_id: orderId,
+    amount,
+    currency: ccavenueConfig.currency,
+    redirect_url: ccavenueConfig.holiday_redirect_url,
+    cancel_url: ccavenueConfig.cancel_url,
+    language: ccavenueConfig.language,
+    billing_name: 'Holiday Meal',
+    billing_email: 'no-email@lunchbowl.in',
+    billing_tel: '0000000000',
+    billing_address: 'Holiday Meal Booking',
+    billing_city: 'Chennai',
+    billing_state: 'TN',
+    billing_zip: '600001',
+    billing_country: 'India',
+    merchant_param1: userId,
+    merchant_param2: mealDateStr,
+    merchant_param3,
+    merchant_param4: 'HOLIDAY_PAYMENT',
   };
 };
 

@@ -11,7 +11,7 @@ import SectionTitle from 'components/Titles/SectionHeading';
 import {useAuth} from 'context/AuthContext';
 import {useDate} from 'context/calenderContext';
 import {useMenu} from 'context/MenuContext';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   Alert,
   Modal,
@@ -31,7 +31,7 @@ import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
 import MenuService from 'services/MyPlansApi/MenuService';
 import {BackIcon, ForwardIcon, questionIcon} from 'styles/svg-icons';
 import {utcToLocal} from 'utils/localTime';
-import {validateMenuDate} from 'utils/MenuValidation';
+import {isWithin48Hours, validateMenuDate} from 'utils/MenuValidation';
 import {createHolidayPaymentRequest, encryptRequest} from 'utils/paymentUtils';
 import {Colors} from '../../assets/styles/colors';
 import ccavenueConfig from '../../config/ccavenueConfig';
@@ -56,7 +56,10 @@ const mealOptions: DropdownOption[] = allMeals.map(meal => ({
 const dietitianPlan1Meals = dietitianData.meal_plan.map(d => d.meal);
 // Plan 2 uses the first-meal-of-each-day from menus.json reversed to give users
 // a nutritionally different second option from the same pool of recipes.
-const dietitianPlan2Meals = menues.meal_plan.map(d => d.meals[0]).reverse();
+const dietitianPlan2Meals = menues.meal_plan
+  .filter(d => d.meals && d.meals.length > 0)
+  .map(d => d.meals[0])
+  .reverse();
 
 const mealPlans: Record<string, {name: string; meals: string[]}> = {
   '1': {name: 'Meal Plan 1', meals: dietitianPlan1Meals},
@@ -151,6 +154,24 @@ const MenuSelectionScreen = ({
 
   const {holidays} = useDate();
 
+  // ############ DYNAMIC holiday/weekend check from live selectedDate ############
+  const isCurrentDateWeekend = useMemo(() => {
+    const dow = selectedDate.getDay();
+    return dow === 0 || dow === 6;
+  }, [selectedDate]);
+
+  const isCurrentDateHoliday = useMemo(() => {
+    const iso = selectedDate.toISOString().split('T')[0];
+    return holidays.some(h => h.date === iso);
+  }, [selectedDate, holidays]);
+
+  // True for custom plan when date is a holiday/weekend → show PAY button
+  const isHoliday = isCurrentDateHoliday || isCurrentDateWeekend;
+
+  // ₹200 per child for holiday meals
+  const holidayFeePerChild = 200;
+  const holidayTotalFee = holidayFeePerChild * childrenData.length;
+
   const formatDate = (date: Date) =>
     date.toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -183,21 +204,21 @@ const MenuSelectionScreen = ({
     setSelectedMonth(next);
   };
 
-  //################ HOLIDAY DETECTION ####################
-
-  const selectedDateStr = new Date(route.params.selectedDate)
-    .toISOString()
-    .split('T')[0];
-  const isHolidayFromApi = holidays.some(h => h.date === selectedDateStr);
-  const dayOfWeek = new Date(route.params.selectedDate).getDay();
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-  const isHoliday = isHolidayFromApi || isWeekend;
-
   // ################### SAVE LOGIC ###################################
 
   const SaveMenue = async () => {
     setLoading(true);
     try {
+      // 48-hour edit lock check
+      if (isWithin48Hours(selectedDate)) {
+        Alert.alert(
+          'Locked',
+          'Meal can be changed only before 48 hours of the meal date.',
+        );
+        setLoading(false);
+        return;
+      }
+
       const errorMsg = validateMenuDate(selectedDate, holidays);
       if (errorMsg) {
         Alert.alert('Not Allowed', errorMsg);
@@ -333,15 +354,34 @@ const MenuSelectionScreen = ({
     try {
       if (!userId) throw new Error('User ID not found. Please login again.');
 
+      // Validate that each child has a meal selected before payment
+      const missingMeals = childrenData.filter(
+        (_, i) => !selectedDishes[i],
+      );
+      if (missingMeals.length > 0) {
+        Alert.alert(
+          'Select Meals',
+          `Please select a meal for: ${missingMeals.map(c => c.name).join(', ')}`,
+        );
+        return;
+      }
+
+      // Build structured children payload for the holiday payment backend
+      const childrenPayload = childrenData.map((child, i) => ({
+        childId: child.id,
+        mealName: selectedDishes[i],
+      }));
+
       const paymentData = createHolidayPaymentRequest(
         ccavenueConfig,
         selectedDate,
-        childrenData,
+        childrenPayload,
         userId,
+        planId,
       );
 
       const plainText = Object.entries(paymentData)
-        .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+        .map(([k, v]) => `${k}=${encodeURIComponent(v as string | number)}`)
         .join('&');
 
       const encryptedData = encryptRequest(
@@ -426,10 +466,29 @@ const MenuSelectionScreen = ({
             </View>
           )}
 
-          <Text style={styles.noteText}>
-            Note: Choose your child's meals for the selected{' '}
-            {selectedTab === 'custom' ? 'date' : 'month'}.
-          </Text>
+          {/* Holiday fee banner (custom plan only) */}
+          {selectedTab === 'custom' && isHoliday && (
+            <View style={styles.holidayFeeBanner}>
+              <Text style={styles.holidayFeeTitle}>
+                🏖 Holiday Meal Booking
+              </Text>
+              <Text style={styles.holidayFeeDetail}>
+                ₹{holidayFeePerChild} × {childrenData.length}{' '}
+                {childrenData.length === 1 ? 'child' : 'children'} ={' '}
+                <Text style={styles.holidayFeeTotal}>₹{holidayTotalFee}</Text>
+              </Text>
+              <Text style={styles.holidayFeeNote}>
+                Select a meal for each child and tap PAY to confirm.
+              </Text>
+            </View>
+          )}
+
+          {!isHoliday && (
+            <Text style={styles.noteText}>
+              Note: Choose your child's meals for the selected{' '}
+              {selectedTab === 'custom' ? 'date' : 'month'}.
+            </Text>
+          )}
 
           {/* Section Header */}
           <View style={styles.menuHeader}>
@@ -544,8 +603,8 @@ const MenuSelectionScreen = ({
             )}
           </View>
 
-          {/* Save for Upcoming Months – custom plan only */}
-          {selectedTab === 'custom' && (
+          {/* Save for Upcoming Months – custom plan on non-holiday dates only */}
+          {selectedTab === 'custom' && !isHoliday && (
             <View style={styles.checkboxContainer}>
               <CheckBox
                 value={saveForUpcoming}
@@ -567,7 +626,8 @@ const MenuSelectionScreen = ({
       <View style={styles.stickyButtonsContainer}>
         {isHoliday && selectedTab === 'custom' && (
           <Text style={styles.holidayWarningText}>
-            Note: This date is a holiday. Additional Charges apply.
+            ₹{holidayFeePerChild}/child × {childrenData.length} ={' '}
+            ₹{holidayTotalFee} — Additional holiday charges apply.
           </Text>
         )}
         <View style={styles.stickyButtonsRow}>
@@ -586,7 +646,7 @@ const MenuSelectionScreen = ({
             />
           ) : (
             <PrimaryButton
-              title="PAY"
+              title={`PAY ₹${holidayTotalFee}`}
               onPress={handlePayNow}
               style={{width: wp('43%')}}
             />
@@ -693,6 +753,35 @@ const styles = StyleSheet.create({
     color: Colors.bodyText,
     marginBottom: hp('1%'),
     marginLeft: wp('1%'),
+  },
+  // Holiday fee banner
+  holidayFeeBanner: {
+    backgroundColor: Colors.hoiday,
+    borderRadius: wp('2%'),
+    padding: wp('4%'),
+    marginBottom: hp('1.5%'),
+    borderWidth: 1,
+    borderColor: Colors.primaryOrange,
+  },
+  holidayFeeTitle: {
+    fontSize: wp('4%'),
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.primaryOrange,
+    marginBottom: hp('0.5%'),
+  },
+  holidayFeeDetail: {
+    fontSize: wp('3.8%'),
+    color: Colors.black,
+    fontFamily: Fonts.Urbanist.regular,
+  },
+  holidayFeeTotal: {
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.primaryOrange,
+  },
+  holidayFeeNote: {
+    fontSize: wp('3%'),
+    color: Colors.bodyText,
+    marginTop: hp('0.5%'),
   },
   menuHeader: {
     flexDirection: 'row',
@@ -848,4 +937,3 @@ const styles = StyleSheet.create({
     fontSize: wp('3.8%'),
   },
 });
-
