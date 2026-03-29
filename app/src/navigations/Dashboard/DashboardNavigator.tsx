@@ -2,6 +2,7 @@ import {createStackNavigator} from '@react-navigation/stack';
 import {MealProvider} from 'context/MealContext';
 import React from 'react';
 import UnderConstruction from 'screens/404Screen';
+import TrialMealScreen from 'screens/TrialMeal/TrialMealScreen';
 import HomeScreen from 'screens/Dashboard/HomeScreen';
 import PaymentWebView from 'screens/PaymentWebView';
 import HistoryDetailPage from 'screens/History/HistoryDetailPage';
@@ -124,6 +125,11 @@ const DashboardNavigator = () => {
           <Stack.Screen
             name="ChangePasswordScreen"
             component={ChangePasswordScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="TrialMealScreen"
+            component={TrialMealScreen}
             options={{headerShown: false}}
           />
           <Stack.Screen

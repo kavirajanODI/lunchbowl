@@ -278,6 +278,36 @@ class RegistrationService {
     }
   }
 
+  static async freeTrialEnquiry(payload: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    mobileNumber: string;
+    altMobileNumber?: string;
+    doorNo: string;
+    areaCity: string;
+    pincode: string;
+    schoolName: string;
+    className: string;
+    childName: string;
+    datePreference?: string;
+    food?: string;
+    message?: string;
+    userId: string;
+  }): Promise<ApiResponseModel> {
+    try {
+      const response = await RegistrationApi.freeTrialEnquiry(payload);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error submitting trial meal enquiry',
+        data: null,
+        error: this.handleApiError(error),
+      };
+    }
+  }
+
   private static handleApiError(error: any): string {
     if (error.response) {
       return `Error: ${

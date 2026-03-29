@@ -115,7 +115,7 @@ const HomeScreen: React.FC<{navigation: any}> = ({navigation}) => {
             }}
           />
           <PromoBanner navigation={navigation} />
-          <SectionTitle> Kick Start your Free Trial</SectionTitle>
+          <SectionTitle> Kick Start your Trial Meal</SectionTitle>
           <FreeTrialCard />
           <SectionTitle>Lunch Bowl’s Highlights</SectionTitle>
           <Highlights navigation={navigation} />

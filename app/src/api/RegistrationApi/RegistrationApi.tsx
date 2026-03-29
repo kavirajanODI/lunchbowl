@@ -119,6 +119,26 @@ class RegistrationApi {
   }) {
     return await httpAxiosClient.post('/customer/local-success', payload);
   }
+
+  async freeTrialEnquiry(payload: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    mobileNumber: string;
+    altMobileNumber?: string;
+    doorNo: string;
+    areaCity: string;
+    pincode: string;
+    schoolName: string;
+    className: string;
+    childName: string;
+    datePreference?: string;
+    food?: string;
+    message?: string;
+    userId: string;
+  }) {
+    return await httpAxiosClient.post('/admin/free-trial-enquiry', payload);
+  }
 }
 
 export default new RegistrationApi();

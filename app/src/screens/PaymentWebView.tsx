@@ -3,20 +3,26 @@ import {View, ActivityIndicator, StyleSheet} from 'react-native';
 import {WebView} from 'react-native-webview';
 import {RouteProp, useRoute} from '@react-navigation/native';
 import AlertModal from 'components/Modal/AlertModal';
+import {useAuth} from 'context/AuthContext';
+import {useUserProfile} from 'context/UserDataContext';
+import RegistrationService from 'services/RegistartionService/registartion';
 
 type PaymentWebViewParams = {
   PaymentWebView: {
     encRequest: string;
     accessCode: string;
     paymentType?: string;
+    trialMealPayload?: Record<string, any>;
   };
 };
 
 export default function PaymentWebView({navigation}: any) {
   const route = useRoute<RouteProp<PaymentWebViewParams, 'PaymentWebView'>>();
-  const {encRequest, accessCode, paymentType} = route.params;
+  const {encRequest, accessCode, paymentType, trialMealPayload} = route.params;
   const webviewRef = useRef<WebView>(null);
   const [holidaySuccess, setHolidaySuccess] = useState(false);
+  const {setUser} = useAuth();
+  const {refreshProfileData} = useUserProfile();
 
   const ccAvenueUrl =
     'https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction';
@@ -27,6 +33,17 @@ export default function PaymentWebView({navigation}: any) {
   const handleSuccess = () => {
     if (paymentType === 'holiday') {
       setHolidaySuccess(true);
+    } else if (paymentType === 'trialMeal') {
+      // Submit enquiry (sends emails/SMS, sets freeTrial: true) only after confirmed payment
+      if (trialMealPayload) {
+        RegistrationService.freeTrialEnquiry(trialMealPayload as any).catch(
+          err => console.warn('Trial enquiry post-payment error:', err),
+        );
+      }
+      // Update AuthContext so FreeTrialCard hides on return to Dashboard
+      setUser((prev: any) => ({...prev, freeTrial: true}));
+      refreshProfileData().catch(() => {});
+      navigation.replace('HomeScreen');
     } else {
       navigation.replace('PlanCalendar');
     }
