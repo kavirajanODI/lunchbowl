@@ -22,7 +22,7 @@ interface MenuContextType {
 
 interface RequestData {
   _id: string | null;
-  path: string;
+  path?: string;
 }
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
@@ -76,7 +76,6 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
     if (userId) {
       fetchChildren({
         _id: userId,
-        path: 'get-saved-meals',
       });
     }
   }, [userId]);
