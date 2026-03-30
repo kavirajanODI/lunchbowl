@@ -15,7 +15,7 @@ import ccavenueConfig from '../../../../config/ccavenueConfig';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 
-export default function PaymentOptions({prevStep, navigation}: any) {
+export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const {userId} = useAuth();
 
@@ -69,11 +69,20 @@ export default function PaymentOptions({prevStep, navigation}: any) {
       const orderId = `LB${Date.now()}${Math.floor(Math.random() * 1000)}`;
       const transactionId = `TEST_TXN_${Date.now()}`;
 
-      const result: any = await RegistrationService.localPaymentSuccess({
-        userId,
-        orderId,
-        transactionId,
-      });
+      let result: any;
+      if (isRenewal) {
+        result = await RegistrationService.renewalLocalPaymentSuccess({
+          userId,
+          orderId,
+          transactionId,
+        });
+      } else {
+        result = await RegistrationService.localPaymentSuccess({
+          userId,
+          orderId,
+          transactionId,
+        });
+      }
 
       if (!result?.success) {
         throw new Error(result?.message || 'Test payment failed');
@@ -81,7 +90,7 @@ export default function PaymentOptions({prevStep, navigation}: any) {
 
       Alert.alert(
         'Test Payment Successful',
-        `Transaction ID: ${transactionId}\nStatus: Success`,
+        `Transaction ID: ${transactionId}\nStatus: ${isRenewal ? 'Upcoming' : 'Success'}`,
         [
           {
             text: 'OK',

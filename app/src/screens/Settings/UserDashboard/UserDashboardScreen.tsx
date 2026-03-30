@@ -46,6 +46,16 @@ const UserDashboardScreen = ({navigation}: any) => {
   const activeSub = profileData?.subscriptionPlan ?? null;
   const children: any[] = (profileData as any)?.children ?? [];
 
+  const daysToExpiry = activeSub?.endDate
+    ? Math.ceil(
+        (new Date(activeSub.endDate).getTime() - Date.now()) /
+          (1000 * 60 * 60 * 24),
+      )
+    : null;
+
+  const canRenew = daysToExpiry !== null && daysToExpiry <= 10;
+  const canAddChild = children.length < 3 && !!activeSub;
+
   const expiryDate = activeSub?.endDate
     ? new Date(activeSub.endDate).toLocaleDateString('en-IN', {
         day: '2-digit',
@@ -86,12 +96,29 @@ const UserDashboardScreen = ({navigation}: any) => {
               <Text style={styles.cardValue}>{expiryDate ?? '—'}</Text>
             </View>
           </View>
+          {daysToExpiry !== null && daysToExpiry <= 10 && (
+            <Text style={styles.expiryWarning}>
+              ⚠️ Expires in {daysToExpiry} day{daysToExpiry !== 1 ? 's' : ''}
+            </Text>
+          )}
           <TouchableOpacity
-            style={styles.renewButton}
-            onPress={() => navigation.navigate('MyPlan', {screen: 'Registartion'})}>
-            <Text style={styles.renewButtonText}>RENEW</Text>
+            style={[styles.renewButton, !canRenew && styles.renewButtonDisabled]}
+            disabled={!canRenew}
+            onPress={() => navigation.navigate('MyPlan', {screen: 'RenewSubscription'})}>
+            <Text style={[styles.renewButtonText, !canRenew && styles.renewButtonTextDisabled]}>
+              RENEW{!canRenew && daysToExpiry !== null ? ` (${daysToExpiry}d left)` : ''}
+            </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Add Child Button */}
+        {canAddChild && (
+          <TouchableOpacity
+            style={styles.addChildButton}
+            onPress={() => navigation.navigate('AddChildScreen')}>
+            <Text style={styles.addChildButtonText}>+ ADD CHILD</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Active Children Card */}
         <View style={styles.summaryCard}>
@@ -204,10 +231,36 @@ const styles = StyleSheet.create({
     paddingVertical: hp('1.2%'),
     alignItems: 'center',
   },
+  renewButtonDisabled: {
+    backgroundColor: Colors.lightRed,
+    opacity: 0.6,
+  },
   renewButtonText: {
     fontSize: hp('2%'),
     fontFamily: Fonts.Urbanist.bold,
     color: Colors.primaryOrange,
+  },
+  renewButtonTextDisabled: {
+    color: Colors.bodyText,
+  },
+  expiryWarning: {
+    fontSize: hp('1.6%'),
+    fontFamily: Fonts.Urbanist.medium,
+    color: Colors.white,
+    marginBottom: hp('1%'),
+    opacity: 0.9,
+  },
+  addChildButton: {
+    backgroundColor: Colors.primaryOrange,
+    borderRadius: wp('3%'),
+    paddingVertical: hp('1.5%'),
+    alignItems: 'center',
+    marginBottom: hp('2.5%'),
+  },
+  addChildButtonText: {
+    fontSize: hp('2%'),
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.white,
   },
   summaryCard: {
     backgroundColor: Colors.white,
