@@ -203,7 +203,7 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
               {walletPoints > maxRedeemable && (
                 <Text style={localStyles.walletNote}>
                   ⓘ Only 80% of the plan price can be redeemed. Remaining{' '}
-                  {walletPoints - walletUsed} points stay in wallet.
+                  {remainingWallet} points stay in wallet.
                 </Text>
               )}
             </View>

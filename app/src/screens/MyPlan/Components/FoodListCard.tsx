@@ -26,16 +26,18 @@ import MenuService from 'services/MyPlansApi/MenuService';
 import menus from 'services/MenueService/Data/menus.json';
 
 const canEdit = (dateStr: string): boolean => {
+  const EDIT_ADVANCE_HOURS = 48;
   const mealDate = new Date(dateStr);
   mealDate.setHours(0, 0, 0, 0);
-  const cutoff = new Date(Date.now() + 48 * 60 * 60 * 1000);
+  const cutoff = new Date(Date.now() + EDIT_ADVANCE_HOURS * 60 * 60 * 1000);
   return mealDate >= cutoff;
 };
 
 const canDelete = (dateStr: string): boolean => {
+  const DELETE_ADVANCE_HOURS = 24;
   const mealDate = new Date(dateStr);
   mealDate.setHours(0, 0, 0, 0);
-  const cutoff = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const cutoff = new Date(Date.now() + DELETE_ADVANCE_HOURS * 60 * 60 * 1000);
   return mealDate >= cutoff;
 };
 
