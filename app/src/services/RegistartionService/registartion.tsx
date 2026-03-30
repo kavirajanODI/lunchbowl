@@ -278,6 +278,47 @@ class RegistrationService {
     }
   }
 
+  static async renewalLocalPaymentSuccess(payload: {
+    userId: string;
+    orderId: string;
+    transactionId: string;
+  }): Promise<ApiResponseModel> {
+    try {
+      const response = await RegistrationApi.renewalLocalPaymentSuccess(payload);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error processing renewal payment',
+        data: null,
+        error: this.handleApiError(error),
+      };
+    }
+  }
+
+  static async addChildLocalPayment(payload: {
+    userId: string;
+    childrenData: any[];
+    paymentInfo: {
+      orderId: string;
+      transactionId: string;
+      subscriptionId: string;
+      paymentAmount: number;
+    };
+  }): Promise<ApiResponseModel> {
+    try {
+      const response = await RegistrationApi.addChildLocalPayment(payload);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error processing add-child payment',
+        data: null,
+        error: this.handleApiError(error),
+      };
+    }
+  }
+
   static async freeTrialEnquiry(payload: {
     firstName: string;
     lastName: string;

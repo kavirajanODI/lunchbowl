@@ -120,6 +120,30 @@ class RegistrationApi {
     return await httpAxiosClient.post('/customer/local-success', payload);
   }
 
+  async renewalLocalPaymentSuccess(payload: {
+    userId: string;
+    orderId: string;
+    transactionId: string;
+  }) {
+    return await httpAxiosClient.post('/ccavenue/local-success', payload);
+  }
+
+  async addChildLocalPayment(payload: {
+    userId: string;
+    childrenData: any[];
+    paymentInfo: {
+      orderId: string;
+      transactionId: string;
+      subscriptionId: string;
+      paymentAmount: number;
+    };
+  }) {
+    return await httpAxiosClient.post(
+      '/ccavenue/local-success/local-add-childPayment',
+      payload,
+    );
+  }
+
   async freeTrialEnquiry(payload: {
     firstName: string;
     lastName: string;

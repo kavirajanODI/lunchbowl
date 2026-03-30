@@ -26,6 +26,8 @@ import UserDashboardScreen from 'screens/Settings/UserDashboard/UserDashboardScr
 import PlansAndPricingScreen from 'screens/Settings/PlansAndPricing/PlansAndPricingScreen';
 import TransactionHistoryScreen from 'screens/Settings/TransactionHistory/TransactionHistoryScreen';
 import TransactionDetailScreen from 'screens/Settings/TransactionHistory/TransactionDetailScreen';
+import AddChildScreen from 'screens/Subscription/AddChildScreen';
+import AddChildPaymentScreen from 'screens/Subscription/AddChildPaymentScreen';
 import {UserProfileProvider} from 'context/UserDataContext';
 
 const Stack = createStackNavigator();
@@ -159,6 +161,16 @@ const DashboardNavigator = () => {
           <Stack.Screen
             name="TransactionDetailScreen"
             component={TransactionDetailScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="AddChildScreen"
+            component={AddChildScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="AddChildPaymentScreen"
+            component={AddChildPaymentScreen}
             options={{headerShown: false}}
           />
         </Stack.Navigator>

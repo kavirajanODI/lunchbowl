@@ -10,6 +10,8 @@ import React from 'react';
 import PaymentWebView from 'screens/PaymentWebView';
 import Registartion from 'screens/Subscription/Registration';
 import RenewSubscription from 'screens/Subscription/RenewSubscription';
+import AddChildScreen from 'screens/Subscription/AddChildScreen';
+import AddChildPaymentScreen from 'screens/Subscription/AddChildPaymentScreen';
 import MyPlanScreen from './Calender';
 import FoodScreen from './FoodScreen';
 import MenuSelectionScreen from './MenuSelection';
@@ -66,6 +68,16 @@ const initialScreen =
                 <Stack.Screen
                   name="RenewSubscription"
                   component={RenewSubscription}
+                  options={{headerShown: false}}
+                />
+                <Stack.Screen
+                  name="AddChildScreen"
+                  component={AddChildScreen}
+                  options={{headerShown: false}}
+                />
+                <Stack.Screen
+                  name="AddChildPaymentScreen"
+                  component={AddChildPaymentScreen}
                   options={{headerShown: false}}
                 />
                 <Stack.Screen
