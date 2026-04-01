@@ -45,13 +45,14 @@ export default function PaymentWebView({navigation}: any) {
       refreshProfileData().catch(() => {});
       navigation.replace('HomeScreen');
     } else {
-      navigation.replace('PlanCalendar');
+      // Subscription payment success – show dedicated success screen
+      navigation.replace('PaymentSuccess');
     }
   };
 
   const handleCancel = () => {
-    // For all payment types, go back to PlanCalendar on cancel
-    navigation.replace('PlanCalendar');
+    // For all payment types, show the failure screen on cancel
+    navigation.replace('PaymentFailed');
   };
 
   return (

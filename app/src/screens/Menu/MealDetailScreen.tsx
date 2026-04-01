@@ -17,6 +17,7 @@ import ErrorMessage from 'components/Error/BoostrapStyleError';
 import {SvgXml} from 'react-native-svg';
 import {sendIcon} from 'styles/svg-icons';
 import {BlurView} from '@react-native-community/blur';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type MealDetailProps = {
   navigation: any;
@@ -126,7 +127,16 @@ const MealDetailScreen: React.FC<MealDetailProps> = ({route}) => {
       <View style={styles.buttoncontainer}>
         <PrimaryButton
           title="Book Now"
-          onPress={() => console.log('Booking Meal:', meal.title)}
+          onPress={async () => {
+            const endDateStr = await AsyncStorage.getItem('@subscriptionEndDate');
+            const hasActiveSubscription =
+              !!endDateStr && new Date(endDateStr) > new Date();
+            if (hasActiveSubscription) {
+              navigation.navigate('MyPlan', {screen: 'PlanCalendar'});
+            } else {
+              navigation.navigate('MyPlan', {screen: 'Registartion'});
+            }
+          }}
           style={styles.button}
         />
         <SvgXml xml={sendIcon} style={styles.buttonIcon} />
