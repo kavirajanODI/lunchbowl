@@ -124,6 +124,8 @@ class RegistrationApi {
     userId: string;
     orderId: string;
     transactionId: string;
+    walletUsed?: number;
+    remainingWallet?: number;
   }) {
     return await httpAxiosClient.post('/ccavenue/local-success', payload);
   }

@@ -1,11 +1,12 @@
-import React, {useState} from 'react';
-import {Text, View, TouchableOpacity, StyleSheet, Alert} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {Text, View, TouchableOpacity, StyleSheet, Alert, Switch} from 'react-native';
 import PrimaryButton from 'components/buttons/PrimaryButton';
 import {
   heightPercentageToDP as hp,
   widthPercentageToDP as wp,
 } from 'react-native-responsive-screen';
 import RegistrationService from 'services/RegistartionService/registartion';
+import PaymentService from 'services/PaymentService/paymentService';
 import {useAuth} from 'context/AuthContext';
 import {
   encryptRequest,
@@ -19,13 +20,50 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const {userId} = useAuth();
 
+  // Wallet state
+  const [walletPoints, setWalletPoints] = useState<number>(0);
+  const [applyWallet, setApplyWallet] = useState<boolean>(false);
+  const [planPrice, setPlanPrice] = useState<number>(0);
+  const [numChildren, setNumChildren] = useState<number>(1);
+
+  // Derived wallet calculation
+  const maxRedeemable = Math.floor(planPrice * 0.8);
+  const walletUsed = applyWallet ? Math.min(walletPoints, maxRedeemable) : 0;
+  const remainingWallet = walletPoints - walletUsed;
+  const finalPayable = Math.max(0, planPrice - walletUsed);
+
+  useEffect(() => {
+    fetchData();
+  }, [userId]);
+
+  const fetchData = async () => {
+    if (!userId) return;
+    try {
+      const [walletRes, formRes]: [any, any] = await Promise.all([
+        PaymentService.getWallet(userId),
+        RegistrationService.getRegisterdUserData(userId),
+      ]);
+
+      if (walletRes?.success) {
+        setWalletPoints(walletRes?.data?.wallet?.points ?? 0);
+      }
+
+      if (formRes?.success) {
+        const plan = formRes?.data?.subscriptionPlan;
+        if (plan?.price) setPlanPrice(Number(plan.price));
+        const children = formRes?.data?.children;
+        if (Array.isArray(children)) setNumChildren(children.length || 1);
+      }
+    } catch (err) {
+      console.error('Error fetching payment data:', err);
+    }
+  };
+
   const handlePayment = async () => {
     try {
       if (!userId) throw new Error('User ID not found. Please login again.');
 
-      const response: any = await RegistrationService.getRegisterdUserData(
-        userId,
-      );
+      const response: any = await RegistrationService.getRegisterdUserData(userId);
 
       if (!response?.success)
         throw new Error(response?.message || 'Failed to fetch form data');
@@ -40,6 +78,8 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
         parentDetails,
         subscriptionPlan,
         ccavenueConfig,
+        walletUsed,
+        remainingWallet,
       );
 
       const plainText = Object.entries(paymentData)
@@ -75,6 +115,8 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
           userId,
           orderId,
           transactionId,
+          walletUsed,
+          remainingWallet,
         });
       } else {
         result = await RegistrationService.localPaymentSuccess({
@@ -106,6 +148,7 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
 
   return (
     <View>
+      {/* Payment Method Selection */}
       <View style={localStyles.cardContainer}>
         <TouchableOpacity
           style={[
@@ -116,6 +159,57 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
           <Text style={localStyles.cardText}>CC Avenue</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Wallet Redemption (renewal only, when wallet > 0) */}
+      {isRenewal && walletPoints > 0 && planPrice > 0 && (
+        <View style={localStyles.walletSection}>
+          <View style={localStyles.walletToggleRow}>
+            <View style={localStyles.walletToggleLeft}>
+              <Text style={localStyles.walletToggleLabel}>Apply Wallet Points</Text>
+              <Text style={localStyles.walletPointsAvail}>
+                {walletPoints} points available
+              </Text>
+            </View>
+            <Switch
+              value={applyWallet}
+              onValueChange={setApplyWallet}
+              trackColor={{false: Colors.Storke, true: Colors.primaryOrange}}
+              thumbColor={Colors.white}
+            />
+          </View>
+
+          {applyWallet && (
+            <View style={localStyles.breakdownTable}>
+              <View style={localStyles.breakdownRow}>
+                <Text style={localStyles.breakdownLabel}>No. of Children</Text>
+                <Text style={localStyles.breakdownValue}>{numChildren}</Text>
+              </View>
+              <View style={localStyles.breakdownRow}>
+                <Text style={localStyles.breakdownLabel}>Plan Price</Text>
+                <Text style={[localStyles.breakdownValue, localStyles.strikeText]}>
+                  ₹{planPrice.toFixed(2)}
+                </Text>
+              </View>
+              <View style={localStyles.breakdownRow}>
+                <Text style={localStyles.breakdownLabel}>Redeemed Points</Text>
+                <Text style={[localStyles.breakdownValue, localStyles.greenText]}>
+                  −₹{walletUsed.toFixed(2)}
+                </Text>
+              </View>
+              <View style={[localStyles.breakdownRow, localStyles.finalRow]}>
+                <Text style={localStyles.finalLabel}>Final Payable</Text>
+                <Text style={localStyles.finalValue}>₹{finalPayable.toFixed(2)}</Text>
+              </View>
+              {walletPoints > maxRedeemable && (
+                <Text style={localStyles.walletNote}>
+                  ⓘ Only 80% of the plan price can be redeemed. Remaining{' '}
+                  {remainingWallet} points stay in wallet.
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+      )}
 
       <View style={localStyles.buttonRow}>
         <PrimaryButton
@@ -165,6 +259,84 @@ const localStyles = StyleSheet.create({
     fontSize: hp(2),
     fontFamily: Fonts.Urbanist.semiBold,
     color: Colors.black,
+  },
+  walletSection: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: wp(4),
+    marginBottom: hp(2),
+    borderWidth: 1,
+    borderColor: Colors.lightRed,
+  },
+  walletToggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  walletToggleLeft: {
+    flex: 1,
+  },
+  walletToggleLabel: {
+    fontSize: hp(2),
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.black,
+  },
+  walletPointsAvail: {
+    fontSize: hp(1.6),
+    fontFamily: Fonts.Urbanist.regular,
+    color: Colors.primaryOrange,
+    marginTop: 2,
+  },
+  breakdownTable: {
+    marginTop: hp(1.5),
+    borderTopWidth: 1,
+    borderTopColor: Colors.Storke,
+    paddingTop: hp(1.5),
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: hp(1),
+  },
+  breakdownLabel: {
+    fontSize: hp(1.8),
+    fontFamily: Fonts.Urbanist.regular,
+    color: Colors.bodyText,
+  },
+  breakdownValue: {
+    fontSize: hp(1.8),
+    fontFamily: Fonts.Urbanist.semiBold,
+    color: Colors.black,
+  },
+  strikeText: {
+    textDecorationLine: 'line-through',
+    color: Colors.bodyText,
+  },
+  greenText: {
+    color: Colors.green,
+  },
+  finalRow: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.Storke,
+    paddingTop: hp(1),
+    marginTop: hp(0.5),
+  },
+  finalLabel: {
+    fontSize: hp(2),
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.black,
+  },
+  finalValue: {
+    fontSize: hp(2),
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.primaryOrange,
+  },
+  walletNote: {
+    fontSize: hp(1.5),
+    fontFamily: Fonts.Urbanist.regular,
+    color: Colors.bodyText,
+    fontStyle: 'italic',
+    marginTop: hp(0.5),
   },
   buttonRow: {
     flexDirection: 'row',

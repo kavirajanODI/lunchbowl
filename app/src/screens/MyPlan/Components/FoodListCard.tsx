@@ -1,12 +1,14 @@
 import React, {useState} from 'react';
 import {
   ActivityIndicator,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {SvgXml} from 'react-native-svg';
+import {useNavigation} from '@react-navigation/native';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import Typography from 'components/Text/Typography';
@@ -22,6 +24,22 @@ import PrimaryButton from 'components/buttons/PrimaryButton';
 import SecondaryButton from 'components/buttons/SecondaryButton';
 import MenuService from 'services/MyPlansApi/MenuService';
 import menus from 'services/MenueService/Data/menus.json';
+
+const canEdit = (dateStr: string): boolean => {
+  const EDIT_ADVANCE_HOURS = 48;
+  const mealDate = new Date(dateStr);
+  mealDate.setHours(0, 0, 0, 0);
+  const cutoff = new Date(Date.now() + EDIT_ADVANCE_HOURS * 60 * 60 * 1000);
+  return mealDate >= cutoff;
+};
+
+const canDelete = (dateStr: string): boolean => {
+  const DELETE_ADVANCE_HOURS = 24;
+  const mealDate = new Date(dateStr);
+  mealDate.setHours(0, 0, 0, 0);
+  const cutoff = new Date(Date.now() + DELETE_ADVANCE_HOURS * 60 * 60 * 1000);
+  return mealDate >= cutoff;
+};
 
 const allMeals = menus.meal_plan.flatMap(day => day.meals);
 const mealOptions = allMeals.map(meal => ({label: meal, value: meal}));
@@ -62,7 +80,9 @@ const FoodListCard: React.FC<Props> = ({
   planId,
   onMealUpdated,
 }) => {
-  const [modalVisible, setModalVisible] = useState(false);
+  const navigation = useNavigation<any>();
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [newMealName, setNewMealName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -70,7 +90,12 @@ const FoodListCard: React.FC<Props> = ({
   const handleEdit = (meal: Meal) => {
     setSelectedMeal(meal);
     setNewMealName(meal.food);
-    setModalVisible(true);
+    setEditModalVisible(true);
+  };
+
+  const handleDeletePress = (meal: Meal) => {
+    setSelectedMeal(meal);
+    setDeleteConfirmVisible(true);
   };
 
   const handleSave = async () => {
@@ -96,7 +121,7 @@ const FoodListCard: React.FC<Props> = ({
           ],
         },
       });
-      setModalVisible(false);
+      setEditModalVisible(false);
       await onMealUpdated();
     } catch (e) {
       console.error('Save error:', e);
@@ -105,7 +130,7 @@ const FoodListCard: React.FC<Props> = ({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteConfirm = async () => {
     if (!selectedMeal) return;
     setSaving(true);
     try {
@@ -115,13 +140,17 @@ const FoodListCard: React.FC<Props> = ({
         childId,
         date: selectedMeal.date,
       });
-      setModalVisible(false);
+      setDeleteConfirmVisible(false);
       await onMealUpdated();
     } catch (e) {
       console.error('Delete error:', e);
     } finally {
       setSaving(false);
     }
+  };
+
+  const goToWallet = () => {
+    navigation.navigate('Home', {screen: 'WalletScreen'});
   };
 
   const dateRangeStr =
@@ -162,23 +191,42 @@ const FoodListCard: React.FC<Props> = ({
                   {formatDisplayDate(item.date)}
                 </Typography>
                 <View style={styles.foodCell}>
-                  <Typography
-                    style={[styles.foodText, item.deleted && styles.deletedText]}
-                    numberOfLines={1}>
-                    {item.food}
-                  </Typography>
                   {item.deleted ? (
-                    <Text style={styles.cancelledBadge}>Cancelled</Text>
+                    <View style={styles.deletedContainer}>
+                      <Text style={styles.deletedLabel}>Deleted</Text>
+                      <Text style={styles.deletedMessage}>
+                        This meal is deleted. The meal amount is credited to your LunchBowl wallet.
+                      </Text>
+                      <TouchableOpacity onPress={goToWallet} style={styles.goToWalletBtn}>
+                        <Text style={styles.goToWalletText}>Go to Wallet →</Text>
+                      </TouchableOpacity>
+                    </View>
                   ) : (
-                    <TouchableOpacity
-                      style={styles.editButton}
-                      onPress={() => handleEdit(item)}>
-                      <SvgXml
-                        xml={EditIcon}
-                        width={wp('4%')}
-                        height={wp('4%')}
-                      />
-                    </TouchableOpacity>
+                    <>
+                      <Typography style={styles.foodText} numberOfLines={1}>
+                        {item.food}
+                      </Typography>
+                      <View style={styles.actionButtons}>
+                        {canEdit(item.date) && (
+                          <TouchableOpacity
+                            style={styles.editButton}
+                            onPress={() => handleEdit(item)}>
+                            <SvgXml
+                              xml={EditIcon}
+                              width={wp('4%')}
+                              height={wp('4%')}
+                            />
+                          </TouchableOpacity>
+                        )}
+                        {canDelete(item.date) && (
+                          <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => handleDeletePress(item)}>
+                            <Text style={styles.deleteIcon}>🗑</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </>
                   )}
                 </View>
               </View>
@@ -190,9 +238,10 @@ const FoodListCard: React.FC<Props> = ({
         )}
       </View>
 
+      {/* Edit Modal */}
       <BottomModal
-        visible={modalVisible}
-        onClose={() => !saving && setModalVisible(false)}>
+        visible={editModalVisible}
+        onClose={() => !saving && setEditModalVisible(false)}>
         <Typography style={styles.modalTitle}>Edit Meal</Typography>
         <Text style={styles.modalDate}>
           {selectedMeal ? formatDisplayDate(selectedMeal.date) : ''}
@@ -211,10 +260,8 @@ const FoodListCard: React.FC<Props> = ({
         ) : (
           <View style={styles.modalButtons}>
             <SecondaryButton
-              title="Delete Meal"
-              onPress={handleDelete}
-              borderColor={Colors.red}
-              textColor={Colors.red}
+              title="Cancel"
+              onPress={() => setEditModalVisible(false)}
               style={{flex: 1, marginRight: wp('2%')}}
               disabled={saving}
             />
@@ -227,6 +274,40 @@ const FoodListCard: React.FC<Props> = ({
           </View>
         )}
       </BottomModal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={deleteConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !saving && setDeleteConfirmVisible(false)}>
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmBox}>
+            <Text style={styles.confirmTitle}>Delete Meal</Text>
+            <Text style={styles.confirmMessage}>
+              This action cannot be undone.{'\n'}Are you sure you want to delete this meal permanently?
+            </Text>
+            {saving ? (
+              <ActivityIndicator color={Colors.primaryOrange} style={{marginTop: hp('2%')}} />
+            ) : (
+              <View style={styles.confirmButtons}>
+                <SecondaryButton
+                  title="Cancel"
+                  onPress={() => setDeleteConfirmVisible(false)}
+                  style={{flex: 1, marginRight: wp('2%')}}
+                  disabled={saving}
+                />
+                <PrimaryButton
+                  title="Confirm"
+                  onPress={handleDeleteConfirm}
+                  style={{flex: 1, backgroundColor: Colors.red}}
+                  disabled={saving}
+                />
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -288,16 +369,53 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     color: Colors.default,
   },
+  deletedContainer: {
+    flex: 1,
+  },
+  deletedLabel: {
+    fontSize: wp('3%'),
+    color: Colors.red,
+    fontFamily: Fonts.Urbanist.bold,
+    marginBottom: hp('0.3%'),
+  },
+  deletedMessage: {
+    fontSize: wp('3%'),
+    color: Colors.bodyText,
+    fontFamily: Fonts.Urbanist.regular,
+    lineHeight: hp('2%'),
+  },
+  goToWalletBtn: {
+    marginTop: hp('0.5%'),
+  },
+  goToWalletText: {
+    fontSize: wp('3.2%'),
+    color: Colors.primaryOrange,
+    fontFamily: Fonts.Urbanist.semiBold,
+    textDecorationLine: 'underline',
+  },
   cancelledBadge: {
     fontSize: wp('2.8%'),
     color: Colors.red,
     fontFamily: Fonts.Urbanist.semiBold,
     marginLeft: wp('1%'),
   },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: wp('1%'),
+  },
   editButton: {
     marginLeft: wp('2%'),
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  deleteButton: {
+    marginLeft: wp('2%'),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteIcon: {
+    fontSize: wp('4%'),
   },
   cell: {
     flex: 1,
@@ -326,6 +444,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: hp('2%'),
     gap: wp('2%'),
+  },
+  // Delete confirm modal
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmBox: {
+    backgroundColor: Colors.white,
+    borderRadius: wp('4%'),
+    padding: wp('6%'),
+    width: '85%',
+    alignItems: 'center',
+  },
+  confirmTitle: {
+    fontSize: wp('4.5%'),
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.black,
+    marginBottom: hp('1%'),
+  },
+  confirmMessage: {
+    fontSize: wp('3.8%'),
+    fontFamily: Fonts.Urbanist.regular,
+    color: Colors.bodyText,
+    textAlign: 'center',
+    lineHeight: hp('2.8%'),
+    marginBottom: hp('2%'),
+  },
+  confirmButtons: {
+    flexDirection: 'row',
+    width: '100%',
   },
 });
 

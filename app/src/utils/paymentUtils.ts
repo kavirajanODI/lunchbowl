@@ -15,7 +15,7 @@ export const encryptRequest = (plainText: string, workingKey: string) => {
 };
 
 export const generateOrderId = () => `LB${Date.now()}${Math.floor(Math.random() * 1000)}`;
-export const createPaymentRequest = (userId: string, user: any, parentDetails: any, subscriptionPlan: any, ccavenueConfig: any) => {
+export const createPaymentRequest = (userId: string, user: any, parentDetails: any, subscriptionPlan: any, ccavenueConfig: any, walletUsed: number = 0, remainingWallet: number = 0) => {
   const orderId = generateOrderId();
   return {
     merchant_id: ccavenueConfig.merchant_id,
@@ -36,6 +36,8 @@ export const createPaymentRequest = (userId: string, user: any, parentDetails: a
     merchant_param1: userId,
     merchant_param2: subscriptionPlan.planId || "predefined",
     merchant_param3: orderId,
+    merchant_param4: walletUsed,
+    merchant_param5: remainingWallet,
   };
 };
 

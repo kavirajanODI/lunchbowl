@@ -19,38 +19,47 @@ import {
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
 import PaymentService from 'services/PaymentService/paymentService';
 
-type Transaction = {
-  _id: string;
-  amount: number;
-  type: 'credit' | 'debit';
-  description: string;
+type WalletEntry = {
+  _id?: string;
   date: string;
-  status: string;
+  change: number;
+  reason?: string;
+  childName?: string;
+  mealName?: string;
+};
+
+const formatDate = (dateStr: string): string => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = date.toLocaleString('default', {month: 'short'});
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
 };
 
 const WalletScreen = ({navigation}: any) => {
   const {userId} = useAuth();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [walletPoints, setWalletPoints] = useState<number>(0);
+  const [history, setHistory] = useState<WalletEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
-  const fetchPayments = async () => {
+  const fetchWallet = async () => {
     if (!userId) return;
     try {
       setLoading(true);
-      const response: any = await PaymentService.getPayments(userId);
+      const response: any = await PaymentService.getWallet(userId);
       if (response?.success) {
-        const data = response.data;
-        if (typeof data?.walletBalance === 'number') {
-          setWalletBalance(data.walletBalance);
+        const wallet = response?.data?.wallet;
+        if (wallet) {
+          setWalletPoints(wallet.points ?? 0);
+          const historyArr = Array.isArray(wallet.history)
+            ? [...wallet.history].sort(
+                (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+              )
+            : [];
+          setHistory(historyArr);
         }
-        const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.transactions)
-          ? data.transactions
-          : [];
-        setTransactions(list);
       }
     } catch (err) {
       console.error('Error fetching wallet data:', err);
@@ -60,22 +69,14 @@ const WalletScreen = ({navigation}: any) => {
   };
 
   useEffect(() => {
-    fetchPayments();
+    fetchWallet();
   }, [userId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchPayments();
+    await fetchWallet();
     setRefreshing(false);
   }, [userId]);
-
-  const totalCredits = transactions
-    .filter(t => t.type === 'credit')
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-  const totalDebits = transactions
-    .filter(t => t.type === 'debit')
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
 
   return (
     <ThemeGradientBackground>
@@ -90,75 +91,79 @@ const WalletScreen = ({navigation}: any) => {
           />
         }>
         <View style={styles.container}>
-          <HeaderBackButton title="Wallet & Payments" />
+          <HeaderBackButton title="My Wallet" />
 
-          {/* Balance Card */}
-          <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>Wallet Balance</Text>
-            <Text style={styles.balanceAmount}>
-              ₹{walletBalance != null ? walletBalance.toFixed(2) : '0.00'}
-            </Text>
-            <View style={styles.balanceRow}>
-              <View style={styles.balanceItem}>
-                <Text style={styles.balanceItemLabel}>Total Credits</Text>
-                <Text style={[styles.balanceItemAmount, styles.creditText]}>
-                  +₹{totalCredits.toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.balanceDivider} />
-              <View style={styles.balanceItem}>
-                <Text style={styles.balanceItemLabel}>Total Debits</Text>
-                <Text style={[styles.balanceItemAmount, styles.debitText]}>
-                  -₹{totalDebits.toFixed(2)}
-                </Text>
-              </View>
+          {/* Points Card */}
+          <View style={styles.pointsCard}>
+            <Text style={styles.pointsLabel}>AVAILABLE POINTS</Text>
+            <Text style={styles.pointsValue}>{walletPoints}</Text>
+            <Text style={styles.pointsUnit}>POINTS</Text>
+          </View>
+
+          {/* How It Works */}
+          <View style={styles.howItWorksCard}>
+            <Text style={styles.howItWorksTitle}>How It Works</Text>
+            <View style={styles.howItWorksList}>
+              <Text style={styles.howItWorksItem}>
+                • Points are added to your wallet when you cancel a meal.
+              </Text>
+              <Text style={styles.howItWorksItem}>
+                • <Text style={styles.bold}>1 Point = ₹1.</Text>
+              </Text>
+              <Text style={styles.howItWorksItem}>
+                • Saved points can be redeemed in your{' '}
+                <Text style={styles.bold}>next subscription.</Text>
+              </Text>
+              <Text style={styles.howItWorksItem}>
+                • Points cannot be{' '}
+                <Text style={styles.bold}>transferred</Text> or{' '}
+                <Text style={styles.bold}>exchanged for cash.</Text>
+              </Text>
             </View>
           </View>
 
-          {/* Transactions */}
-          <Text style={styles.sectionTitle}>Transaction History</Text>
-          {transactions.length > 0 ? (
-            transactions.map(txn => (
-              <View key={txn._id} style={styles.txnCard}>
-                <View style={styles.txnLeft}>
-                  <View
-                    style={[
-                      styles.txnBadge,
-                      txn.type === 'credit'
-                        ? styles.creditBadge
-                        : styles.debitBadge,
-                    ]}>
-                    <Text style={styles.txnBadgeText}>
-                      {txn.type === 'credit' ? 'CR' : 'DR'}
-                    </Text>
-                  </View>
-                  <View style={styles.txnInfo}>
-                    <Text style={styles.txnDescription} numberOfLines={2}>
-                      {txn.description || 'Transaction'}
-                    </Text>
-                    <Text style={styles.txnDate}>
-                      {txn.date
-                        ? new Date(txn.date).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })
-                        : '-'}
-                    </Text>
-                  </View>
-                </View>
-                <Text
-                  style={[
-                    styles.txnAmount,
-                    txn.type === 'credit' ? styles.creditText : styles.debitText,
-                  ]}>
-                  {txn.type === 'credit' ? '+' : '-'}₹
-                  {Math.abs(txn.amount).toFixed(2)}
+          {/* Recent Activity */}
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          {history.length > 0 ? (
+            <View style={styles.tableCard}>
+              {/* Table Header */}
+              <View style={[styles.tableRow, styles.tableHeader]}>
+                <Text style={[styles.tableCell, styles.tableHeaderText]}>DATE</Text>
+                <Text style={[styles.tableCell, styles.tableHeaderText]}>CHILD</Text>
+                <Text style={[styles.tableCell, styles.tableHeaderText]}>MEAL</Text>
+                <Text style={[styles.tableCell, styles.tableHeaderText, styles.pointsCol]}>
+                  POINTS
                 </Text>
               </View>
-            ))
+              {history.map((item, idx) => (
+                <View
+                  key={item._id ?? idx}
+                  style={[
+                    styles.tableRow,
+                    idx < history.length - 1 && styles.rowBorder,
+                  ]}>
+                  <Text style={styles.tableCell} numberOfLines={2}>
+                    {formatDate(item.date)}
+                  </Text>
+                  <Text style={styles.tableCell} numberOfLines={2}>
+                    {item.childName || '-'}
+                  </Text>
+                  <Text style={styles.tableCell} numberOfLines={2}>
+                    {item.mealName || '-'}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.pointsCol,
+                      item.change > 0 ? styles.creditText : styles.debitText,
+                    ]}>
+                    {item.change > 0 ? `+${item.change}` : item.change}
+                  </Text>
+                </View>
+              ))}
+            </View>
           ) : (
-            !loading && <NoDataFound message="No transactions found" />
+            !loading && <NoDataFound message="No wallet activity yet." />
           )}
         </View>
       </ScrollView>
@@ -171,56 +176,62 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp('5%'),
     paddingBottom: hp('10%'),
   },
-  balanceCard: {
+  pointsCard: {
     backgroundColor: Colors.primaryOrange,
     borderRadius: wp('4%'),
-    padding: wp('5%'),
-    marginBottom: hp('3%'),
+    padding: wp('6%'),
+    marginBottom: hp('2.5%'),
     alignItems: 'center',
   },
-  balanceLabel: {
-    fontSize: hp('2%'),
+  pointsLabel: {
+    fontSize: hp('1.8%'),
     color: Colors.white,
     fontFamily: Fonts.Urbanist.medium,
-    opacity: 0.85,
+    opacity: 0.9,
+    letterSpacing: 1,
   },
-  balanceAmount: {
-    fontSize: hp('4.5%'),
+  pointsValue: {
+    fontSize: hp('5.5%'),
     color: Colors.white,
     fontFamily: Fonts.Urbanist.bold,
-    marginVertical: hp('1%'),
+    marginVertical: hp('0.8%'),
   },
-  balanceRow: {
-    flexDirection: 'row',
-    marginTop: hp('1%'),
-    width: '100%',
-    justifyContent: 'space-around',
-  },
-  balanceItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  balanceDivider: {
-    width: 1,
-    backgroundColor: 'rgba(255,255,255,0.4)',
-    marginHorizontal: wp('2%'),
-  },
-  balanceItemLabel: {
+  pointsUnit: {
     fontSize: hp('1.6%'),
     color: Colors.white,
     fontFamily: Fonts.Urbanist.medium,
     opacity: 0.8,
+    letterSpacing: 1,
   },
-  balanceItemAmount: {
+  howItWorksCard: {
+    backgroundColor: Colors.white,
+    borderRadius: wp('3%'),
+    padding: wp('4%'),
+    marginBottom: hp('2.5%'),
+    elevation: 1,
+    shadowColor: Colors.black,
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    shadowOffset: {width: 0, height: 1},
+  },
+  howItWorksTitle: {
     fontSize: hp('2%'),
     fontFamily: Fonts.Urbanist.bold,
-    marginTop: 2,
+    color: Colors.black,
+    marginBottom: hp('1%'),
   },
-  creditText: {
-    color: Colors.green,
+  howItWorksList: {
+    gap: hp('0.6%'),
   },
-  debitText: {
-    color: Colors.red,
+  howItWorksItem: {
+    fontSize: hp('1.7%'),
+    fontFamily: Fonts.Urbanist.regular,
+    color: Colors.bodyText,
+    lineHeight: hp('2.4%'),
+  },
+  bold: {
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.black,
   },
   sectionTitle: {
     fontSize: hp('2.2%'),
@@ -228,61 +239,52 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: hp('1.5%'),
   },
-  txnCard: {
+  tableCard: {
     backgroundColor: Colors.white,
     borderRadius: wp('3%'),
-    padding: wp('4%'),
-    marginBottom: hp('1.5%'),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    elevation: 2,
+    overflow: 'hidden',
+    elevation: 1,
     shadowColor: Colors.black,
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    shadowOffset: {width: 0, height: 1},
   },
-  txnLeft: {
+  tableRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    paddingVertical: hp('1.2%'),
+    paddingHorizontal: wp('3%'),
+    alignItems: 'flex-start',
+  },
+  tableHeader: {
+    backgroundColor: '#F9F9F9',
+  },
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  tableCell: {
     flex: 1,
-  },
-  txnBadge: {
-    width: wp('10%'),
-    height: wp('10%'),
-    borderRadius: wp('5%'),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: wp('3%'),
-  },
-  creditBadge: {
-    backgroundColor: '#E8F5E9',
-  },
-  debitBadge: {
-    backgroundColor: '#FFEBEE',
-  },
-  txnBadgeText: {
-    fontSize: hp('1.5%'),
-    fontFamily: Fonts.Urbanist.bold,
-  },
-  txnInfo: {
-    flex: 1,
-  },
-  txnDescription: {
-    fontSize: hp('1.9%'),
-    fontFamily: Fonts.Urbanist.semiBold,
+    fontSize: hp('1.6%'),
+    fontFamily: Fonts.Urbanist.regular,
     color: Colors.black,
   },
-  txnDate: {
-    fontSize: hp('1.5%'),
-    fontFamily: Fonts.Urbanist.regular,
-    color: Colors.bodyText,
-    marginTop: 2,
-  },
-  txnAmount: {
-    fontSize: hp('2%'),
+  tableHeaderText: {
     fontFamily: Fonts.Urbanist.bold,
-    marginLeft: wp('2%'),
+    fontSize: hp('1.5%'),
+    color: Colors.bodyText,
+    letterSpacing: 0.5,
+  },
+  pointsCol: {
+    flex: 0.8,
+    textAlign: 'right',
+  },
+  creditText: {
+    color: Colors.green,
+    fontFamily: Fonts.Urbanist.bold,
+  },
+  debitText: {
+    color: Colors.red,
+    fontFamily: Fonts.Urbanist.bold,
   },
 });
 

@@ -16,6 +16,24 @@ class PaymentService {
       };
     }
   }
+
+  static async getWallet(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<ApiResponseModel> {
+    try {
+      const response = await PaymentApi.getWallet(userId, page, limit);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error fetching wallet data',
+        data: null,
+        error: handleApiError(error),
+      };
+    }
+  }
 }
 
 export default PaymentService;

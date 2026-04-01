@@ -282,6 +282,8 @@ class RegistrationService {
     userId: string;
     orderId: string;
     transactionId: string;
+    walletUsed?: number;
+    remainingWallet?: number;
   }): Promise<ApiResponseModel> {
     try {
       const response = await RegistrationApi.renewalLocalPaymentSuccess(payload);
