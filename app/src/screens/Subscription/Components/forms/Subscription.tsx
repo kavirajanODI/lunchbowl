@@ -26,6 +26,17 @@ import {getNextCalendarDay} from 'utils/dateUtils';
 type Plan = {
   days: number;
   price: number;
+  basePrice: number;
+  discountPercent: number;
+  discountAmount: number;
+  startDate: Date;
+  endDate: Date;
+};
+
+/** Format a Date as "DD MMM YYYY" (e.g. "08 Apr 2026"). */
+const formatDateShort = (d: Date): string => {
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${String(d.getDate()).padStart(2, '0')} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 };
 
 const addWorkingDays = (
@@ -72,75 +83,11 @@ const isWorkingDay = (date: Date, holidays: Holiday[] = []): boolean => {
  * Next-day logic: any action performed today → effective start date is tomorrow.
  */
 const getEffectiveStartDate = (base: Date, holidays: Holiday[] = []): Date => {
-  // Start from the next calendar day (tomorrow at midnight)
   let newDate = getNextCalendarDay(base);
-  // Advance further if that day is a weekend or holiday
   while (!isWorkingDay(newDate, holidays)) {
     newDate.setDate(newDate.getDate() + 1);
   }
   return newDate;
-};
-
-const getWorkingDaysBetween = (
-  start: Date,
-  end: Date,
-  holidays: Holiday[] = [],
-): number => {
-  let count = 0;
-  let temp = new Date(start);
-  const holidaySet = new Set(
-    holidays.map(h => new Date(h.date).toISOString().split('T')[0]),
-  );
-
-  while (temp <= end) {
-    const day = temp.getDay();
-    const dateStr = temp.toISOString().split('T')[0];
-    if (day !== 0 && day !== 6 && !holidaySet.has(dateStr)) {
-      count++;
-    }
-    temp.setDate(temp.getDate() + 1);
-  }
-  return count;
-};
-
-/** Returns the last working day of the given year/month (0-indexed month). */
-const getLastWorkingDayOfMonth = (
-  year: number,
-  month: number,
-  holidays: Holiday[] = [],
-): Date => {
-  const holidaySet = new Set(
-    holidays.map(h => new Date(h.date).toISOString().split('T')[0]),
-  );
-  // day 0 of next month = last day of this month
-  let temp = new Date(year, month + 1, 0);
-  while (
-    temp.getDay() === 0 ||
-    temp.getDay() === 6 ||
-    holidaySet.has(temp.toISOString().split('T')[0])
-  ) {
-    temp.setDate(temp.getDate() - 1);
-  }
-  return temp;
-};
-
-/**
- * Auto-calculates the end date for a custom plan:
- *  - If ≥ 3 working days remain in the start month → last working day of that month
- *  - Otherwise → last working day of the following month
- */
-const calculateCustomEndDate = (start: Date, holidays: Holiday[]): Date => {
-  const endOfThisMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0);
-  const workingDaysLeft = getWorkingDaysBetween(start, endOfThisMonth, holidays);
-
-  if (workingDaysLeft >= 3) {
-    return getLastWorkingDayOfMonth(start.getFullYear(), start.getMonth(), holidays);
-  }
-
-  const nextMonth = start.getMonth() + 1;
-  const nextYear = nextMonth > 11 ? start.getFullYear() + 1 : start.getFullYear();
-  const actualNextMonth = nextMonth > 11 ? 0 : nextMonth;
-  return getLastWorkingDayOfMonth(nextYear, actualNextMonth, holidays);
 };
 
 export default function SubscriptionPlan({
@@ -157,19 +104,20 @@ export default function SubscriptionPlan({
 
   // Derive all configurable values from remote config (falls back to defaults)
   const PER_DAY_COST = config.pricePerDayPerChild;
-  // Per the business rules, "Subscription By Date" plans always use the
-  // single-child (base) discount tier, regardless of how many children are
-  // actually selected.  Passing count=1 into applyDiscount ensures the
-  // multi-child uplift is never triggered for custom-date plans.
+  // Per the business rules, custom-date plans always use the single-child (base)
+  // discount tier regardless of how many children are selected.
   const SINGLE_CHILD_COUNT = 1;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isChecked, setIsChecked] = useState(false);
-  const [showStart, setShowStart] = useState(false);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [customDateError, setCustomDateError] = useState<string | null>(null);
+
+  // Per-plan custom start dates: keyed by plan.days
+  const [customStartDates, setCustomStartDates] = useState<Record<number, Date>>({});
+  // Which plan's date picker is currently open (null = none)
+  const [showDatePickerFor, setShowDatePickerFor] = useState<number | null>(null);
+  // Validation errors for each plan's custom date picker
+  const [customDateErrors, setCustomDateErrors] = useState<Record<number, string | null>>({});
+
   const {userId} = useAuth();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
 
@@ -199,8 +147,8 @@ export default function SubscriptionPlan({
    * number of children.  All thresholds and percentages come from the remote
    * app config so they can be updated from the dashboard without a new release.
    *
-   * NOTE: "Subscription By Date" plans always use base (single-child) discounts
-   * regardless of the number of children — the caller must pass `isCustomDate=true`.
+   * NOTE: When `isCustomDate=true`, always uses single-child (base) discounts
+   * regardless of the number of children selected.
    */
   const getDiscountPercent = (days: number, children: number, isCustomDate: boolean = false): number => {
     const {planDurations, singleChildDiscounts, multiChildDiscounts, multiChildThreshold} = config;
@@ -219,21 +167,22 @@ export default function SubscriptionPlan({
     const finalPrice = basePrice - discountAmount;
     return {finalPrice, discountPercent, discountAmount};
   };
+
   //####################### GENERATE PLAN  ######################
 
-  const generatePlans = (holidays: Holiday[], childrenCount: number = 1) => {
+  const generatePlans = (holidayList: Holiday[], childrenCount: number = 1): Plan[] => {
     const today = new Date();
-    const start = getEffectiveStartDate(today, holidays);
+    const start = getEffectiveStartDate(today, holidayList);
 
     const {planDurations} = config;
-    const planMonths: Array<{months: number; days: number}> = [
-      {months: 1, days: planDurations.oneMonth},
-      {months: 3, days: planDurations.threeMonths},
-      {months: 6, days: planDurations.sixMonths},
+    const planDefs = [
+      planDurations.oneMonth,
+      planDurations.threeMonths,
+      planDurations.sixMonths,
     ];
 
-    return planMonths.map(({days: requiredDays}) => {
-      const end = addWorkingDays(start, requiredDays, holidays);
+    return planDefs.map(requiredDays => {
+      const end = addWorkingDays(start, requiredDays, holidayList);
 
       const basePricePerChild = requiredDays * PER_DAY_COST;
       const totalBasePrice = basePricePerChild * childrenCount;
@@ -254,6 +203,7 @@ export default function SubscriptionPlan({
       };
     });
   };
+
   const [plans, setPlans] = useState<Plan[]>(() => generatePlans(holidays, 1));
 
   //######### GET HOLIDAYS API CALL ############################
@@ -262,7 +212,7 @@ export default function SubscriptionPlan({
     try {
       const response: any = await HolidayService.getAllHolidays();
       if (response && response.data) {
-        const holidays = response.data.map((holiday: any) => {
+        const fetched = response.data.map((holiday: any) => {
           const dateObj = new Date(holiday.date);
           const formattedDate = dateObj.toISOString().split('T')[0];
           return {
@@ -271,12 +221,12 @@ export default function SubscriptionPlan({
             date: formattedDate,
           };
         });
-        setHolidays(holidays);
+        setHolidays(fetched);
       } else {
         console.error('Invalid data format', response);
       }
-    } catch (error) {
-      console.error('Error fetching holidays:', error);
+    } catch (err) {
+      console.error('Error fetching holidays:', err);
     }
   };
 
@@ -290,37 +240,38 @@ export default function SubscriptionPlan({
   useEffect(() => {
     setPlans(generatePlans(holidays, selectedCount));
   }, [holidays, selectedCount, config]);
+
   const handleCloseError = () => {
     setError(null);
   };
-  //######### PLAN DETAILS API CALL ############################
+
+  //######### PLAN SUBMIT HANDLER ############################
 
   const handleNext = async () => {
-    let workingDays = 0;
-    let totalPrice = 0;
-    let planId = '';
-    let sDate = null;
-    let eDate = null;
+    if (!selectedPlan || selectedCount === 0) return;
 
-    if (isChecked && startDate && endDate) {
-      // Subscription by custom date: base discount only, no multi-child uplift
-      sDate = startDate.toISOString().split('T')[0];
-      eDate = endDate.toISOString().split('T')[0];
+    const customStart = customStartDates[selectedPlan.days] ?? null;
+    const isCustomDate = customStart != null;
 
-      workingDays = getWorkingDaysBetween(startDate, endDate, holidays);
+    const effectiveStart: Date = customStart ?? selectedPlan.startDate;
+    const effectiveEnd: Date = isCustomDate
+      ? addWorkingDays(customStart, selectedPlan.days, holidays)
+      : selectedPlan.endDate;
+
+    const workingDays = selectedPlan.days;
+
+    let totalPrice: number;
+    if (isCustomDate) {
+      // Custom start date → base discounts only, no multi-child uplift
       const basePriceTotal = workingDays * PER_DAY_COST * selectedCount;
-      const {finalPrice} = applyDiscount(workingDays, basePriceTotal, SINGLE_CHILD_COUNT, true); // isCustomDate=true — base discount only (spec: custom-date ignores multi-child pricing)
+      const {finalPrice} = applyDiscount(workingDays, basePriceTotal, SINGLE_CHILD_COUNT, true);
       totalPrice = finalPrice;
-      planId = 'byDate';
-    } else if (selectedPlan) {
-      // Predefined plan (1, 3, 6 months) — price already computed with multi-child discount
-      workingDays = selectedPlan.days;
-      totalPrice = selectedPlan.price; // price is already the total (all children)
-      planId = `${selectedPlan.days}-days`;
-
-      sDate = selectedPlan.startDate?.toISOString().split('T')[0] ?? null;
-      eDate = selectedPlan.endDate?.toISOString().split('T')[0] ?? null;
+    } else {
+      // Auto start date → price already computed with correct multi-child discount
+      totalPrice = selectedPlan.price;
     }
+
+    const planId = isCustomDate ? 'byDate' : `${selectedPlan.days}-days`;
 
     const payload: any = {
       step: 3,
@@ -329,8 +280,8 @@ export default function SubscriptionPlan({
         selectedPlan: planId,
         workingDays,
         totalPrice,
-        startDate: sDate,
-        endDate: eDate,
+        startDate: effectiveStart.toISOString().split('T')[0],
+        endDate: effectiveEnd.toISOString().split('T')[0],
         numberOfChildren: selectedCount,
         children: selectedChildIds,
       },
@@ -339,11 +290,7 @@ export default function SubscriptionPlan({
 
     try {
       setLoading(true);
-
-      console.log(
-        '++++++++++++++++++++++++++Sending payload ******************************:',
-        payload,
-      );
+      console.log('Sending subscription payload:', payload);
       const response = await RegistrationService.savePlans(payload);
       if (response.success) {
         nextStep();
@@ -358,17 +305,19 @@ export default function SubscriptionPlan({
     }
   };
 
-  const isPlanSelected = selectedPlan != null || (isChecked && startDate != null && endDate != null);
+  const isPlanSelected = selectedPlan != null;
   const isNextButtonDisabled = selectedCount === 0 || !isPlanSelected;
 
   return (
     <View style={{flex: 1}}>
       <LoadingModal loading={loading} setLoading={setLoading} />
       {error && <ErrorMessage error={error} onClose={handleCloseError} />}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{paddingBottom: 24}}>
-        {/* Child Selector */}
+
+        {/* ── Child Selector ─────────────────────────────────────── */}
         {childrenData && childrenData.length > 0 && (
           <View style={styles.childSelectorCard}>
             <Text style={styles.childSelectorTitle}>
@@ -376,7 +325,7 @@ export default function SubscriptionPlan({
             </Text>
             {childrenData.map((child: any) => {
               const id = child._id;
-              const isSelected = selectedChildIds.includes(id);
+              const isChildSelected = selectedChildIds.includes(id);
               const name =
                 `${child.childFirstName || ''} ${child.childLastName || ''}`.trim() ||
                 'Child';
@@ -387,7 +336,7 @@ export default function SubscriptionPlan({
                   style={styles.childSelectorRow}
                   activeOpacity={0.7}>
                   <CheckBox
-                    value={isSelected}
+                    value={isChildSelected}
                     onValueChange={() => toggleChild(id)}
                     tintColors={{
                       true: Colors.primaryOrange,
@@ -406,216 +355,214 @@ export default function SubscriptionPlan({
           </View>
         )}
 
-        {plans.map(plan => (
+        {/* ── Plan section label ─────────────────────────────────── */}
+        <Text style={styles.planSectionLabel}>
+          SELECT YOUR SUBSCRIPTION PLAN*{' '}
+          <Text style={styles.planSectionNote}>(All Taxes included)</Text>
+        </Text>
+
+        {/* ── Plan Cards ────────────────────────────────────────── */}
+        {plans.map(plan => {
+          const isSelected = selectedPlan?.days === plan.days;
+          const customStart = customStartDates[plan.days] ?? null;
+          // A custom date is "active" only on the selected plan
+          const isCustomDate = isSelected && customStart != null;
+
+          // Effective pricing: recalculate if custom date is chosen (base discounts only)
+          const effectiveBasePrice = plan.days * PER_DAY_COST * selectedCount;
+          let effectiveDiscountPct: number;
+          let effectiveDiscountAmt: number;
+          let effectiveFinalPrice: number;
+          let effectiveStart: Date;
+          let effectiveEnd: Date;
+
+          if (isCustomDate && customStart) {
+            const result = applyDiscount(plan.days, effectiveBasePrice, SINGLE_CHILD_COUNT, true);
+            effectiveDiscountPct = result.discountPercent;
+            effectiveDiscountAmt = result.discountAmount;
+            effectiveFinalPrice = result.finalPrice;
+            effectiveStart = customStart;
+            effectiveEnd = addWorkingDays(customStart, plan.days, holidays);
+          } else {
+            effectiveDiscountPct = plan.discountPercent;
+            effectiveDiscountAmt = plan.discountAmount;
+            effectiveFinalPrice = plan.price;
+            effectiveStart = plan.startDate;
+            effectiveEnd = plan.endDate;
+          }
+
+          const customError = customDateErrors[plan.days] ?? null;
+
+          return (
             <TouchableOpacity
               key={plan.days}
-              style={[
-                styles.planCard,
-                selectedPlan?.days === plan.days && styles.selectedCard,
-              ]}
-              onPress={() => {
-                setIsChecked(false);
-                setStartDate(null);
-                setEndDate(null);
-                setCustomDateError(null);
-                setSelectedPlan(plan);
-              }}>
-              <View style={styles.radioCircle}>
-                {selectedPlan?.days === plan.days && (
-                  <View style={styles.radioDot} />
-                )}
-              </View>
-              <View style={{flex: 1}}>
-                <Text
-                  style={[
-                    styles.planText,
-                    selectedPlan?.days === plan.days && styles.selectedText,
-                  ]}>
-                  {plan.days} Working Days
-                  {plan.discountPercent > 0 ? ` (${plan.discountPercent}% off)` : ''}
-                </Text>
-                <Text style={{fontSize: 13, color: '#666'}}>
-                  For {selectedCount} {selectedCount > 1 ? 'children' : 'child'}
-                </Text>
-                {plan.discountAmount > 0 && (
-                  <Text style={{fontSize: 13, color: Colors.bodyText}}>
-                    Save: Rs. {plan.discountAmount.toLocaleString()}
+              style={[styles.planCard, isSelected && styles.selectedCard]}
+              onPress={() => setSelectedPlan(plan)}
+              activeOpacity={0.85}>
+
+              {/* Header row: radio + plan title [+ date picker button when selected] */}
+              <View style={styles.planHeaderRow}>
+                <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
+                  {isSelected && <View style={styles.radioDot} />}
+                </View>
+
+                <View style={styles.planTitleArea}>
+                  <Text style={[styles.planText, isSelected && styles.selectedText]}>
+                    {plan.days} Working Days
+                    {effectiveDiscountPct > 0 ? ` (${effectiveDiscountPct}% off)` : ''}
                   </Text>
+
+                  {/* Collapsed view (not selected): show price summary inline */}
+                  {!isSelected && (
+                    <Text style={styles.planCollapsedSub}>
+                      {'(' + plan.days + ' working days)  '}
+                      {plan.discountPercent > 0 ? (
+                        <Text>
+                          <Text style={styles.strikethrough}>Rs. {plan.basePrice.toLocaleString()}</Text>
+                          {'  '}
+                          <Text style={styles.discountBadge}>{plan.discountPercent}% OFF</Text>
+                          {'  –  Rs. '}
+                          {plan.price.toLocaleString()}
+                        </Text>
+                      ) : (
+                        `Rs. ${plan.price.toLocaleString()}`
+                      )}
+                    </Text>
+                  )}
+
+                  {/* Expanded view (selected): show per-child / save / total */}
+                  {isSelected && (
+                    <>
+                      <Text style={styles.planForChildren}>
+                        For {selectedCount} {selectedCount > 1 ? 'children' : 'child'}
+                      </Text>
+                      {effectiveDiscountAmt > 0 && (
+                        <Text style={styles.planSaveText}>
+                          Save: Rs. {effectiveDiscountAmt.toLocaleString()}
+                        </Text>
+                      )}
+                      <Text style={styles.planTotalText}>
+                        Total: Rs. {effectiveFinalPrice.toLocaleString()}
+                      </Text>
+                    </>
+                  )}
+                </View>
+
+                {/* Calendar date-picker button — visible only on selected plan */}
+                {isSelected && (
+                  <TouchableOpacity
+                    style={styles.datePickerBtn}
+                    onPress={() => {
+                      setSelectedPlan(plan);
+                      setShowDatePickerFor(plan.days);
+                    }}
+                    activeOpacity={0.75}>
+                    <Text style={styles.datePickerIcon}>📅</Text>
+                    <Text style={styles.datePickerDate} numberOfLines={1}>
+                      {formatDateShort(effectiveStart)}
+                    </Text>
+                  </TouchableOpacity>
                 )}
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: Colors.primaryOrange,
-                  }}>
-                  Total: Rs. {plan.price.toLocaleString()}
-                </Text>
               </View>
+
+              {/* Expanded plan details — shown only when this plan is selected */}
+              {isSelected && (
+                <View style={styles.planExpandedSection}>
+                  <View style={styles.planExpandedDivider} />
+                  <View style={styles.planDetailRow}>
+                    <Text style={styles.detailLabel}>Start Date:</Text>
+                    <Text style={styles.detailValue}>{formatDateShort(effectiveStart)}</Text>
+                  </View>
+                  <View style={styles.planDetailRow}>
+                    <Text style={styles.detailLabel}>End Date:</Text>
+                    <Text style={styles.detailValue}>{formatDateShort(effectiveEnd)}</Text>
+                  </View>
+                  <View style={styles.planDetailRow}>
+                    <Text style={styles.detailLabel}>Total Working Days:</Text>
+                    <Text style={styles.detailValue}>{plan.days}</Text>
+                  </View>
+                  <View style={styles.planDetailRow}>
+                    <Text style={styles.detailLabel}>Price per day per child:</Text>
+                    <Text style={styles.detailValue}>Rs. {PER_DAY_COST}</Text>
+                  </View>
+                  {isCustomDate && (
+                    <Text style={styles.customDateNote}>
+                      ℹ️ Custom start date — only base offer applies (no multi-child uplift).
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              {customError && (
+                <Text style={styles.customDateError}>{customError}</Text>
+              )}
             </TouchableOpacity>
-          ))}
+          );
+        })}
 
-        {/* Subscription By Date (Pre Book) */}
-        <View style={styles.container}>
-          <View style={styles.headerRow}>
-            <CheckBox
-              value={isChecked}
-              onValueChange={val => {
-                setIsChecked(val);
-                if (val) {
-                  setSelectedPlan(null);
-                  const minStart = getEffectiveStartDate(new Date(), holidays);
-                  setStartDate(minStart);
-                  setEndDate(calculateCustomEndDate(minStart, holidays));
-                  setCustomDateError(null);
-                } else {
-                  setStartDate(null);
-                  setEndDate(null);
-                  setCustomDateError(null);
-                }
-              }}
-              tintColors={{true: '#007BFF', false: '#ccc'}}
-            />
-            <Text style={styles.label}>
-              Subscription By Date{' '}
-              <Text style={styles.subLabel}>(Pre Book)</Text>
-            </Text>
-          </View>
-
-          {isChecked && (
-            <View style={styles.dateRow}>
-              <TouchableOpacity
-                style={styles.dateBox}
-                onPress={() => setShowStart(true)}>
-                <Text style={styles.dateLabel}>Start Date</Text>
-                <Text style={styles.dateText}>
-                  {startDate ? startDate.toDateString() : 'Select'}
+        {/* ── Offers Available ──────────────────────────────────── */}
+        <View style={styles.offersCard}>
+          <Text style={styles.offersTitle}>OFFERS AVAILABLE</Text>
+          {selectedCount >= config.multiChildThreshold ? (
+            // Multi-child offers
+            <>
+              {config.multiChildDiscounts.oneMonth > 0 && (
+                <Text style={styles.offerItem}>
+                  {'• Save '}
+                  <Text style={styles.offerBold}>{config.multiChildDiscounts.oneMonth}%</Text>
+                  {` on the ${config.planDurations.oneMonth} Working Days Plan (for ${config.multiChildThreshold}+ children).`}
                 </Text>
-              </TouchableOpacity>
-
-              <View style={[styles.dateBox, styles.dateBoxReadOnly]}>
-                <Text style={styles.dateLabel}>End Date (auto)</Text>
-                <Text style={styles.dateText}>
-                  {endDate ? endDate.toDateString() : '—'}
+              )}
+              {config.multiChildDiscounts.threeMonths > 0 && (
+                <Text style={styles.offerItem}>
+                  {'• Save '}
+                  <Text style={styles.offerBold}>{config.multiChildDiscounts.threeMonths}%</Text>
+                  {` on the ${config.planDurations.threeMonths} Working Days Plan (for ${config.multiChildThreshold}+ children).`}
                 </Text>
-              </View>
-            </View>
-          )}
-
-          {customDateError ? (
-            <Text style={styles.customDateError}>{customDateError}</Text>
-          ) : null}
-
-          {showStart && (
-            <DateTimePicker
-              value={startDate || getEffectiveStartDate(new Date(), holidays)}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
-              minimumDate={getEffectiveStartDate(new Date(), holidays)}
-              onChange={(e, date) => {
-                setShowStart(false);
-                if (!date) return;
-                const minDate = getEffectiveStartDate(new Date(), holidays);
-                const picked = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-                const min = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
-                if (picked < min) {
-                  setCustomDateError(
-                    `Start date must be from tomorrow onwards (${min.toDateString()})`,
-                  );
-                  return;
-                }
-                if (!isWorkingDay(picked, holidays)) {
-                  setCustomDateError('Please select a working day (no weekends or holidays).');
-                  return;
-                }
-                setCustomDateError(null);
-                setStartDate(picked);
-                setEndDate(calculateCustomEndDate(picked, holidays));
-              }}
-            />
+              )}
+              {config.multiChildDiscounts.sixMonths > 0 && (
+                <Text style={styles.offerItem}>
+                  {'• Save '}
+                  <Text style={styles.offerBold}>{config.multiChildDiscounts.sixMonths}%</Text>
+                  {` on the ${config.planDurations.sixMonths} Working Days Plan (for ${config.multiChildThreshold}+ children).`}
+                </Text>
+              )}
+              <Text style={styles.offerNote}>
+                Note: Per Day Meal = Rs. {PER_DAY_COST} (No. of Days × Rs. {PER_DAY_COST} × {selectedCount} children = Subscription Amount)
+              </Text>
+            </>
+          ) : (
+            // Single-child offers
+            <>
+              {config.singleChildDiscounts.oneMonth > 0 && (
+                <Text style={styles.offerItem}>
+                  {'• Save '}
+                  <Text style={styles.offerBold}>{config.singleChildDiscounts.oneMonth}%</Text>
+                  {` on the ${config.planDurations.oneMonth} Working Days Plan.`}
+                </Text>
+              )}
+              {config.singleChildDiscounts.threeMonths > 0 && (
+                <Text style={styles.offerItem}>
+                  {'• Save '}
+                  <Text style={styles.offerBold}>{config.singleChildDiscounts.threeMonths}%</Text>
+                  {` on the ${config.planDurations.threeMonths} Working Days Plan.`}
+                </Text>
+              )}
+              {config.singleChildDiscounts.sixMonths > 0 && (
+                <Text style={styles.offerItem}>
+                  {'• Save '}
+                  <Text style={styles.offerBold}>{config.singleChildDiscounts.sixMonths}%</Text>
+                  {` on the ${config.planDurations.sixMonths} Working Days Plan.`}
+                </Text>
+              )}
+              <Text style={styles.offerNote}>
+                Note: Per Day Meal = Rs. {PER_DAY_COST} (No. of Days × Rs. {PER_DAY_COST} × {selectedCount} child = Subscription Amount)
+              </Text>
+            </>
           )}
         </View>
 
-        {/* Selected Plan Details */}
-        {(selectedPlan || (isChecked && startDate && endDate)) && (
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Plan Details</Text>
-
-            {selectedPlan && (
-              <>
-                <Text style={styles.summaryText}>
-                  Working Days: {selectedPlan.days}
-                </Text>
-                <Text style={styles.summaryText}>
-                  Start Date: {selectedPlan.startDate?.toDateString()}
-                </Text>
-                <Text style={styles.summaryText}>
-                  End Date: {selectedPlan.endDate?.toDateString()}
-                </Text>
-                <Text style={styles.summaryText}>
-                  Price per day per child: Rs. {PER_DAY_COST}
-                </Text>
-                <Text style={styles.summaryText}>
-                  Number of children: {selectedCount}
-                </Text>
-                <Text style={styles.summaryText}>
-                  Base Total: Rs. {selectedPlan.basePrice?.toLocaleString()}
-                </Text>
-                {selectedPlan.discountPercent > 0 && (
-                  <Text style={styles.summaryText}>
-                    Discount: {selectedPlan.discountPercent}% (Save Rs.{' '}
-                    {selectedPlan.discountAmount?.toLocaleString()})
-                  </Text>
-                )}
-                <Text style={styles.summaryTotal}>
-                  Total for {selectedCount}{' '}
-                  {selectedCount > 1 ? 'children' : 'child'}:{' '}
-                  Rs. {selectedPlan.price.toLocaleString()}
-                </Text>
-              </>
-            )}
-
-            {isChecked && startDate && endDate && (() => {
-              const customDays = getWorkingDaysBetween(startDate, endDate, holidays);
-              const basePriceTotal = customDays * PER_DAY_COST * selectedCount;
-              // Custom date: base discount only, no multi-child uplift
-              const {finalPrice, discountPercent, discountAmount} = applyDiscount(customDays, basePriceTotal, SINGLE_CHILD_COUNT, true); // base discount only (spec: custom-date ignores multi-child pricing)
-              return (
-                <>
-                  <Text style={styles.summaryText}>
-                    Start Date: {startDate.toDateString()}
-                  </Text>
-                  <Text style={styles.summaryText}>
-                    End Date: {endDate.toDateString()}
-                  </Text>
-                  <Text style={styles.summaryText}>
-                    Working Days: {customDays}
-                  </Text>
-                  <Text style={styles.summaryText}>
-                    Price per day per child: Rs. {PER_DAY_COST}
-                  </Text>
-                  <Text style={styles.summaryText}>
-                    Number of children: {selectedCount}
-                  </Text>
-                  <Text style={styles.summaryText}>
-                    Base Total: Rs. {basePriceTotal.toLocaleString()}
-                  </Text>
-                  {discountPercent > 0 && (
-                    <Text style={styles.summaryText}>
-                      Discount: {discountPercent}% (Save Rs. {discountAmount.toLocaleString()})
-                    </Text>
-                  )}
-                  <Text style={styles.summaryTotal}>
-                    Total for {selectedCount}{' '}
-                    {selectedCount > 1 ? 'children' : 'child'}:{' '}
-                    Rs. {finalPrice.toLocaleString()}
-                  </Text>
-                </>
-              );
-            })()}
-          </View>
-        )}
-
-        {/* Footer Buttons — inside ScrollView so they're always reachable */}
+        {/* ── Back / Next buttons ───────────────────────────────── */}
         <View style={styles.btnRow}>
           <PrimaryButton title="BACK" onPress={prevStep} style={styles.backBtn} />
           <PrimaryButton
@@ -626,136 +573,49 @@ export default function SubscriptionPlan({
           />
         </View>
       </ScrollView>
+
+      {/* ── Per-plan date picker (rendered outside ScrollView so it overlays properly) */}
+      {showDatePickerFor !== null && (() => {
+        // Capture planDays before the state is cleared inside onChange
+        const planDays = showDatePickerFor;
+        const minDate = getEffectiveStartDate(new Date(), holidays);
+        return (
+          <DateTimePicker
+            value={customStartDates[planDays] ?? minDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+            minimumDate={minDate}
+            onChange={(e, date) => {
+              setShowDatePickerFor(null);
+              if (e.type === 'dismissed' || !date) return;
+              const picked = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+              const min = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+              if (picked < min) {
+                setCustomDateErrors(prev => ({
+                  ...prev,
+                  [planDays]: `Start date must be from ${formatDateShort(min)} onwards.`,
+                }));
+                return;
+              }
+              if (!isWorkingDay(picked, holidays)) {
+                setCustomDateErrors(prev => ({
+                  ...prev,
+                  [planDays]: 'Please select a working day (no weekends or holidays).',
+                }));
+                return;
+              }
+              setCustomDateErrors(prev => ({...prev, [planDays]: null}));
+              setCustomStartDates(prev => ({...prev, [planDays]: picked}));
+            }}
+          />
+        );
+      })()}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    borderWidth: 1,
-    borderColor: Colors.lightRed,
-    borderRadius: 10,
-    padding: 12,
-    marginVertical: 10,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  label: {
-    fontSize: 16,
-    marginLeft: 6,
-    fontWeight: '500',
-  },
-  subLabel: {
-    fontSize: 12,
-    color: 'gray',
-  },
-  dateRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-  },
-  dateBox: {
-    flex: 1,
-    backgroundColor: Colors.bg,
-    paddingVertical: 14,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  dateBoxReadOnly: {
-    opacity: 0.7,
-  },
-  dateLabel: {
-    fontSize: 11,
-    color: Colors.bodyText,
-    marginBottom: 2,
-  },
-  dateText: {
-    color: Colors.default,
-    fontSize: 14,
-  },
-  customDateError: {
-    fontSize: 12,
-    color: Colors.red,
-    marginTop: 6,
-  },
-  planCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.red,
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 12,
-    backgroundColor: Colors.white,
-  },
-  selectedCard: {
-    borderColor: Colors.primaryOrange,
-    backgroundColor: Colors.lightRed,
-  },
-  radioCircle: {
-    height: 20,
-    width: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: Colors.Storke,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  radioDot: {
-    height: 10,
-    width: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.primaryOrange,
-  },
-  planText: {
-    fontSize: 16,
-    color: Colors.bodyText,
-  },
-  selectedText: {
-    color: Colors.primaryOrange,
-  },
-  btnRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
-  backBtn: {
-    flex: 1,
-    marginRight: 10,
-  },
-  nextBtn: {
-    flex: 1,
-    marginLeft: 10,
-  },
-
-  summaryCard: {
-    borderWidth: 1,
-    borderColor: Colors.lightRed,
-    borderRadius: 12,
-    padding: 15,
-    marginTop: 15,
-    backgroundColor: Colors.white,
-  },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: Colors.primaryOrange,
-  },
-  summaryText: {
-    fontSize: 14,
-    color: Colors.bodyText,
-    marginBottom: 4,
-  },
-  summaryTotal: {
-    fontSize: 15,
-    color: Colors.primaryOrange,
-    marginTop: 6,
-  },
+  // ── Child selector ────────────────────────────────────────────
   childSelectorCard: {
     borderWidth: 1,
     borderColor: Colors.lightRed,
@@ -784,5 +644,209 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.red,
     marginTop: 4,
+  },
+
+  // ── Section label ─────────────────────────────────────────────
+  planSectionLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.primaryOrange,
+    marginBottom: 10,
+    letterSpacing: 0.3,
+  },
+  planSectionNote: {
+    fontWeight: '400',
+    color: Colors.default,
+    fontSize: 12,
+  },
+
+  // ── Plan card ─────────────────────────────────────────────────
+  planCard: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+    backgroundColor: Colors.white,
+  },
+  selectedCard: {
+    borderColor: Colors.primaryOrange,
+    backgroundColor: Colors.lightRed,
+  },
+
+  // Plan card header row (radio + title area + date button)
+  planHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  radioCircle: {
+    height: 20,
+    width: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Colors.Storke,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    marginTop: 2,
+  },
+  radioCircleSelected: {
+    borderColor: Colors.primaryOrange,
+  },
+  radioDot: {
+    height: 10,
+    width: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.primaryOrange,
+  },
+  planTitleArea: {
+    flex: 1,
+  },
+  planText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.bodyText,
+  },
+  selectedText: {
+    color: Colors.primaryOrange,
+  },
+  // Collapsed (non-selected) sub-line showing strikethrough + discount
+  planCollapsedSub: {
+    fontSize: 12,
+    color: Colors.default,
+    marginTop: 2,
+  },
+  strikethrough: {
+    textDecorationLine: 'line-through',
+    color: Colors.default,
+  },
+  discountBadge: {
+    color: Colors.primaryOrange,
+    fontWeight: '600',
+  },
+  // Selected plan sub-lines
+  planForChildren: {
+    fontSize: 13,
+    color: Colors.default,
+    marginTop: 2,
+  },
+  planSaveText: {
+    fontSize: 13,
+    color: Colors.bodyText,
+    marginTop: 1,
+  },
+  planTotalText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.primaryOrange,
+    marginTop: 2,
+  },
+
+  // Calendar date-picker button inside selected plan card
+  datePickerBtn: {
+    borderWidth: 1,
+    borderColor: Colors.primaryOrange,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    alignItems: 'center',
+    marginLeft: 8,
+    minWidth: 90,
+    maxWidth: 110,
+  },
+  datePickerIcon: {
+    fontSize: 14,
+  },
+  datePickerDate: {
+    fontSize: 10,
+    color: Colors.primaryOrange,
+    fontWeight: '600',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+
+  // Expanded plan details (start/end date, working days, price/day)
+  planExpandedSection: {
+    marginTop: 10,
+  },
+  planExpandedDivider: {
+    height: 1,
+    backgroundColor: Colors.primaryOrange,
+    opacity: 0.25,
+    marginBottom: 8,
+  },
+  planDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 3,
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: Colors.bodyText,
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 13,
+    color: Colors.bodyText,
+  },
+  customDateNote: {
+    fontSize: 11,
+    color: Colors.primaryOrange,
+    fontStyle: 'italic',
+    marginTop: 5,
+  },
+  customDateError: {
+    fontSize: 12,
+    color: Colors.red,
+    marginTop: 5,
+  },
+
+  // ── Offers card ───────────────────────────────────────────────
+  offersCard: {
+    borderWidth: 1,
+    borderColor: Colors.lightRed,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    backgroundColor: Colors.white,
+  },
+  offersTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.primaryOrange,
+    marginBottom: 6,
+    letterSpacing: 0.4,
+  },
+  offerItem: {
+    fontSize: 13,
+    color: Colors.bodyText,
+    marginBottom: 3,
+    lineHeight: 18,
+  },
+  offerBold: {
+    fontWeight: '700',
+    color: Colors.bodyText,
+  },
+  offerNote: {
+    fontSize: 11,
+    color: Colors.default,
+    fontStyle: 'italic',
+    marginTop: 6,
+    lineHeight: 16,
+  },
+
+  // ── Back / Next row ───────────────────────────────────────────
+  btnRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  backBtn: {
+    flex: 1,
+    marginRight: 10,
+  },
+  nextBtn: {
+    flex: 1,
+    marginLeft: 10,
   },
 });
