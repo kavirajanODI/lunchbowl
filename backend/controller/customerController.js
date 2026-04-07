@@ -2361,23 +2361,22 @@ const deleteAccount = async (req, res) => {
   }
 
   try {
-    // Look up the customer first so we can use their phone number to clean up OTPs
-    const customer = await Customer.findById(objectId).select('phone').lean();
-
-    // Delete all related data; run in parallel for efficiency
+    // Delete all related data in parallel for efficiency
     const deletionTasks = [
       Form.deleteMany({ user: objectId }),
       Child.deleteMany({ user: objectId }),
       Subscription.deleteMany({ user: objectId }),
       UserMeal.deleteMany({ userId: objectId }),
       UserPayment.deleteMany({ user: objectId }),
-      Customer.deleteOne({ _id: objectId }),
+      // Look up phone for OTP cleanup, then delete the customer record and OTPs
+      Customer.findById(objectId).select('phone').lean().then(customer => {
+        const tasks = [Customer.deleteOne({ _id: objectId })];
+        if (customer && customer.phone) {
+          tasks.push(Otp.deleteMany({ mobile: customer.phone }));
+        }
+        return Promise.all(tasks);
+      }),
     ];
-
-    // Only attempt OTP cleanup if we know the customer's phone
-    if (customer && customer.phone) {
-      deletionTasks.push(Otp.deleteMany({ mobile: customer.phone }));
-    }
 
     await Promise.all(deletionTasks);
 

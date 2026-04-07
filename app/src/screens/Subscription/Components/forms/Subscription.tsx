@@ -106,7 +106,8 @@ export default function SubscriptionPlan({
   const PER_DAY_COST = config.pricePerDayPerChild;
   // Per the business rules, custom-date plans always use the single-child (base)
   // discount tier regardless of how many children are selected.
-  const SINGLE_CHILD_COUNT = 1;
+  // Value of 1 is passed as `children` to applyDiscount to force the single-child tier.
+  const BASE_DISCOUNT_CHILD_COUNT = 1;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -264,7 +265,7 @@ export default function SubscriptionPlan({
     if (isCustomDate) {
       // Custom start date → base discounts only, no multi-child uplift
       const basePriceTotal = workingDays * PER_DAY_COST * selectedCount;
-      const {finalPrice} = applyDiscount(workingDays, basePriceTotal, SINGLE_CHILD_COUNT, true);
+      const {finalPrice} = applyDiscount(workingDays, basePriceTotal, BASE_DISCOUNT_CHILD_COUNT, true);
       totalPrice = finalPrice;
     } else {
       // Auto start date → price already computed with correct multi-child discount
@@ -290,7 +291,6 @@ export default function SubscriptionPlan({
 
     try {
       setLoading(true);
-      console.log('Sending subscription payload:', payload);
       const response = await RegistrationService.savePlans(payload);
       if (response.success) {
         nextStep();
@@ -377,7 +377,7 @@ export default function SubscriptionPlan({
           let effectiveEnd: Date;
 
           if (isCustomDate && customStart) {
-            const result = applyDiscount(plan.days, effectiveBasePrice, SINGLE_CHILD_COUNT, true);
+            const result = applyDiscount(plan.days, effectiveBasePrice, BASE_DISCOUNT_CHILD_COUNT, true);
             effectiveDiscountPct = result.discountPercent;
             effectiveDiscountAmt = result.discountAmount;
             effectiveFinalPrice = result.finalPrice;
@@ -415,7 +415,6 @@ export default function SubscriptionPlan({
                   {/* Collapsed view (not selected): show price summary inline */}
                   {!isSelected && (
                     <Text style={styles.planCollapsedSub}>
-                      {'(' + plan.days + ' working days)  '}
                       {plan.discountPercent > 0 ? (
                         <Text>
                           <Text style={styles.strikethrough}>Rs. {plan.basePrice.toLocaleString()}</Text>
@@ -556,7 +555,7 @@ export default function SubscriptionPlan({
                 </Text>
               )}
               <Text style={styles.offerNote}>
-                Note: Per Day Meal = Rs. {PER_DAY_COST} (No. of Days × Rs. {PER_DAY_COST} × {selectedCount} child = Subscription Amount)
+                Note: Per Day Meal = Rs. {PER_DAY_COST} (No. of Days × Rs. {PER_DAY_COST} × {selectedCount} {selectedCount > 1 ? 'children' : 'child'} = Subscription Amount)
               </Text>
             </>
           )}
