@@ -25,6 +25,7 @@ const currencyRoutes = require("../routes/currencyRoutes");
 const languageRoutes = require("../routes/languageRoutes");
 const notificationRoutes = require("../routes/notificationRoutes");
 const smsRoutes = require("../routes/smsRoutes");
+const appSettingsRoutes = require("../routes/appSettingsRoutes");
 const { testSMSNotification } = require("../controller/testSmsController");
 const { isAuth, isAdmin } = require("../config/auth");
 const {
@@ -71,6 +72,7 @@ app.use("/api/language/", languageRoutes);
 app.use("/api/notification/", isAuth, notificationRoutes);
 app.use("/api/sms/", smsRoutes);
 app.use("/api/ccavenue/", ccavenueRoutes);
+app.use("/api/app-config/", appSettingsRoutes);
 
 // Test SMS endpoint without database dependency
 app.post("/api/test-sms", testSMSNotification);

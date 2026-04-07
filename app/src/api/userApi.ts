@@ -51,6 +51,14 @@ async getUserData(userId: string) {
       userDetails,
     );
   }
+
+  /**
+   * Permanently deletes the user account and all associated data from the database.
+   * The caller must log the user out after this succeeds.
+   */
+  async deleteAccount(userId: string) {
+    return await httpAxiosClient.delete(`/customer/delete-account/${userId}`);
+  }
 }
 
 export default new UserApi();

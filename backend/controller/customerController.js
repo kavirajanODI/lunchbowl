@@ -2332,6 +2332,68 @@ function isDateInCurrentMonth(date, currentMonth) {
   return mealDate.getMonth() === currentMonth;
 }
 
+/**
+ * Delete Account
+ *
+ * Permanently removes the user and all their associated data:
+ *   - Customer record
+ *   - Form (registration / parent details)
+ *   - Child records
+ *   - Subscription records
+ *   - UserMeal records
+ *   - UserPayment records
+ *   - Otp records
+ *
+ * Route: DELETE /api/customer/delete-account/:userId
+ */
+const deleteAccount = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'userId is required' });
+  }
+
+  let objectId;
+  try {
+    objectId = new ObjectId(userId);
+  } catch (_) {
+    return res.status(400).json({ success: false, message: 'Invalid userId format' });
+  }
+
+  try {
+    // Look up the customer first so we can use their phone number to clean up OTPs
+    const customer = await Customer.findById(objectId).select('phone').lean();
+
+    // Delete all related data; run in parallel for efficiency
+    const deletionTasks = [
+      Form.deleteMany({ user: objectId }),
+      Child.deleteMany({ user: objectId }),
+      Subscription.deleteMany({ user: objectId }),
+      UserMeal.deleteMany({ userId: objectId }),
+      UserPayment.deleteMany({ user: objectId }),
+      Customer.deleteOne({ _id: objectId }),
+    ];
+
+    // Only attempt OTP cleanup if we know the customer's phone
+    if (customer && customer.phone) {
+      deletionTasks.push(Otp.deleteMany({ mobile: customer.phone }));
+    }
+
+    await Promise.all(deletionTasks);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Account and all associated data have been permanently deleted.',
+    });
+  } catch (err) {
+    console.error('deleteAccount error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'An error occurred while deleting the account. Please try again.',
+    });
+  }
+};
+
 module.exports = {
   loginCustomer,
   verifyPhoneNumber,
@@ -2347,6 +2409,7 @@ module.exports = {
   getCustomerById,
   updateCustomer,
   deleteCustomer,
+  deleteAccount,
   addShippingAddress,
   getShippingAddress,
   updateShippingAddress,

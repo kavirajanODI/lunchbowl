@@ -14,6 +14,7 @@ const {
   getCustomerById,
   updateCustomer,
   deleteCustomer,
+  deleteAccount,
   addAllCustomers,
   addShippingAddress,
   getShippingAddress,
@@ -142,6 +143,8 @@ router.post("/get-payments", getPaymentsForUser);
 
 router.post("/delete-meal", deleteMeal);
 
+// Delete account and all associated user data
+router.delete("/delete-account/:userId", deleteAccount);
 
 
 

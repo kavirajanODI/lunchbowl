@@ -5,6 +5,7 @@ import PrimaryButton from 'components/buttons/PrimaryButton';
 import ErrorMessage from 'components/Error/BoostrapStyleError';
 import {LoadingModal} from 'components/LoadingModal/LoadingModal';
 import {useAuth} from 'context/AuthContext';
+import {useAppConfig} from 'context/AppConfigContext';
 import React, {useCallback, useEffect, useState} from 'react';
 import {
   ScrollView,
@@ -26,11 +27,6 @@ type Plan = {
   days: number;
   price: number;
 };
-
-const PER_DAY_COST = 200;
-// Used when "Subscription By Date" is chosen: only the base (single-child)
-// discount tier applies, regardless of how many children are selected.
-const SINGLE_CHILD_DISCOUNT = 1;
 
 const addWorkingDays = (
   start: Date,
@@ -157,6 +153,14 @@ export default function SubscriptionPlan({
 }: any) {
   //####################### STATE VARIABLES ######################
 
+  const {config} = useAppConfig();
+
+  // Derive all configurable values from remote config (falls back to defaults)
+  const PER_DAY_COST = config.pricePerDayPerChild;
+  // When "Subscription By Date" is chosen, only the base (single-child) discount
+  // tier applies regardless of how many children are selected.
+  const SINGLE_CHILD_DISCOUNT = 1;
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isChecked, setIsChecked] = useState(false);
@@ -190,30 +194,20 @@ export default function SubscriptionPlan({
 
   /**
    * Returns the discount percentage to apply based on plan duration and
-   * number of children.
-   *
-   * Single child:          22d → 0%,  66d → 5%,  132d → 10%
-   * Multi-child (≥ 2):    22d → 5%,  66d → 15%, 132d → 20%
+   * number of children.  All thresholds and percentages come from the remote
+   * app config so they can be updated from the dashboard without a new release.
    *
    * NOTE: "Subscription By Date" plans always use base (single-child) discounts
    * regardless of the number of children — the caller must pass `isCustomDate=true`.
    */
   const getDiscountPercent = (days: number, children: number, isCustomDate: boolean = false): number => {
-    if (isCustomDate) {
-      // Custom date plans only get base discount (no multi-child uplift)
-      if (days === 66) return 5;
-      if (days === 132) return 10;
-      return 0;
-    }
-    if (children >= 2) {
-      if (days === 22) return 5;
-      if (days === 66) return 15;
-      if (days === 132) return 20;
-      return 0;
-    }
-    // Single child
-    if (days === 66) return 5;
-    if (days === 132) return 10;
+    const {planDurations, singleChildDiscounts, multiChildDiscounts, multiChildThreshold} = config;
+    const isMulti = !isCustomDate && children >= multiChildThreshold;
+    const discounts = isMulti ? multiChildDiscounts : singleChildDiscounts;
+
+    if (days === planDurations.oneMonth)    return discounts.oneMonth;
+    if (days === planDurations.threeMonths) return discounts.threeMonths;
+    if (days === planDurations.sixMonths)   return discounts.sixMonths;
     return 0;
   };
 
@@ -229,15 +223,14 @@ export default function SubscriptionPlan({
     const today = new Date();
     const start = getEffectiveStartDate(today, holidays);
 
-    // 1 month = 22 working days, 3 months = 66, 6 months = 132
-    const monthToWorkingDays = {
-      1: 22,
-      3: 66,
-      6: 132,
-    };
+    const {planDurations} = config;
+    const planMonths: Array<{months: number; days: number}> = [
+      {months: 1, days: planDurations.oneMonth},
+      {months: 3, days: planDurations.threeMonths},
+      {months: 6, days: planDurations.sixMonths},
+    ];
 
-    return [1, 3, 6].map(m => {
-      const requiredDays = monthToWorkingDays[m as 1 | 3 | 6];
+    return planMonths.map(({days: requiredDays}) => {
       const end = addWorkingDays(start, requiredDays, holidays);
 
       const basePricePerChild = requiredDays * PER_DAY_COST;
@@ -291,10 +284,10 @@ export default function SubscriptionPlan({
     }, []),
   );
 
-  // Regenerate plans whenever holidays or selected child count changes
+  // Regenerate plans whenever holidays, selected child count, or remote config changes
   useEffect(() => {
     setPlans(generatePlans(holidays, selectedCount));
-  }, [holidays, selectedCount]);
+  }, [holidays, selectedCount, config]);
   const handleCloseError = () => {
     setError(null);
   };
