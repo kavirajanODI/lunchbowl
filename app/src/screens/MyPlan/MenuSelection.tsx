@@ -221,7 +221,7 @@ const MenuSelectionScreen = ({
   // Regular working day → show normal SAVE flow
   const isHoliday = !isSunday && (isCurrentDateHoliday || isCurrentDateWeekend);
 
-  // 48-hr lock: date is within 48 hours from now (past or imminent)
+  // Edit lock: date is today or in the past (next-day logic — any action today takes effect tomorrow)
   const isLocked = useMemo(
     () => isWithin48Hours(selectedDate),
     [selectedDate],
@@ -297,11 +297,12 @@ const MenuSelectionScreen = ({
   const SaveMenue = async () => {
     setLoading(true);
     try {
-      // 48-hour edit lock check
+      // Edit lock check: meals scheduled for today or earlier cannot be changed
+      // (next-day logic — any action today only takes effect tomorrow)
       if (isWithin48Hours(selectedDate)) {
         Alert.alert(
           'Locked',
-          'Meal can be changed only before 48 hours of the meal date.',
+          'Meal can be changed only before the previous day cutoff.',
         );
         setLoading(false);
         return;
@@ -672,10 +673,10 @@ const MenuSelectionScreen = ({
             </View>
           )}
 
-          {/* 48-hr lock notice */}
+          {/* Edit lock notice */}
           {selectedTab === 'custom' && !isSunday && isLocked && (
             <Text style={styles.lockedText}>
-              🔒 This date is locked for edits (within 48 hours).
+              🔒 This date is locked for edits (past the previous day cutoff).
             </Text>
           )}
 
@@ -1163,7 +1164,7 @@ const styles = StyleSheet.create({
     color: Colors.bodyText,
     textAlign: 'center',
   },
-  // 48-hr lock
+  // edit lock (next-day logic)
   lockedText: {
     fontSize: wp('3.2%'),
     fontFamily: Fonts.Urbanist.semiBold,

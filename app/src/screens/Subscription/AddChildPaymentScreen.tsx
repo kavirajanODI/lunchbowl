@@ -108,7 +108,7 @@ export default function AddChildPaymentScreen({route, navigation}: any) {
 
       Alert.alert(
         'Payment Successful',
-        `Children added successfully!\nTransaction ID: ${transactionId}\n\nNote: New children will be activated after 48 hours.`,
+        `Children added successfully!\nTransaction ID: ${transactionId}\n\nNote: New children will be activated from the next business day.`,
         [
           {
             text: 'Go to My Plan',
@@ -167,7 +167,7 @@ export default function AddChildPaymentScreen({route, navigation}: any) {
             </View>
 
             <Text style={localStyles.noteText}>
-              * New children will be activated within 48 hours of payment.
+              * New children will be activated from the next business day.
             </Text>
           </View>
 

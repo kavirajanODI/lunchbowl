@@ -65,9 +65,18 @@ const isWorkingDay = (date: Date, holidays: Holiday[] = []): boolean => {
   return !holidaySet.has(date.toISOString().split('T')[0]);
 };
 
-const getValidStartDate = (base: Date, prepDays: number = 2, holidays: Holiday[] = []): Date => {
+/**
+ * Returns the next calendar day from `base`, then advances further if that day
+ * is not a working day (weekend or holiday).
+ *
+ * Next-day logic: any action performed today → effective start date is tomorrow.
+ */
+const getEffectiveStartDate = (base: Date, holidays: Holiday[] = []): Date => {
+  // Always start from the next calendar day
   let newDate = new Date(base);
-  newDate.setDate(newDate.getDate() + prepDays);
+  newDate.setDate(newDate.getDate() + 1);
+  newDate.setHours(0, 0, 0, 0);
+  // If that day is not a working day, advance until we find one
   while (!isWorkingDay(newDate, holidays)) {
     newDate.setDate(newDate.getDate() + 1);
   }
@@ -177,27 +186,48 @@ export default function SubscriptionPlan({
 
   //####################### PLAN DISCOUNT  ######################
 
-  const applyDiscount = (days: number, basePrice: number) => {
-    let discountPercent = 0;
-
-    if (days === 66) {
-      discountPercent = 5;
-    } else if (days === 132) {
-      discountPercent = 10;
+  /**
+   * Returns the discount percentage to apply based on plan duration and
+   * number of children.
+   *
+   * Single child:          22d → 0%,  66d → 5%,  132d → 10%
+   * Multi-child (≥ 2):    22d → 5%,  66d → 15%, 132d → 20%
+   *
+   * NOTE: "Subscription By Date" plans always use base (single-child) discounts
+   * regardless of the number of children — the caller must pass `isCustomDate=true`.
+   */
+  const getDiscountPercent = (days: number, children: number, isCustomDate: boolean = false): number => {
+    if (isCustomDate) {
+      // Custom date plans only get base discount (no multi-child uplift)
+      if (days === 66) return 5;
+      if (days === 132) return 10;
+      return 0;
     }
+    if (children >= 2) {
+      if (days === 22) return 5;
+      if (days === 66) return 15;
+      if (days === 132) return 20;
+      return 0;
+    }
+    // Single child
+    if (days === 66) return 5;
+    if (days === 132) return 10;
+    return 0;
+  };
 
+  const applyDiscount = (days: number, basePrice: number, children: number = 1, isCustomDate: boolean = false) => {
+    const discountPercent = getDiscountPercent(days, children, isCustomDate);
     const discountAmount = (basePrice * discountPercent) / 100;
     const finalPrice = basePrice - discountAmount;
-
     return {finalPrice, discountPercent, discountAmount};
   };
   //####################### GENERATE PLAN  ######################
 
-  const generatePlans = (holidays: Holiday[]) => {
+  const generatePlans = (holidays: Holiday[], childrenCount: number = 1) => {
     const today = new Date();
-    const start = getValidStartDate(today, 2);
+    const start = getEffectiveStartDate(today, holidays);
 
-    // Example mapping: 1 month=22d, 3 months=66d, 6 months=132d
+    // 1 month = 22 working days, 3 months = 66, 6 months = 132
     const monthToWorkingDays = {
       1: 22,
       3: 66,
@@ -208,16 +238,18 @@ export default function SubscriptionPlan({
       const requiredDays = monthToWorkingDays[m as 1 | 3 | 6];
       const end = addWorkingDays(start, requiredDays, holidays);
 
-      const basePrice = requiredDays * PER_DAY_COST;
+      const basePricePerChild = requiredDays * PER_DAY_COST;
+      const totalBasePrice = basePricePerChild * childrenCount;
       const {finalPrice, discountPercent, discountAmount} = applyDiscount(
         requiredDays,
-        basePrice,
+        totalBasePrice,
+        childrenCount,
       );
 
       return {
         days: requiredDays,
         price: finalPrice,
-        basePrice,
+        basePrice: totalBasePrice,
         discountPercent,
         discountAmount,
         startDate: start,
@@ -225,7 +257,7 @@ export default function SubscriptionPlan({
       };
     });
   };
-  const [plans, setPlans] = useState<Plan[]>(() => generatePlans(holidays));
+  const [plans, setPlans] = useState<Plan[]>(() => generatePlans(holidays, 1));
 
   //######### GET HOLIDAYS API CALL ############################
 
@@ -257,11 +289,10 @@ export default function SubscriptionPlan({
     }, []),
   );
 
+  // Regenerate plans whenever holidays or selected child count changes
   useEffect(() => {
-    if (holidays.length > 0) {
-      setPlans(generatePlans(holidays));
-    }
-  }, [holidays]);
+    setPlans(generatePlans(holidays, selectedCount));
+  }, [holidays, selectedCount]);
   const handleCloseError = () => {
     setError(null);
   };
@@ -275,17 +306,19 @@ export default function SubscriptionPlan({
     let eDate = null;
 
     if (isChecked && startDate && endDate) {
-      // Subscription by custom date
+      // Subscription by custom date: base discount only, no multi-child uplift
       sDate = startDate.toISOString().split('T')[0];
       eDate = endDate.toISOString().split('T')[0];
 
       workingDays = getWorkingDaysBetween(startDate, endDate, holidays);
-      totalPrice = workingDays * PER_DAY_COST * selectedCount;
+      const basePriceTotal = workingDays * PER_DAY_COST * selectedCount;
+      const {finalPrice} = applyDiscount(workingDays, basePriceTotal, 1, true); // isCustomDate=true
+      totalPrice = finalPrice;
       planId = 'byDate';
     } else if (selectedPlan) {
-      // Predefined plan (1, 3, 6 months)
+      // Predefined plan (1, 3, 6 months) — price already computed with multi-child discount
       workingDays = selectedPlan.days;
-      totalPrice = selectedPlan.price * selectedCount;
+      totalPrice = selectedPlan.price; // price is already the total (all children)
       planId = `${selectedPlan.days}-days`;
 
       sDate = selectedPlan.startDate?.toISOString().split('T')[0] ?? null;
@@ -376,10 +409,7 @@ export default function SubscriptionPlan({
           </View>
         )}
 
-        {plans.map(plan => {
-          const totalAmount = plan.price * selectedCount;
-
-          return (
+        {plans.map(plan => (
             <TouchableOpacity
               key={plan.days}
               style={[
@@ -404,23 +434,28 @@ export default function SubscriptionPlan({
                     styles.planText,
                     selectedPlan?.days === plan.days && styles.selectedText,
                   ]}>
-                  {plan.days} Working Days - Rs. {plan.price.toLocaleString()}
+                  {plan.days} Working Days
+                  {plan.discountPercent > 0 ? ` (${plan.discountPercent}% off)` : ''}
                 </Text>
                 <Text style={{fontSize: 13, color: '#666'}}>
                   For {selectedCount} {selectedCount > 1 ? 'children' : 'child'}
                 </Text>
+                {plan.discountAmount > 0 && (
+                  <Text style={{fontSize: 13, color: Colors.bodyText}}>
+                    Save: Rs. {plan.discountAmount.toLocaleString()}
+                  </Text>
+                )}
                 <Text
                   style={{
                     fontSize: 14,
                     fontWeight: '600',
                     color: Colors.primaryOrange,
                   }}>
-                  Total: Rs. {totalAmount.toLocaleString()}
+                  Total: Rs. {plan.price.toLocaleString()}
                 </Text>
               </View>
             </TouchableOpacity>
-          );
-        })}
+          ))}
 
         {/* Subscription By Date (Pre Book) */}
         <View style={styles.container}>
@@ -431,7 +466,7 @@ export default function SubscriptionPlan({
                 setIsChecked(val);
                 if (val) {
                   setSelectedPlan(null);
-                  const minStart = getValidStartDate(new Date(), 2, holidays);
+                  const minStart = getEffectiveStartDate(new Date(), holidays);
                   setStartDate(minStart);
                   setEndDate(calculateCustomEndDate(minStart, holidays));
                   setCustomDateError(null);
@@ -475,19 +510,19 @@ export default function SubscriptionPlan({
 
           {showStart && (
             <DateTimePicker
-              value={startDate || getValidStartDate(new Date(), 2, holidays)}
+              value={startDate || getEffectiveStartDate(new Date(), holidays)}
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
-              minimumDate={getValidStartDate(new Date(), 2, holidays)}
+              minimumDate={getEffectiveStartDate(new Date(), holidays)}
               onChange={(e, date) => {
                 setShowStart(false);
                 if (!date) return;
-                const minDate = getValidStartDate(new Date(), 2, holidays);
+                const minDate = getEffectiveStartDate(new Date(), holidays);
                 const picked = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                 const min = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
                 if (picked < min) {
                   setCustomDateError(
-                    `Start date must be at least 2 working days from today (${min.toDateString()})`,
+                    `Start date must be from tomorrow onwards (${min.toDateString()})`,
                   );
                   return;
                 }
@@ -520,58 +555,66 @@ export default function SubscriptionPlan({
                   End Date: {selectedPlan.endDate?.toDateString()}
                 </Text>
                 <Text style={styles.summaryText}>
-                  Base Price per Child: Rs.{' '}
-                  {selectedPlan.basePrice?.toLocaleString()}
+                  Price per day per child: Rs. {PER_DAY_COST}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Number of children: {selectedCount}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Base Total: Rs. {selectedPlan.basePrice?.toLocaleString()}
                 </Text>
                 {selectedPlan.discountPercent > 0 && (
                   <Text style={styles.summaryText}>
-                    Discount: {selectedPlan.discountPercent}% (-Rs.
+                    Discount: {selectedPlan.discountPercent}% (Save Rs.{' '}
                     {selectedPlan.discountAmount?.toLocaleString()})
                   </Text>
                 )}
-                <Text style={styles.summaryText}>
-                  Final Price per Child: Rs.{' '}
-                  {selectedPlan.price.toLocaleString()}
-                </Text>
                 <Text style={styles.summaryTotal}>
                   Total for {selectedCount}{' '}
                   {selectedCount > 1 ? 'children' : 'child'}:{' '}
-                  Rs. {(selectedPlan.price * selectedCount).toLocaleString()}
+                  Rs. {selectedPlan.price.toLocaleString()}
                 </Text>
               </>
             )}
 
-            {isChecked && startDate && endDate && (
-              <>
-                <Text style={styles.summaryText}>
-                  Start Date: {startDate.toDateString()}
-                </Text>
-                <Text style={styles.summaryText}>
-                  End Date: {endDate.toDateString()}
-                </Text>
-                <Text style={styles.summaryText}>
-                  Working Days:{' '}
-                  {getWorkingDaysBetween(startDate, endDate, holidays)}
-                </Text>
-                <Text style={styles.summaryText}>
-                  Price per Child: Rs.{' '}
-                  {(
-                    getWorkingDaysBetween(startDate, endDate, holidays) *
-                    PER_DAY_COST
-                  ).toLocaleString()}
-                </Text>
-                <Text style={styles.summaryTotal}>
-                  Total for {selectedCount}{' '}
-                  {selectedCount > 1 ? 'children' : 'child'}:{' '}
-                  Rs.{' '}
-                  {(
-                    getWorkingDaysBetween(startDate, endDate, holidays) *
-                    PER_DAY_COST *
-                    selectedCount
-                  ).toLocaleString()}
-                </Text>
-              </>
-            )}
+            {isChecked && startDate && endDate && (() => {
+              const customDays = getWorkingDaysBetween(startDate, endDate, holidays);
+              const basePriceTotal = customDays * PER_DAY_COST * selectedCount;
+              // Custom date: base discount only, no multi-child uplift
+              const {finalPrice, discountPercent, discountAmount} = applyDiscount(customDays, basePriceTotal, 1, true);
+              return (
+                <>
+                  <Text style={styles.summaryText}>
+                    Start Date: {startDate.toDateString()}
+                  </Text>
+                  <Text style={styles.summaryText}>
+                    End Date: {endDate.toDateString()}
+                  </Text>
+                  <Text style={styles.summaryText}>
+                    Working Days: {customDays}
+                  </Text>
+                  <Text style={styles.summaryText}>
+                    Price per day per child: Rs. {PER_DAY_COST}
+                  </Text>
+                  <Text style={styles.summaryText}>
+                    Number of children: {selectedCount}
+                  </Text>
+                  <Text style={styles.summaryText}>
+                    Base Total: Rs. {basePriceTotal.toLocaleString()}
+                  </Text>
+                  {discountPercent > 0 && (
+                    <Text style={styles.summaryText}>
+                      Discount: {discountPercent}% (Save Rs. {discountAmount.toLocaleString()})
+                    </Text>
+                  )}
+                  <Text style={styles.summaryTotal}>
+                    Total for {selectedCount}{' '}
+                    {selectedCount > 1 ? 'children' : 'child'}:{' '}
+                    Rs. {finalPrice.toLocaleString()}
+                  </Text>
+                </>
+              );
+            })()}
           </View>
         )}
 

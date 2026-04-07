@@ -32,13 +32,24 @@ export const isSaturday = (date: Date) => date.getDay() === 6;
 export const isSunday = (date: Date) => date.getDay() === 0;
 
 /**
- * Returns true if the date is within 48 hours from now (i.e. locked for edits).
+ * Returns true if the meal date is today or in the past (locked for edits/deletes).
+ *
+ * Next-day logic: any action performed today only takes effect tomorrow.
+ * Therefore a meal can only be edited/deleted if its date is strictly after today.
  */
-export const isWithin48Hours = (date: Date): boolean => {
-  const now = new Date();
-  const diffMs = date.getTime() - now.getTime();
-  return diffMs < 48 * 60 * 60 * 1000;
+export const isLockedForEdit = (date: Date): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d <= today;
 };
+
+/**
+ * @deprecated Use `isLockedForEdit` instead.
+ * Kept as an alias so existing callers continue to work without changes.
+ */
+export const isWithin48Hours = isLockedForEdit;
 
 
 // -------------------- Main Validation (non-holiday dates) --------------------

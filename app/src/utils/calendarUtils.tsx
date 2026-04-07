@@ -1,7 +1,6 @@
 // --------------------
 // Helpers for Menu Calendar
 // --------------------
-import { differenceInHours, parseISO } from 'date-fns';
 
 export const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -76,16 +75,19 @@ export const isBookedDate = (
   for (const child of foodlist) {
     const meal = child.meals.find(m => m.date === dateStr);
     if (meal) {
-      // Check if the date is within 48 hours from now
-      const now = new Date();
-      const bookedDate = parseISO(dateStr);
-      const diff = differenceInHours(bookedDate, now);
+      // Next-day logic: a meal is editable only if its date is strictly after today.
+      // Any action today takes effect tomorrow, so meals scheduled for today or earlier
+      // are locked.
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const bookedDate = new Date(dateStr);
+      bookedDate.setHours(0, 0, 0, 0);
 
       return {
         childName: child.name,
         meal: meal.food,
         date: dateStr,
-        editable: diff >= 48, 
+        editable: bookedDate > today,
       };
     }
   }

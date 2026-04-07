@@ -26,19 +26,21 @@ import MenuService from 'services/MyPlansApi/MenuService';
 import menus from 'services/MenueService/Data/menus.json';
 
 const canEdit = (dateStr: string): boolean => {
-  const EDIT_ADVANCE_HOURS = 48;
+  // Next-day logic: a meal is editable only if its date is strictly after today.
   const mealDate = new Date(dateStr);
   mealDate.setHours(0, 0, 0, 0);
-  const cutoff = new Date(Date.now() + EDIT_ADVANCE_HOURS * 60 * 60 * 1000);
-  return mealDate >= cutoff;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return mealDate > today;
 };
 
 const canDelete = (dateStr: string): boolean => {
-  const DELETE_ADVANCE_HOURS = 24;
+  // Next-day logic: a meal can be deleted only if its date is strictly after today.
   const mealDate = new Date(dateStr);
   mealDate.setHours(0, 0, 0, 0);
-  const cutoff = new Date(Date.now() + DELETE_ADVANCE_HOURS * 60 * 60 * 1000);
-  return mealDate >= cutoff;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return mealDate > today;
 };
 
 const allMeals = menus.meal_plan.flatMap(day => day.meals);

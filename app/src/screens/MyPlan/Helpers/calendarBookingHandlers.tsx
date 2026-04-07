@@ -169,7 +169,7 @@ export const getTooltipText = (
   if (booked) {
     return booked.editable
       ? `Meal Booked (Editable): ${booked.childName}'s ${booked.meal} (${booked.date})`
-      : `Meal Booked (Locked): ${booked.childName}'s ${booked.meal} (${booked.date})\nOrders must be placed at least 48 hours in advance.`;
+      : `Meal Booked (Locked): ${booked.childName}'s ${booked.meal} (${booked.date})\nOrders must be placed before the previous day cutoff.`;
   }
 
   if (isStartDate(day, startDate, currentYear, currentMonth)) return `Plan Started: ${dateStr}`;
