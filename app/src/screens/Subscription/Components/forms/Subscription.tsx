@@ -157,9 +157,11 @@ export default function SubscriptionPlan({
 
   // Derive all configurable values from remote config (falls back to defaults)
   const PER_DAY_COST = config.pricePerDayPerChild;
-  // When "Subscription By Date" is chosen, only the base (single-child) discount
-  // tier applies regardless of how many children are selected.
-  const SINGLE_CHILD_DISCOUNT = 1;
+  // Per the business rules, "Subscription By Date" plans always use the
+  // single-child (base) discount tier, regardless of how many children are
+  // actually selected.  Passing count=1 into applyDiscount ensures the
+  // multi-child uplift is never triggered for custom-date plans.
+  const SINGLE_CHILD_COUNT = 1;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -307,7 +309,7 @@ export default function SubscriptionPlan({
 
       workingDays = getWorkingDaysBetween(startDate, endDate, holidays);
       const basePriceTotal = workingDays * PER_DAY_COST * selectedCount;
-      const {finalPrice} = applyDiscount(workingDays, basePriceTotal, SINGLE_CHILD_DISCOUNT, true); // isCustomDate=true — base discount only
+      const {finalPrice} = applyDiscount(workingDays, basePriceTotal, SINGLE_CHILD_COUNT, true); // isCustomDate=true — base discount only (spec: custom-date ignores multi-child pricing)
       totalPrice = finalPrice;
       planId = 'byDate';
     } else if (selectedPlan) {
@@ -576,7 +578,7 @@ export default function SubscriptionPlan({
               const customDays = getWorkingDaysBetween(startDate, endDate, holidays);
               const basePriceTotal = customDays * PER_DAY_COST * selectedCount;
               // Custom date: base discount only, no multi-child uplift
-              const {finalPrice, discountPercent, discountAmount} = applyDiscount(customDays, basePriceTotal, SINGLE_CHILD_DISCOUNT, true); // base discount only
+              const {finalPrice, discountPercent, discountAmount} = applyDiscount(customDays, basePriceTotal, SINGLE_CHILD_COUNT, true); // base discount only (spec: custom-date ignores multi-child pricing)
               return (
                 <>
                   <Text style={styles.summaryText}>

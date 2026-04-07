@@ -2356,7 +2356,7 @@ const deleteAccount = async (req, res) => {
   let objectId;
   try {
     objectId = new ObjectId(userId);
-  } catch (_) {
+  } catch (err) {
     return res.status(400).json({ success: false, message: 'Invalid userId format' });
   }
 
