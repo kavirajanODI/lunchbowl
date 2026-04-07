@@ -18,6 +18,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import HolidayService from 'services/MyPlansApi/HolidayService';
 import RegistrationService from 'services/RegistartionService/registartion';
 import {Holiday} from 'src/model/calendarModels';
+import {getNextCalendarDay} from 'utils/dateUtils';
 
 //####################### HELPER FUNCTIONS   ######################
 
@@ -27,6 +28,9 @@ type Plan = {
 };
 
 const PER_DAY_COST = 200;
+// Used when "Subscription By Date" is chosen: only the base (single-child)
+// discount tier applies, regardless of how many children are selected.
+const SINGLE_CHILD_DISCOUNT = 1;
 
 const addWorkingDays = (
   start: Date,
@@ -66,17 +70,15 @@ const isWorkingDay = (date: Date, holidays: Holiday[] = []): boolean => {
 };
 
 /**
- * Returns the next calendar day from `base`, then advances further if that day
- * is not a working day (weekend or holiday).
+ * Returns the next working day starting from `base`, using `getNextCalendarDay`
+ * as the base and then advancing past weekends and holidays.
  *
  * Next-day logic: any action performed today → effective start date is tomorrow.
  */
 const getEffectiveStartDate = (base: Date, holidays: Holiday[] = []): Date => {
-  // Always start from the next calendar day
-  let newDate = new Date(base);
-  newDate.setDate(newDate.getDate() + 1);
-  newDate.setHours(0, 0, 0, 0);
-  // If that day is not a working day, advance until we find one
+  // Start from the next calendar day (tomorrow at midnight)
+  let newDate = getNextCalendarDay(base);
+  // Advance further if that day is a weekend or holiday
   while (!isWorkingDay(newDate, holidays)) {
     newDate.setDate(newDate.getDate() + 1);
   }
@@ -312,7 +314,7 @@ export default function SubscriptionPlan({
 
       workingDays = getWorkingDaysBetween(startDate, endDate, holidays);
       const basePriceTotal = workingDays * PER_DAY_COST * selectedCount;
-      const {finalPrice} = applyDiscount(workingDays, basePriceTotal, 1, true); // isCustomDate=true
+      const {finalPrice} = applyDiscount(workingDays, basePriceTotal, SINGLE_CHILD_DISCOUNT, true); // isCustomDate=true — base discount only
       totalPrice = finalPrice;
       planId = 'byDate';
     } else if (selectedPlan) {
@@ -581,7 +583,7 @@ export default function SubscriptionPlan({
               const customDays = getWorkingDaysBetween(startDate, endDate, holidays);
               const basePriceTotal = customDays * PER_DAY_COST * selectedCount;
               // Custom date: base discount only, no multi-child uplift
-              const {finalPrice, discountPercent, discountAmount} = applyDiscount(customDays, basePriceTotal, 1, true);
+              const {finalPrice, discountPercent, discountAmount} = applyDiscount(customDays, basePriceTotal, SINGLE_CHILD_DISCOUNT, true); // base discount only
               return (
                 <>
                   <Text style={styles.summaryText}>

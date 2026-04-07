@@ -20,7 +20,7 @@ export const formatDate = (
 };
 
 /**
- * Returns the next calendar day from the given time.
+ * Returns the next calendar day from the given time (tomorrow at midnight).
  * This is the effective start date for all user actions
  * (new subscription, add child, meal delete, meal edit, renewal, etc.).
  *
@@ -29,9 +29,12 @@ export const formatDate = (
  *   - 11:59 PM → next day
  *   - 12:01 AM → next day (still next calendar day)
  */
-export const getEffectiveStartDate = (currentTime: Date = new Date()): Date => {
+export const getNextCalendarDay = (currentTime: Date = new Date()): Date => {
   const next = new Date(currentTime);
   next.setDate(next.getDate() + 1);
   next.setHours(0, 0, 0, 0);
   return next;
 };
+
+/** @deprecated Use `getNextCalendarDay` instead. */
+export const getEffectiveStartDate = getNextCalendarDay;
