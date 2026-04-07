@@ -12,6 +12,8 @@ import Registartion from 'screens/Subscription/Registration';
 import RenewSubscription from 'screens/Subscription/RenewSubscription';
 import AddChildScreen from 'screens/Subscription/AddChildScreen';
 import AddChildPaymentScreen from 'screens/Subscription/AddChildPaymentScreen';
+import PaymentSuccessScreen from 'screens/Payment/PaymentSuccessScreen';
+import PaymentFailedScreen from 'screens/Payment/PaymentFailedScreen';
 import MyPlanScreen from './Calender';
 import FoodScreen from './FoodScreen';
 import MenuSelectionScreen from './MenuSelection';
@@ -83,6 +85,16 @@ const initialScreen =
                 <Stack.Screen
                   name="WebViewScreen"
                   component={PaymentWebView}
+                  options={{headerShown: false}}
+                />
+                <Stack.Screen
+                  name="PaymentSuccess"
+                  component={PaymentSuccessScreen}
+                  options={{headerShown: false}}
+                />
+                <Stack.Screen
+                  name="PaymentFailed"
+                  component={PaymentFailedScreen}
                   options={{headerShown: false}}
                 />
               </Stack.Navigator>

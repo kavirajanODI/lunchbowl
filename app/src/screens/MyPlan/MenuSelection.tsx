@@ -134,6 +134,11 @@ const MenuSelectionScreen = ({
   } | null>(null);
   const [showTip, setShowTip] = useState(false);
 
+  // For holiday payment: only one child can be selected at a time
+  const [selectedHolidayChildId, setSelectedHolidayChildId] = useState<
+    string | null
+  >(null);
+
   //################ ERROR HANDLING #######################
 
   const [alertVisible, setAlertVisible] = useState(false);
@@ -222,9 +227,16 @@ const MenuSelectionScreen = ({
     [selectedDate],
   );
 
-  // ₹200 per child for holiday meals
+  // ₹200 per child for holiday meals (only the selected child)
   const holidayFeePerChild = 200;
-  const holidayTotalFee = holidayFeePerChild * childrenData.length;
+  const selectedHolidayChild = useMemo(
+    () =>
+      selectedHolidayChildId
+        ? childrenData.find(c => c.id === selectedHolidayChildId) ?? null
+        : null,
+    [selectedHolidayChildId, childrenData],
+  );
+  const holidayTotalFee = selectedHolidayChild ? holidayFeePerChild : 0;
 
   const formatDate = (date: Date) =>
     date.toLocaleDateString('en-GB', {
@@ -430,23 +442,31 @@ const MenuSelectionScreen = ({
     try {
       if (!userId) throw new Error('User ID not found. Please login again.');
 
-      // Validate that each child has a meal selected before payment
-      const missingMeals = childrenData.filter(
-        (_, i) => !selectedDishes[i],
+      // Validate that a child has been selected for holiday payment
+      if (!selectedHolidayChild) {
+        Alert.alert('Select Child', 'Please select a child for the holiday meal.');
+        return;
+      }
+
+      // Find the dish selected for this child
+      const childIndex = childrenData.findIndex(
+        c => c.id === selectedHolidayChild.id,
       );
-      if (missingMeals.length > 0) {
+      if (!selectedDishes[childIndex]) {
         Alert.alert(
-          'Select Meals',
-          `Please select a meal for: ${missingMeals.map(c => c.name).join(', ')}`,
+          'Select Meal',
+          `Please select a meal for ${selectedHolidayChild.name}`,
         );
         return;
       }
 
-      // Build structured children payload for the holiday payment backend
-      const childrenPayload = childrenData.map((child, i) => ({
-        childId: child.id,
-        mealName: selectedDishes[i],
-      }));
+      // Build payload with only the selected child
+      const childrenPayload = [
+        {
+          childId: selectedHolidayChild.id,
+          mealName: selectedDishes[childIndex],
+        },
+      ];
 
       const paymentData = createHolidayPaymentRequest(
         ccavenueConfig,
@@ -482,11 +502,18 @@ const MenuSelectionScreen = ({
     try {
       if (!userId) throw new Error('User ID not found. Please login again.');
 
-      const missingMeals = childrenData.filter((_, i) => !selectedDishes[i]);
-      if (missingMeals.length > 0) {
+      if (!selectedHolidayChild) {
+        Alert.alert('Select Child', 'Please select a child for the holiday meal.');
+        return;
+      }
+
+      const childIndex = childrenData.findIndex(
+        c => c.id === selectedHolidayChild.id,
+      );
+      if (!selectedDishes[childIndex]) {
         Alert.alert(
-          'Select Meals',
-          `Please select a meal for: ${missingMeals.map(c => c.name).join(', ')}`,
+          'Select Meal',
+          `Please select a meal for ${selectedHolidayChild.name}`,
         );
         return;
       }
@@ -495,10 +522,12 @@ const MenuSelectionScreen = ({
       const transactionId = `TEST_HOLIDAY_TXN_${Date.now()}`;
       const mealDateStr = selectedDate.toISOString().split('T')[0];
 
-      const childrenPayload = childrenData.map((child, i) => ({
-        childId: child.id,
-        mealName: selectedDishes[i],
-      }));
+      const childrenPayload = [
+        {
+          childId: selectedHolidayChild.id,
+          mealName: selectedDishes[childIndex],
+        },
+      ];
 
       const result: any = await HolidayService.localHolidayPaymentSuccess({
         userId,
@@ -612,14 +641,34 @@ const MenuSelectionScreen = ({
               <Text style={styles.holidayFeeTitle}>
                 🏖 Holiday Meal Booking
               </Text>
-              <Text style={styles.holidayFeeDetail}>
-                ₹{holidayFeePerChild} × {childrenData.length}{' '}
-                {childrenData.length === 1 ? 'child' : 'children'} ={' '}
-                <Text style={styles.holidayFeeTotal}>₹{holidayTotalFee}</Text>
-              </Text>
               <Text style={styles.holidayFeeNote}>
-                Select a meal for each child and tap PAY to confirm.
+                Select one child below and choose their meal, then tap PAY.
               </Text>
+              {childrenData.map(child => (
+                <TouchableOpacity
+                  key={child.id}
+                  style={[
+                    styles.holidayChildOption,
+                    selectedHolidayChildId === child.id &&
+                      styles.holidayChildOptionSelected,
+                  ]}
+                  onPress={() => setSelectedHolidayChildId(child.id)}>
+                  <View style={styles.holidayChildRadioOuter}>
+                    {selectedHolidayChildId === child.id && (
+                      <View style={styles.holidayChildRadioInner} />
+                    )}
+                  </View>
+                  <Text style={styles.holidayChildName}>{child.name}</Text>
+                </TouchableOpacity>
+              ))}
+              {selectedHolidayChild && (
+                <Text style={styles.holidayFeeDetail}>
+                  ₹{holidayFeePerChild} × 1 child ={' '}
+                  <Text style={styles.holidayFeeTotal}>
+                    ₹{holidayTotalFee}
+                  </Text>
+                </Text>
+              )}
             </View>
           )}
 
@@ -667,15 +716,24 @@ const MenuSelectionScreen = ({
                 <ScrollView
                   style={styles.formContainer}
                   keyboardShouldPersistTaps="handled">
-                  {childrenData.map((child, index) => (
+                  {(isHoliday
+                    ? childrenData.filter(
+                        c => c.id === selectedHolidayChildId,
+                      )
+                    : childrenData
+                  ).map((child, index) => {
+                    const globalIndex = childrenData.findIndex(
+                      c => c.id === child.id,
+                    );
+                    return (
                     <View key={child.id} style={styles.childForm}>
                       <Text style={styles.childName}>{child.name}</Text>
                       {isLocked ? (
                         // Read-only: show saved meal name when locked
                         <View style={styles.lockedMealBox}>
                           <Text style={styles.lockedMealText}>
-                            {selectedDishes[index]
-                              ? selectedDishes[index]
+                            {selectedDishes[globalIndex]
+                              ? selectedDishes[globalIndex]
                               : 'No meal saved for this date'}
                           </Text>
                         </View>
@@ -683,11 +741,11 @@ const MenuSelectionScreen = ({
                         <PrimaryDropdown
                           options={mealOptions}
                           placeholder="Select your Child's Dish"
-                          selectedValue={selectedDishes[index] || ''}
-                          onValueChange={handleDishSelect(index)}
+                          selectedValue={selectedDishes[globalIndex] || ''}
+                          onValueChange={handleDishSelect(globalIndex)}
                         />
                       )}
-                      {!isLocked && index === 0 && childrenData.length > 1 && (
+                      {!isHoliday && !isLocked && index === 0 && childrenData.length > 1 && (
                         <View style={styles.checkboxContainer}>
                           <CheckBox
                             value={applySameDish}
@@ -707,7 +765,8 @@ const MenuSelectionScreen = ({
                         </View>
                       )}
                     </View>
-                  ))}
+                    );
+                  })}
                 </ScrollView>
               ) : (
                 // ---------- Dietitian Plan (per-child) ----------
@@ -786,9 +845,9 @@ const MenuSelectionScreen = ({
 
       {/* Sticky footer buttons */}
       <View style={styles.stickyButtonsContainer}>
-        {isHoliday && selectedTab === 'custom' && (
+        {isHoliday && selectedTab === 'custom' && selectedHolidayChild && (
           <Text style={styles.holidayWarningText}>
-            ₹{holidayFeePerChild}/child × {childrenData.length} ={' '}
+            ₹{holidayFeePerChild} × 1 child ({selectedHolidayChild.name}) ={' '}
             ₹{holidayTotalFee} — Additional holiday charges apply.
           </Text>
         )}
@@ -812,8 +871,13 @@ const MenuSelectionScreen = ({
                 />
               ) : (
                 <PrimaryButton
-                  title={`PAY ₹${holidayTotalFee}`}
+                  title={
+                    selectedHolidayChild
+                      ? `PAY ₹${holidayTotalFee}`
+                      : 'SELECT CHILD'
+                  }
                   onPress={handlePayNow}
+                  disabled={!selectedHolidayChild}
                   style={{width: wp('43%')}}
                 />
               )}
@@ -952,6 +1016,7 @@ const styles = StyleSheet.create({
     fontSize: wp('3.8%'),
     color: Colors.black,
     fontFamily: Fonts.Urbanist.regular,
+    marginTop: hp('0.5%'),
   },
   holidayFeeTotal: {
     fontFamily: Fonts.Urbanist.bold,
@@ -960,7 +1025,44 @@ const styles = StyleSheet.create({
   holidayFeeNote: {
     fontSize: wp('3%'),
     color: Colors.bodyText,
-    marginTop: hp('0.5%'),
+    marginBottom: hp('1%'),
+  },
+  holidayChildOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: hp('1%'),
+    paddingHorizontal: wp('2%'),
+    borderRadius: wp('2%'),
+    borderWidth: 1,
+    borderColor: Colors.default,
+    marginBottom: hp('0.8%'),
+    backgroundColor: Colors.white,
+  },
+  holidayChildOptionSelected: {
+    borderColor: Colors.primaryOrange,
+    backgroundColor: Colors.lightRed,
+  },
+  holidayChildRadioOuter: {
+    width: wp('5%'),
+    height: wp('5%'),
+    borderRadius: wp('2.5%'),
+    borderWidth: 2,
+    borderColor: Colors.primaryOrange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: wp('3%'),
+  },
+  holidayChildRadioInner: {
+    width: wp('2.5%'),
+    height: wp('2.5%'),
+    borderRadius: wp('1.25%'),
+    backgroundColor: Colors.primaryOrange,
+  },
+  holidayChildName: {
+    fontSize: wp('4%'),
+    fontFamily: Fonts.Urbanist.semiBold,
+    color: Colors.black,
+    textTransform: 'capitalize',
   },
   menuHeader: {
     flexDirection: 'row',

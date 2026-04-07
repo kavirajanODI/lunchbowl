@@ -24,7 +24,7 @@ import {
 } from 'react-native-responsive-screen';
 import {SvgXml} from 'react-native-svg';
 import {validateLoginForm} from 'screens/validations';
-import {facebookIcon, googleIcon, logo} from 'styles/svg-icons';
+import {logo} from 'styles/svg-icons';
 import {useAuth} from '../../../context/AuthContext';
 
 const LoginScreen = ({navigation, route}: {navigation: any; route: any}) => {
@@ -74,10 +74,6 @@ const LoginScreen = ({navigation, route}: {navigation: any; route: any}) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGoogleLogin = () => {
-    navigation.navigate('GoogleAuth');
   };
 
   const handleCloseError = () => {
@@ -167,29 +163,7 @@ const LoginScreen = ({navigation, route}: {navigation: any; route: any}) => {
                 />
               </View>
 
-              {/*########## DEVIDER   ############ */}
 
-              <View style={styles.dividerContainer}>
-                <View style={styles.line} />
-                <Text style={styles.orText}>or Login with</Text>
-                <View style={styles.line} />
-              </View>
-
-              {/*########## SOCIAL BUTTON   ######### */}
-
-              <View style={styles.socialButtonRow}>
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={handleGoogleLogin}>
-                  <SvgXml xml={googleIcon} style={styles.socialIcon} />
-                  <Text style={styles.socialButtonText}>Google</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.socialButton}>
-                  <SvgXml xml={facebookIcon} style={styles.socialIcon} />
-                  <Text style={styles.socialButtonText}>Facebook</Text>
-                </TouchableOpacity>
-              </View>
 
               {/*########## FOOTER   ######### */}
 

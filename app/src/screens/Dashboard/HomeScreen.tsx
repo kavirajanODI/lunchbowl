@@ -21,7 +21,6 @@ import FreeTrialCard from './Components/FreeTrialCard';
 import Header from './Components/Header';
 import PopularMenus from './Components/PopularMenusMarquee';
 import SchoolMarquee from './Components/SchoolsServes';
-import SearchBar from './Components/Search';
 import WhatsAppButton from 'components/buttons/WhatsAppButton';
 import EasterEgg from 'components/Fun/EasterEgg';
 import HomeSkeleton from 'components/skeletons/HomeSkeleton';
@@ -108,12 +107,6 @@ const HomeScreen: React.FC<{navigation: any}> = ({navigation}) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{paddingBottom: hp('10%')}}>
           <Header userName={userName ?? 'GuestUSer'} navigation={navigation} />
-          <SearchBar
-            value={''}
-            onChangeText={function (text: string): void {
-              throw new Error('Function not implemented.');
-            }}
-          />
           <PromoBanner navigation={navigation} />
           <SectionTitle> Kick Start your Trial Meal</SectionTitle>
           <FreeTrialCard />

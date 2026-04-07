@@ -7,10 +7,10 @@ import {
 } from 'react-native-responsive-screen';
 import {SvgXml} from 'react-native-svg';
 
-import HistoryNavigator from 'screens/History/HistoryNavigator';
 import MenueNavigator from 'screens/Menu/MenueNavigator';
 import MyPlanNavigator from 'screens/MyPlan/MyPlanNavigator';
 import DashboardNavigator from './Dashboard/DashboardNavigator';
+import UserDashboardTabNavigator from './UserDashboardTabNavigator';
 
 import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
 import {Colors} from 'assets/styles/colors';
@@ -30,7 +30,6 @@ import {
   MyPlanIconInactive,
 } from 'styles/svg-icons';
 import {hiddenTabRoutes, isTabHidden} from './HiddenTabRoutes';
-import CustomerNavigator from './Dashboard/Child/CustomerNavigator';
 
 const Tab = createBottomTabNavigator();
 
@@ -64,7 +63,7 @@ const AppNavigator = () => {
             case 'MyPlan':
               iconXml = focused ? MyPlanIconActive : MyPlanIconInactive;
               break;
-            case 'History':
+            case 'Dashboard':
               iconXml = focused ? HistoryIconActive : HistoryIconInactive;
               break;
           }
@@ -150,7 +149,7 @@ const AppNavigator = () => {
         )}
       </Tab.Screen>
 
-      <Tab.Screen name="History" component={HistoryNavigator} />
+      <Tab.Screen name="Dashboard" component={UserDashboardTabNavigator} />
     </Tab.Navigator>
   );
 };
