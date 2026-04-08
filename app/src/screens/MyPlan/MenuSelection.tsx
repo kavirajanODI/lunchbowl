@@ -559,6 +559,7 @@ const MenuSelectionScreen = ({
       return;
     }
 
+    const childrenPayload: {childId: string; mealName: string}[] = [];
     for (const id of selectedHolidayChildIds) {
       const childIndex = childrenData.findIndex(c => c.id === id);
       const child = childrenData[childIndex];
@@ -569,10 +570,35 @@ const MenuSelectionScreen = ({
         );
         return;
       }
+      childrenPayload.push({childId: id, mealName: selectedDishes[childIndex]});
     }
 
-    // Navigate to PaymentSuccess screen, same as regular subscription test payment
-    navigation.replace('PaymentSuccess');
+    setLoading(true);
+    try {
+      const orderId = `LB${Date.now()}${Math.floor(Math.random() * 1000)}`;
+      const transactionId = `TEST_TXN_${Date.now()}`;
+      const dateStr = `${selectedDate.getFullYear()}-${_pad(selectedDate.getMonth() + 1)}-${_pad(selectedDate.getDate())}`;
+
+      const result = await HolidayService.localHolidayPaymentSuccess({
+        userId,
+        orderId,
+        transactionId,
+        childrenData: childrenPayload,
+        selectedDate: dateStr,
+        planId,
+      });
+
+      if (!result?.success) {
+        throw new Error(result?.message || 'Test payment failed');
+      }
+
+      navigation.replace('PaymentSuccess');
+    } catch (err: any) {
+      console.error('Test holiday payment error:', err);
+      Alert.alert('Error', err?.message || 'Test payment failed, please try again');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ################### RENDER ###############################
@@ -899,41 +925,26 @@ const MenuSelectionScreen = ({
             <>
               {/* Locked dates: no save/pay */}
               {isLocked ? null : isHoliday && selectedTab === 'custom' ? (
-                // Holiday date: show SAVE (for paid children) and/or PAY (for unpaid)
+                // Holiday date: PAY when unpaid children selected; SAVE when only paid children have meal changes
                 <View style={{flexDirection: 'row', gap: wp('2%'), width: wp('43%')}}>
-                  {paidChildrenWithMeal.length > 0 && selectedHolidayChildIds.length === 0 && (
-                    <PrimaryButton
-                      title={loading ? 'Saving...' : 'SAVE'}
-                      onPress={savePaidHolidayMeal}
-                      disabled={loading}
-                      style={{flex: 1}}
-                    />
-                  )}
-                  {selectedHolidayChildIds.length > 0 && paidChildrenWithMeal.length === 0 && (
+                  {selectedHolidayChildIds.length > 0 ? (
+                    // Unpaid children selected → show PAY, no SAVE
                     <PrimaryButton
                       title={`PAY ₹${holidayTotalFee}`}
                       onPress={handlePayNow}
                       disabled={holidayPayDisabled}
                       style={{flex: 1}}
                     />
-                  )}
-                  {paidChildrenWithMeal.length > 0 && selectedHolidayChildIds.length > 0 && (
-                    <>
-                      <PrimaryButton
-                        title={loading ? '...' : 'SAVE'}
-                        onPress={savePaidHolidayMeal}
-                        disabled={loading}
-                        style={{flex: 1}}
-                      />
-                      <PrimaryButton
-                        title={`PAY ₹${holidayTotalFee}`}
-                        onPress={handlePayNow}
-                        disabled={holidayPayDisabled}
-                        style={{flex: 1}}
-                      />
-                    </>
-                  )}
-                  {paidChildrenWithMeal.length === 0 && selectedHolidayChildIds.length === 0 && (
+                  ) : paidChildrenWithMeal.length > 0 ? (
+                    // No unpaid selected, paid children have meal changes → show SAVE
+                    <PrimaryButton
+                      title={loading ? 'Saving...' : 'SAVE'}
+                      onPress={savePaidHolidayMeal}
+                      disabled={loading}
+                      style={{flex: 1}}
+                    />
+                  ) : (
+                    // Nothing selected yet
                     <PrimaryButton
                       title="SELECT CHILD"
                       onPress={() => {}}
