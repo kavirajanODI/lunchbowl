@@ -2291,7 +2291,7 @@ const getFormData = async (req, res) => {
 
 const getPaidHolidays = async (req, res) => {
   try {
-    const userId = req.body.userId;
+    const { userId, date } = req.body;
     if (!userId) {
       return res.status(400).json({
         success: false,
@@ -2299,11 +2299,14 @@ const getPaidHolidays = async (req, res) => {
       });
     }
 
-    // Find all paid holiday records for the user where paymentStatus is "Paid"
-    const paidHolidays = await HolidayPayment.find({
-      userId,
-      paymentStatus: "Paid",
-    }).lean();
+    const query = { userId, paymentStatus: "Paid" };
+    // If a specific date (YYYY-MM-DD) is provided, filter by mealDate
+    if (date) {
+      query.mealDate = date;
+    }
+
+    // Find paid holiday records for the user where paymentStatus is "Paid"
+    const paidHolidays = await HolidayPayment.find(query).lean();
 
     if (!paidHolidays || paidHolidays.length === 0) {
       return res.status(404).json({

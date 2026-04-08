@@ -1082,11 +1082,13 @@ exports.localHolidayPaymentSuccess = async (req, res) => {
       // Update UserMeal
       let plan = userMeal.plans.find((p) => p.planId === planId);
       if (!plan) {
-        plan = { planId, children: [] };
-        userMeal.plans.push(plan);
+        userMeal.plans.push({ planId, children: [] });
+        // Use the hydrated Mongoose subdocument (not the original plain object)
+        plan = userMeal.plans[userMeal.plans.length - 1];
       }
 
-      let childEntry = plan.children.find((c) => c.childId.equals(childId));
+      // Use toString() for safe comparison that works with both ObjectId and strings
+      let childEntry = plan.children.find((c) => c.childId.toString() === childId.toString());
       if (!childEntry) {
         plan.children.push({ childId, meals: [{ mealDate: new Date(selectedDate), mealName }] });
       } else {

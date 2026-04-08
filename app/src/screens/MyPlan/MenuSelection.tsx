@@ -134,10 +134,13 @@ const MenuSelectionScreen = ({
   } | null>(null);
   const [showTip, setShowTip] = useState(false);
 
-  // For holiday payment: multiple children can be selected via checkboxes
+  // For holiday payment: multiple children can be selected via checkboxes (UNPAID only)
   const [selectedHolidayChildIds, setSelectedHolidayChildIds] = useState<
     string[]
   >([]);
+
+  // Children who have already paid for the currently selected holiday date
+  const [paidHolidayChildIds, setPaidHolidayChildIds] = useState<string[]>([]);
 
   //################ ERROR HANDLING #######################
 
@@ -221,6 +224,30 @@ const MenuSelectionScreen = ({
   // Regular working day → show normal SAVE flow
   const isHoliday = !isSunday && (isCurrentDateHoliday || isCurrentDateWeekend);
 
+  // When selectedDate changes and it is a holiday, fetch which children have already paid
+  useEffect(() => {
+    if (!userId || !isHoliday) {
+      setPaidHolidayChildIds([]);
+      setSelectedHolidayChildIds([]);
+      return;
+    }
+    const y = selectedDate.getFullYear();
+    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const d = String(selectedDate.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
+    HolidayService.getPaidHolidaysByDate(userId, dateStr).then(res => {
+      if (res?.success && Array.isArray(res.data)) {
+        const ids = res.data.map((p: any) => String(p.childId));
+        setPaidHolidayChildIds(ids);
+      } else {
+        setPaidHolidayChildIds([]);
+      }
+      // Reset unpaid selection when date changes
+      setSelectedHolidayChildIds([]);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, isHoliday, userId]);
+
   // Edit lock: date is today or in the past (next-day logic — any action today takes effect tomorrow)
   const isLocked = useMemo(
     () => isWithin48Hours(selectedDate),
@@ -229,13 +256,14 @@ const MenuSelectionScreen = ({
 
   // ₹200 per child for holiday meals
   const holidayFeePerChild = 200;
+  // Unpaid children selected via checkboxes
   const selectedHolidayChildren = useMemo(
     () => childrenData.filter(c => selectedHolidayChildIds.includes(c.id)),
     [selectedHolidayChildIds, childrenData],
   );
   const holidayTotalFee = selectedHolidayChildren.length * holidayFeePerChild;
 
-  // PAY button disabled when no child selected OR any selected child has no meal chosen
+  // PAY button disabled when no unpaid child selected OR any selected unpaid child has no meal chosen
   const holidayPayDisabled = useMemo(() => {
     if (selectedHolidayChildIds.length === 0) return true;
     return selectedHolidayChildIds.some(id => {
@@ -243,6 +271,15 @@ const MenuSelectionScreen = ({
       return idx < 0 || !selectedDishes[idx];
     });
   }, [selectedHolidayChildIds, childrenData, selectedDishes]);
+
+  // Paid children who have selected a meal → can be saved without re-payment
+  const paidChildrenWithMeal = useMemo(
+    () =>
+      childrenData.filter(
+        c => paidHolidayChildIds.includes(c.id) && selectedDishes[childrenData.indexOf(c)],
+      ),
+    [paidHolidayChildIds, childrenData, selectedDishes],
+  );
 
   const formatDate = (date: Date) =>
     date.toLocaleDateString('en-GB', {
@@ -440,6 +477,43 @@ const MenuSelectionScreen = ({
     } catch (error) {
       console.error('🔥 Save menu error:', error);
       Alert.alert('Error', 'Something went wrong while saving the menu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Save updated meal for children who have already paid for this holiday date
+  const savePaidHolidayMeal = async () => {
+    setLoading(true);
+    try {
+      if (!userId) throw new Error('User ID not found. Please login again.');
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const payload = {
+        _id: userId,
+        path: 'save-meals',
+        data: {
+          userId,
+          planId,
+          children: paidChildrenWithMeal.map(child => ({
+            childId: child.id,
+            meals: [{
+              mealDate: new Date(dateStr).toISOString(),
+              mealName: selectedDishes[childrenData.indexOf(child)],
+            }],
+          })),
+        },
+      };
+      const response = await MenuService.saveMenuSelection(payload);
+      if (response?.success) {
+        setAlertType('success');
+        setAlertMessage('Holiday meal updated successfully!');
+      } else {
+        setAlertType('error');
+        setAlertMessage(response?.error || 'Failed to update meal');
+      }
+      setAlertVisible(true);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to save meal');
     } finally {
       setLoading(false);
     }
@@ -645,46 +719,72 @@ const MenuSelectionScreen = ({
               <Text style={styles.holidayFeeTitle}>
                 🏖 Holiday Meal Booking
               </Text>
-              <Text style={styles.holidayFeeNote}>
-                Select one or more children below and choose their meal, then tap PAY.
-              </Text>
-              {childrenData.map(child => {
-                const isChecked = selectedHolidayChildIds.includes(child.id);
-                return (
-                  <TouchableOpacity
-                    key={child.id}
-                    style={[
-                      styles.holidayChildOption,
-                      isChecked && styles.holidayChildOptionSelected,
-                    ]}
-                    onPress={() =>
-                      setSelectedHolidayChildIds(prev =>
-                        isChecked
-                          ? prev.filter(id => id !== child.id)
-                          : [...prev, child.id],
-                      )
-                    }>
-                    <View
-                      style={[
-                        styles.holidayChildCheckOuter,
-                        isChecked && styles.holidayChildCheckChecked,
-                      ]}>
-                      {isChecked && (
-                        <Text style={styles.holidayChildCheckMark}>✓</Text>
-                      )}
-                    </View>
-                    <Text style={styles.holidayChildName}>{child.name}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-              {selectedHolidayChildIds.length > 0 && (
-                <Text style={styles.holidayFeeDetail}>
-                  ₹{holidayFeePerChild} × {selectedHolidayChildIds.length} child
-                  {selectedHolidayChildIds.length > 1 ? 'ren' : ''} ={' '}
-                  <Text style={styles.holidayFeeTotal}>
-                    ₹{holidayTotalFee}
+
+              {/* Paid children — always visible, can update meal */}
+              {childrenData.some(c => paidHolidayChildIds.includes(c.id)) && (
+                <>
+                  <Text style={styles.holidayFeeNote}>
+                    ✅ Already paid — you can update their meal:
                   </Text>
-                </Text>
+                  {childrenData
+                    .filter(c => paidHolidayChildIds.includes(c.id))
+                    .map(child => (
+                      <View key={`paid-${child.id}`} style={[styles.holidayChildOption, styles.holidayChildOptionSelected]}>
+                        <Text style={[styles.holidayChildName, {color: Colors.green}]}>
+                          ✓ {child.name}
+                        </Text>
+                      </View>
+                    ))}
+                </>
+              )}
+
+              {/* Unpaid children — select via checkboxes for payment */}
+              {childrenData.some(c => !paidHolidayChildIds.includes(c.id)) && (
+                <>
+                  <Text style={[styles.holidayFeeNote, {marginTop: hp('1%')}]}>
+                    Select children to book holiday meal:
+                  </Text>
+                  {childrenData
+                    .filter(c => !paidHolidayChildIds.includes(c.id))
+                    .map(child => {
+                      const isChecked = selectedHolidayChildIds.includes(child.id);
+                      return (
+                        <TouchableOpacity
+                          key={child.id}
+                          style={[
+                            styles.holidayChildOption,
+                            isChecked && styles.holidayChildOptionSelected,
+                          ]}
+                          onPress={() =>
+                            setSelectedHolidayChildIds(prev =>
+                              isChecked
+                                ? prev.filter(id => id !== child.id)
+                                : [...prev, child.id],
+                            )
+                          }>
+                          <View
+                            style={[
+                              styles.holidayChildCheckOuter,
+                              isChecked && styles.holidayChildCheckChecked,
+                            ]}>
+                            {isChecked && (
+                              <Text style={styles.holidayChildCheckMark}>✓</Text>
+                            )}
+                          </View>
+                          <Text style={styles.holidayChildName}>{child.name}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  {selectedHolidayChildIds.length > 0 && (
+                    <Text style={styles.holidayFeeDetail}>
+                      ₹{holidayFeePerChild} × {selectedHolidayChildIds.length} child
+                      {selectedHolidayChildIds.length > 1 ? 'ren' : ''} ={' '}
+                      <Text style={styles.holidayFeeTotal}>
+                        ₹{holidayTotalFee}
+                      </Text>
+                    </Text>
+                  )}
+                </>
               )}
             </View>
           )}
@@ -735,6 +835,8 @@ const MenuSelectionScreen = ({
                   keyboardShouldPersistTaps="handled">
                   {(isHoliday
                     ? childrenData.filter(c =>
+                        // paid children always shown; unpaid only when checked
+                        paidHolidayChildIds.includes(c.id) ||
                         selectedHolidayChildIds.includes(c.id),
                       )
                     : childrenData
@@ -879,22 +981,55 @@ const MenuSelectionScreen = ({
           {!isSunday && (
             <>
               {/* Locked dates: no save/pay */}
-              {isLocked ? null : !isHoliday || selectedTab === 'dietitian' ? (
+              {isLocked ? null : isHoliday && selectedTab === 'custom' ? (
+                // Holiday date: show SAVE (for paid children) and/or PAY (for unpaid)
+                <View style={{flexDirection: 'row', gap: wp('2%'), width: wp('43%')}}>
+                  {paidChildrenWithMeal.length > 0 && selectedHolidayChildIds.length === 0 && (
+                    <PrimaryButton
+                      title={loading ? 'Saving...' : 'SAVE'}
+                      onPress={savePaidHolidayMeal}
+                      disabled={loading}
+                      style={{flex: 1}}
+                    />
+                  )}
+                  {selectedHolidayChildIds.length > 0 && paidChildrenWithMeal.length === 0 && (
+                    <PrimaryButton
+                      title={`PAY ₹${holidayTotalFee}`}
+                      onPress={handlePayNow}
+                      disabled={holidayPayDisabled}
+                      style={{flex: 1}}
+                    />
+                  )}
+                  {paidChildrenWithMeal.length > 0 && selectedHolidayChildIds.length > 0 && (
+                    <>
+                      <PrimaryButton
+                        title={loading ? '...' : 'SAVE'}
+                        onPress={savePaidHolidayMeal}
+                        disabled={loading}
+                        style={{flex: 1}}
+                      />
+                      <PrimaryButton
+                        title={`PAY ₹${holidayTotalFee}`}
+                        onPress={handlePayNow}
+                        disabled={holidayPayDisabled}
+                        style={{flex: 1}}
+                      />
+                    </>
+                  )}
+                  {paidChildrenWithMeal.length === 0 && selectedHolidayChildIds.length === 0 && (
+                    <PrimaryButton
+                      title="SELECT CHILD"
+                      onPress={() => {}}
+                      disabled={true}
+                      style={{flex: 1}}
+                    />
+                  )}
+                </View>
+              ) : (
                 <PrimaryButton
                   title={loading ? 'Saving...' : 'SAVE'}
                   onPress={SaveMenue}
                   disabled={loading}
-                  style={{width: wp('43%')}}
-                />
-              ) : (
-                <PrimaryButton
-                  title={
-                    selectedHolidayChildIds.length > 0
-                      ? `PAY ₹${holidayTotalFee}`
-                      : 'SELECT CHILD'
-                  }
-                  onPress={handlePayNow}
-                  disabled={holidayPayDisabled}
                   style={{width: wp('43%')}}
                 />
               )}
@@ -903,7 +1038,7 @@ const MenuSelectionScreen = ({
         </View>
 
         {/* Test / local payment button for holidays (dev mode) */}
-        {isHoliday && selectedTab === 'custom' && !isLocked && (
+        {isHoliday && selectedTab === 'custom' && !isLocked && selectedHolidayChildIds.length > 0 && (
           <View style={styles.testButtonContainer}>
             <TouchableOpacity
               style={styles.testButton}

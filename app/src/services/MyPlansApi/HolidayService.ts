@@ -72,6 +72,24 @@ class HolidayService {
     }
   }
 
+  static async getPaidHolidaysByDate(userId: string, date: string): Promise<ApiResponseModel> {
+    try {
+      const response = await holidaysApi.getPaidHolidaysByDate(userId, date);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      // 404 means no paid holidays → treat as success with empty array
+      if (error?.response?.status === 404) {
+        return { success: true, data: [], message: '', error: '' };
+      }
+      return {
+        success: false,
+        message: 'Error fetching paid holidays',
+        data: null,
+        error: this.handleApiError(error),
+      };
+    }
+  }
+
   static async localHolidayPaymentSuccess(payload: {
     userId: string;
     orderId: string;
