@@ -2300,8 +2300,12 @@ const getPaidHolidays = async (req, res) => {
     }
 
     const query = { userId, paymentStatus: "Paid" };
-    // If a specific date (YYYY-MM-DD) is provided, filter by mealDate
-    if (date) {
+    // If a specific date (YYYY-MM-DD) is provided, validate and filter by mealDate
+    if (date !== undefined) {
+      // Validate the date is a proper YYYY-MM-DD string to prevent injection
+      if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ success: false, message: "Invalid date format. Use YYYY-MM-DD." });
+      }
       query.mealDate = date;
     }
 

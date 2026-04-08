@@ -56,6 +56,13 @@ const deleteAccountLimit = rateLimit({
   message: { success: false, message: 'Too many delete-account requests. Please try again later.' },
 });
 
+// Rate limiter for holiday payment queries (max 60 requests per 15 min per IP)
+const paidHolidaysLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+});
+
 //verify email
 router.post("/verify-email", emailVerificationLimit, verifyEmailAddress);
 
@@ -139,7 +146,7 @@ router.post("/payment/verify", verifyCCAvenuePayment);
 // CCAvenue Response Handler
 router.post("/payment/response", handleCCAvenueResponse);
 
-router.post("/get-paid-holidays", getPaidHolidays);
+router.post("/get-paid-holidays", paidHolidaysLimit, getPaidHolidays);
 
 router.post("/get-all-children", getAllChildrenForUser);
 
