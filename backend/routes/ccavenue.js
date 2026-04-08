@@ -23,7 +23,7 @@ router.post("/local-success", localPaymentSuccess);
 
 router.post("/local-success/local-add-childPayment", localAddChildPaymentController);
 
-// Test/local holiday payment (no CCAvenue gateway) — no rate limiter, same as /local-success
-router.post("/local-holiday-success", localHolidayPaymentSuccess);
+// Test/local holiday payment (no CCAvenue gateway)
+router.post("/local-holiday-success", localPaymentLimiter, localHolidayPaymentSuccess);
 
 module.exports = router;
