@@ -8,6 +8,7 @@ import {useAuth} from 'context/AuthContext';
 import {useAppConfig} from 'context/AppConfigContext';
 import React, {useCallback, useEffect, useState} from 'react';
 import {
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +21,7 @@ import HolidayService from 'services/MyPlansApi/HolidayService';
 import RegistrationService from 'services/RegistartionService/registartion';
 import {Holiday} from 'src/model/calendarModels';
 import {getNextCalendarDay} from 'utils/dateUtils';
+import {getDaysInMonth, getFirstDayOfMonth} from 'utils/calendarUtils';
 
 //####################### HELPER FUNCTIONS   ######################
 
@@ -109,6 +111,191 @@ const getEffectiveStartDate = (base: Date, holidays: Holiday[] = []): Date => {
   return newDate;
 };
 
+// ── Working Days Preview Modal ──────────────────────────────────────────────
+
+const MODAL_MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+type WorkingDaysModalProps = {
+  visible: boolean;
+  onClose: () => void;
+  startDate: Date;
+  endDate: Date;
+  holidays: Holiday[];
+  totalWorkingDays: number;
+};
+
+function WorkingDaysModal({
+  visible,
+  onClose,
+  startDate,
+  endDate,
+  holidays,
+  totalWorkingDays,
+}: WorkingDaysModalProps) {
+  const [viewMonth, setViewMonth] = useState<number>(startDate.getMonth());
+  const [viewYear, setViewYear] = useState<number>(startDate.getFullYear());
+
+  // Reset to plan start month whenever modal opens or startDate changes
+  useEffect(() => {
+    if (visible) {
+      setViewMonth(startDate.getMonth());
+      setViewYear(startDate.getFullYear());
+    }
+  }, [visible, startDate]);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const planStart = new Date(startDate);
+  planStart.setHours(0, 0, 0, 0);
+  const planEnd = new Date(endDate);
+  planEnd.setHours(0, 0, 0, 0);
+
+  // Holiday set uses YYYY-MM-DD strings (UTC-based from backend — correct for same calendar day)
+  const holidaySet = new Set(holidays.map(h => h.date));
+
+  const daysInCurrentMonth = getDaysInMonth(viewMonth, viewYear);
+  const firstDayIdx = getFirstDayOfMonth(viewMonth, viewYear); // 0 = Monday
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDayIdx; i++) cells.push(null);
+  for (let d = 1; d <= daysInCurrentMonth; d++) cells.push(d);
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    else setViewMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  };
+
+  const getDayInfo = (day: number) => {
+    const date = new Date(viewYear, viewMonth, day);
+    date.setHours(0, 0, 0, 0);
+    const dow = date.getDay(); // 0=Sun, 6=Sat
+    const isWeekendDay = dow === 0 || dow === 6;
+    const isTodayDay = date.getTime() === today.getTime();
+    const isHolidayDay = holidaySet.has(toLocalDateStr(date));
+    const inPlanRange = date >= planStart && date <= planEnd;
+    const isWorkDay = inPlanRange && !isWeekendDay && !isHolidayDay;
+    return {isWeekendDay, isTodayDay, isHolidayDay, inPlanRange, isWorkDay};
+  };
+
+  const getCircleBg = (day: number): string => {
+    const {isTodayDay, isWeekendDay, isWorkDay} = getDayInfo(day);
+    if (isTodayDay) return Colors.primaryOrange;
+    if (isWorkDay) return Colors.green;
+    if (isWeekendDay) return Colors.lightRed;
+    return Colors.Storke; // past / outside range / holiday in range
+  };
+
+  const getDayTextColor = (day: number): string => {
+    const {isTodayDay, isWorkDay} = getDayInfo(day);
+    return isTodayDay || isWorkDay ? Colors.white : Colors.bodyText;
+  };
+
+  const formatDateRange = (d: Date): string => {
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={modalSt.overlay}>
+        <View style={modalSt.card}>
+          {/* Title + Close */}
+          <View style={modalSt.titleRow}>
+            <Text style={modalSt.title}>YOUR SUBSCRIPTION WORKING DAYS</Text>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={{top: 8, left: 8, bottom: 8, right: 8}}>
+              <Text style={modalSt.closeX}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Month navigation */}
+          <View style={modalSt.monthNav}>
+            <TouchableOpacity
+              onPress={prevMonth}
+              hitSlop={{top: 8, left: 8, bottom: 8, right: 8}}>
+              <Text style={modalSt.navArrow}>‹</Text>
+            </TouchableOpacity>
+            <Text style={modalSt.monthLabel}>
+              {MODAL_MONTH_NAMES[viewMonth]}, {viewYear}
+            </Text>
+            <TouchableOpacity
+              onPress={nextMonth}
+              hitSlop={{top: 8, left: 8, bottom: 8, right: 8}}>
+              <Text style={modalSt.navArrow}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Weekday headers */}
+          <View style={modalSt.weekRow}>
+            {['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d => (
+              <Text
+                key={d}
+                style={[modalSt.weekHeader, (d === 'SAT' || d === 'SUN') && modalSt.weekendHeader]}>
+                {d}
+              </Text>
+            ))}
+          </View>
+
+          {/* Day grid */}
+          <View style={modalSt.daysGrid}>
+            {cells.map((day, idx) => {
+              if (day === null) {
+                return <View key={`e-${idx}`} style={modalSt.dayCell} />;
+              }
+              const {isHolidayDay} = getDayInfo(day);
+              const bgColor = getCircleBg(day);
+              const textColor = getDayTextColor(day);
+              return (
+                <View key={day} style={modalSt.dayCell}>
+                  <View style={[modalSt.dayCircle, {backgroundColor: bgColor}]}>
+                    <Text style={[modalSt.dayNum, {color: textColor}]}>{day}</Text>
+                  </View>
+                  {isHolidayDay && <View style={modalSt.holidayDot} />}
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Legend */}
+          <View style={modalSt.legend}>
+            <View style={modalSt.legendRow}>
+              <View style={[modalSt.legendSwatch, {backgroundColor: Colors.green}]} />
+              <Text style={modalSt.legendText}>Your Working Days</Text>
+              <View style={[modalSt.legendSwatch, {backgroundColor: Colors.lightRed}]} />
+              <Text style={modalSt.legendText}>Weekends</Text>
+            </View>
+            <View style={modalSt.legendRow}>
+              <View style={modalSt.legendDotItem} />
+              <Text style={modalSt.legendText}>Holidays</Text>
+              <View style={[modalSt.legendSwatch, {backgroundColor: Colors.Storke}]} />
+              <Text style={modalSt.legendText}>Past Dates</Text>
+              <View style={[modalSt.legendSwatch, {backgroundColor: Colors.primaryOrange}]} />
+              <Text style={modalSt.legendText}>Today</Text>
+            </View>
+          </View>
+
+          {/* Plan info */}
+          <Text style={modalSt.infoLine}>
+            Subscription Period: {formatDateRange(startDate)} – {formatDateRange(endDate)}
+          </Text>
+          <Text style={modalSt.infoLine}>This plan activates after 48 hrs</Text>
+          <Text style={modalSt.infoLineBold}>Total Working Days: {totalWorkingDays}</Text>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ── Subscription Plan component ────────────────────────────────────────────
 export default function SubscriptionPlan({
   selectedPlan,
   setSelectedPlan,
@@ -137,6 +324,8 @@ export default function SubscriptionPlan({
   const [customStartDates, setCustomStartDates] = useState<Record<number, Date>>({});
   // Which plan's date picker is currently open (null = none)
   const [showDatePickerFor, setShowDatePickerFor] = useState<number | null>(null);
+  // Which plan's working-days helper modal is currently open (null = none)
+  const [workingDaysModalFor, setWorkingDaysModalFor] = useState<number | null>(null);
   // Validation errors for each plan's custom date picker
   const [customDateErrors, setCustomDateErrors] = useState<Record<number, string | null>>({});
 
@@ -468,20 +657,29 @@ export default function SubscriptionPlan({
                   )}
                 </View>
 
-                {/* Calendar date-picker button — visible only on selected plan */}
+                {/* Date-picker + working-days info buttons (selected plan only) */}
                 {isSelected && (
-                  <TouchableOpacity
-                    style={styles.datePickerBtn}
-                    onPress={() => {
-                      setSelectedPlan(plan);
-                      setShowDatePickerFor(plan.days);
-                    }}
-                    activeOpacity={0.75}>
-                    <Text style={styles.datePickerIcon}>📅</Text>
-                    <Text style={styles.datePickerDate} numberOfLines={1}>
-                      {formatDateShort(effectiveStart)}
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={styles.planCardRightBtns}>
+                    <TouchableOpacity
+                      style={styles.datePickerBtn}
+                      onPress={() => {
+                        setSelectedPlan(plan);
+                        setShowDatePickerFor(plan.days);
+                      }}
+                      activeOpacity={0.75}>
+                      <Text style={styles.datePickerIcon}>📅</Text>
+                      <Text style={styles.datePickerDate} numberOfLines={1}>
+                        {formatDateShort(effectiveStart)}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.infoIconBtn}
+                      onPress={() => setWorkingDaysModalFor(plan.days)}
+                      activeOpacity={0.75}
+                      hitSlop={{top: 6, left: 6, bottom: 6, right: 6}}>
+                      <Text style={styles.infoIconText}>ℹ</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
 
@@ -521,66 +719,77 @@ export default function SubscriptionPlan({
         })}
 
         {/* ── Offers Available ──────────────────────────────────── */}
-        <View style={styles.offersCard}>
-          <Text style={styles.offersTitle}>OFFERS AVAILABLE</Text>
-          {selectedCount >= config.multiChildThreshold ? (
-            // Multi-child offers
-            <>
-              {config.multiChildDiscounts.oneMonth > 0 && (
-                <Text style={styles.offerItem}>
-                  {'• Save '}
-                  <Text style={styles.offerBold}>{config.multiChildDiscounts.oneMonth}%</Text>
-                  {` on the ${config.planDurations.oneMonth} Working Days Plan (for ${config.multiChildThreshold}+ children).`}
+        {(() => {
+          const selectedHasCustomDate =
+            selectedPlan != null && (customStartDates[selectedPlan.days] ?? null) != null;
+          return (
+            <View style={styles.offersCard}>
+              <Text style={styles.offersTitle}>OFFERS AVAILABLE</Text>
+              {selectedHasCustomDate && (
+                <Text style={styles.customDateOfferNote}>
+                  ⚠️ Custom start date selected — multi-child discounts are not applied. Only base plan discounts are used.
                 </Text>
               )}
-              {config.multiChildDiscounts.threeMonths > 0 && (
-                <Text style={styles.offerItem}>
-                  {'• Save '}
-                  <Text style={styles.offerBold}>{config.multiChildDiscounts.threeMonths}%</Text>
-                  {` on the ${config.planDurations.threeMonths} Working Days Plan (for ${config.multiChildThreshold}+ children).`}
-                </Text>
+              {selectedCount >= config.multiChildThreshold ? (
+                // Multi-child offers
+                <>
+                  {config.multiChildDiscounts.oneMonth > 0 && (
+                    <Text style={styles.offerItem}>
+                      {'• Save '}
+                      <Text style={styles.offerBold}>{config.multiChildDiscounts.oneMonth}%</Text>
+                      {` on the ${config.planDurations.oneMonth} Working Days Plan (for ${config.multiChildThreshold}+ children).`}
+                    </Text>
+                  )}
+                  {config.multiChildDiscounts.threeMonths > 0 && (
+                    <Text style={styles.offerItem}>
+                      {'• Save '}
+                      <Text style={styles.offerBold}>{config.multiChildDiscounts.threeMonths}%</Text>
+                      {` on the ${config.planDurations.threeMonths} Working Days Plan (for ${config.multiChildThreshold}+ children).`}
+                    </Text>
+                  )}
+                  {config.multiChildDiscounts.sixMonths > 0 && (
+                    <Text style={styles.offerItem}>
+                      {'• Save '}
+                      <Text style={styles.offerBold}>{config.multiChildDiscounts.sixMonths}%</Text>
+                      {` on the ${config.planDurations.sixMonths} Working Days Plan (for ${config.multiChildThreshold}+ children).`}
+                    </Text>
+                  )}
+                  <Text style={styles.offerNote}>
+                    Note: Per Day Meal = Rs. {PER_DAY_COST} (No. of Days × Rs. {PER_DAY_COST} × {selectedCount} children = Subscription Amount)
+                  </Text>
+                </>
+              ) : (
+                // Single-child offers
+                <>
+                  {config.singleChildDiscounts.oneMonth > 0 && (
+                    <Text style={styles.offerItem}>
+                      {'• Save '}
+                      <Text style={styles.offerBold}>{config.singleChildDiscounts.oneMonth}%</Text>
+                      {` on the ${config.planDurations.oneMonth} Working Days Plan.`}
+                    </Text>
+                  )}
+                  {config.singleChildDiscounts.threeMonths > 0 && (
+                    <Text style={styles.offerItem}>
+                      {'• Save '}
+                      <Text style={styles.offerBold}>{config.singleChildDiscounts.threeMonths}%</Text>
+                      {` on the ${config.planDurations.threeMonths} Working Days Plan.`}
+                    </Text>
+                  )}
+                  {config.singleChildDiscounts.sixMonths > 0 && (
+                    <Text style={styles.offerItem}>
+                      {'• Save '}
+                      <Text style={styles.offerBold}>{config.singleChildDiscounts.sixMonths}%</Text>
+                      {` on the ${config.planDurations.sixMonths} Working Days Plan.`}
+                    </Text>
+                  )}
+                  <Text style={styles.offerNote}>
+                    Note: Per Day Meal = Rs. {PER_DAY_COST} (No. of Days × Rs. {PER_DAY_COST} × {selectedCount} {selectedCount > 1 ? 'children' : 'child'} = Subscription Amount)
+                  </Text>
+                </>
               )}
-              {config.multiChildDiscounts.sixMonths > 0 && (
-                <Text style={styles.offerItem}>
-                  {'• Save '}
-                  <Text style={styles.offerBold}>{config.multiChildDiscounts.sixMonths}%</Text>
-                  {` on the ${config.planDurations.sixMonths} Working Days Plan (for ${config.multiChildThreshold}+ children).`}
-                </Text>
-              )}
-              <Text style={styles.offerNote}>
-                Note: Per Day Meal = Rs. {PER_DAY_COST} (No. of Days × Rs. {PER_DAY_COST} × {selectedCount} children = Subscription Amount)
-              </Text>
-            </>
-          ) : (
-            // Single-child offers
-            <>
-              {config.singleChildDiscounts.oneMonth > 0 && (
-                <Text style={styles.offerItem}>
-                  {'• Save '}
-                  <Text style={styles.offerBold}>{config.singleChildDiscounts.oneMonth}%</Text>
-                  {` on the ${config.planDurations.oneMonth} Working Days Plan.`}
-                </Text>
-              )}
-              {config.singleChildDiscounts.threeMonths > 0 && (
-                <Text style={styles.offerItem}>
-                  {'• Save '}
-                  <Text style={styles.offerBold}>{config.singleChildDiscounts.threeMonths}%</Text>
-                  {` on the ${config.planDurations.threeMonths} Working Days Plan.`}
-                </Text>
-              )}
-              {config.singleChildDiscounts.sixMonths > 0 && (
-                <Text style={styles.offerItem}>
-                  {'• Save '}
-                  <Text style={styles.offerBold}>{config.singleChildDiscounts.sixMonths}%</Text>
-                  {` on the ${config.planDurations.sixMonths} Working Days Plan.`}
-                </Text>
-              )}
-              <Text style={styles.offerNote}>
-                Note: Per Day Meal = Rs. {PER_DAY_COST} (No. of Days × Rs. {PER_DAY_COST} × {selectedCount} {selectedCount > 1 ? 'children' : 'child'} = Subscription Amount)
-              </Text>
-            </>
-          )}
-        </View>
+            </View>
+          );
+        })()}
 
         {/* ── Back / Next buttons ───────────────────────────────── */}
         <View style={styles.btnRow}>
@@ -593,6 +802,28 @@ export default function SubscriptionPlan({
           />
         </View>
       </ScrollView>
+
+      {/* ── Working Days helper modal ───────────────────────────── */}
+      {workingDaysModalFor !== null && (() => {
+        const plan = plans.find(p => p.days === workingDaysModalFor);
+        if (!plan) return null;
+        const customStart = customStartDates[plan.days] ?? null;
+        const isCustomForModal = selectedPlan?.days === plan.days && customStart != null;
+        const modalStart = customStart ?? plan.startDate;
+        const modalEnd = isCustomForModal
+          ? addWorkingDays(customStart, plan.days, holidays)
+          : plan.endDate;
+        return (
+          <WorkingDaysModal
+            visible
+            onClose={() => setWorkingDaysModalFor(null)}
+            startDate={modalStart}
+            endDate={modalEnd}
+            holidays={holidays}
+            totalWorkingDays={plan.days}
+          />
+        );
+      })()}
 
       {/* ── Per-plan date picker (rendered outside ScrollView so it overlays properly) */}
       {showDatePickerFor !== null && (() => {
@@ -618,9 +849,18 @@ export default function SubscriptionPlan({
                 return;
               }
               if (!isWorkingDay(picked, holidays)) {
+                const dow = picked.getDay();
+                const isWeekendPicked = dow === 0 || dow === 6;
+                const pickedStr = toLocalDateStr(picked);
+                const holidayName = holidays.find(h => h.date === pickedStr)?.name;
+                const reason = isWeekendPicked
+                  ? 'Weekends are not working days.'
+                  : holidayName
+                  ? `${holidayName} is a public holiday.`
+                  : 'This is not a working day.';
                 setCustomDateErrors(prev => ({
                   ...prev,
-                  [planDays]: 'Please select a working day (no weekends or holidays).',
+                  [planDays]: `Cannot select this date — ${reason} Please choose a weekday that is not a holiday.`,
                 }));
                 return;
               }
@@ -868,5 +1108,183 @@ const styles = StyleSheet.create({
   nextBtn: {
     flex: 1,
     marginLeft: 10,
+  },
+
+  // ── Plan card right-side button group (date picker + info icon) ─
+  planCardRightBtns: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  infoIconBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: Colors.primaryOrange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+  infoIconText: {
+    fontSize: 13,
+    color: Colors.primaryOrange,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+
+  // ── Offers card: custom-date warning note ─────────────────────
+  customDateOfferNote: {
+    fontSize: 12,
+    color: Colors.primaryOrange,
+    fontStyle: 'italic',
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.primaryOrange,
+    paddingLeft: 6,
+    lineHeight: 18,
+  },
+});
+
+// ── Working Days Modal styles ─────────────────────────────────────────────
+const modalSt = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  card: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+    maxWidth: 400,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.primaryOrange,
+    flex: 1,
+    marginRight: 8,
+    lineHeight: 18,
+  },
+  closeX: {
+    fontSize: 16,
+    color: Colors.bodyText,
+    fontWeight: '700',
+  },
+  monthNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  navArrow: {
+    fontSize: 24,
+    color: Colors.primaryOrange,
+    fontWeight: '700',
+    paddingHorizontal: 8,
+  },
+  monthLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.black,
+  },
+  weekRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  weekHeader: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.bodyText,
+    paddingVertical: 4,
+  },
+  weekendHeader: {
+    color: Colors.red,
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  dayCell: {
+    width: `${100 / 7}%` as any,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    position: 'relative',
+  },
+  dayCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayNum: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  holidayDot: {
+    position: 'absolute',
+    top: 4,
+    right: 6,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.red,
+  },
+  legend: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.Storke,
+    paddingTop: 10,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    flexWrap: 'wrap',
+  },
+  legendSwatch: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginRight: 4,
+  },
+  legendDotItem: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.red,
+    marginRight: 4,
+  },
+  legendText: {
+    fontSize: 11,
+    color: Colors.bodyText,
+    marginRight: 10,
+  },
+  infoLine: {
+    fontSize: 12,
+    color: Colors.bodyText,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  infoLineBold: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.primaryOrange,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
