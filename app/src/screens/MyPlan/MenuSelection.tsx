@@ -591,16 +591,8 @@ const MenuSelectionScreen = ({
         throw new Error(result?.message || 'Test holiday payment failed');
       }
 
-      Alert.alert(
-        'Test Payment Successful',
-        `Holiday meal booked!\nTransaction ID: ${transactionId}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.replace('PlanCalendar'),
-          },
-        ],
-      );
+      // Navigate to PaymentSuccess screen, same as regular subscription test payment
+      navigation.replace('PaymentSuccess');
     } catch (err: any) {
       console.error('Test holiday payment error:', err);
       Alert.alert('Error', err?.message || 'Test holiday payment failed');

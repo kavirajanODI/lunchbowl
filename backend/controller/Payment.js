@@ -415,13 +415,14 @@ exports.holiydayPayment = async (req, res) => {
 
         if (!plan) {
           console.log("🆕 Creating new plan:", planId);
-          plan = { planId, children: [] };
-          userMeal.plans.push(plan);
+          userMeal.plans.push({ planId, children: [] });
+          // Use the hydrated Mongoose subdocument so childId.equals() and push work correctly
+          plan = userMeal.plans[userMeal.plans.length - 1];
         }
 
         // --- Find or create child under plan
         console.log("🔍 Searching child entry:", childId);
-        let childEntry = plan.children.find((c) => c.childId.equals(childId));
+        let childEntry = plan.children.find((c) => c.childId.toString() === childId.toString());
 
         if (!childEntry) {
           console.log("🆕 Adding new child entry");
