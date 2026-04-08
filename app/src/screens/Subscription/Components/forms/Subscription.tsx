@@ -39,11 +39,28 @@ const formatDateShort = (d: Date): string => {
   return `${String(d.getDate()).padStart(2, '0')} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 };
 
+/**
+ * Format a Date as a local YYYY-MM-DD string WITHOUT timezone conversion.
+ *
+ * `.toISOString()` converts to UTC first, which in positive-offset timezones
+ * (e.g. IST = UTC+5:30) shifts midnight local time to the previous calendar
+ * day in UTC. This helper avoids that by reading the date components directly
+ * from the local clock so the string always matches what the user sees.
+ */
+const toLocalDateStr = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 const addWorkingDays = (
   start: Date,
   requiredDays: number,
   holidays: Holiday[] = [],
 ): Date => {
+  // Holiday dates come from the backend as midnight UTC strings (e.g. "2026-04-03"),
+  // so .toISOString().split('T')[0] is correct for them.
   const holidaySet = new Set(
     holidays.map(h => new Date(h.date).toISOString().split('T')[0]),
   );
@@ -53,7 +70,8 @@ const addWorkingDays = (
 
   while (count < requiredDays) {
     const day = temp.getDay();
-    const dateStr = temp.toISOString().split('T')[0];
+    // Use local date string so the comparison is always in the user's timezone
+    const dateStr = toLocalDateStr(temp);
 
     if (day !== 0 && day !== 6 && !holidaySet.has(dateStr)) {
       count++;
@@ -73,7 +91,8 @@ const isWorkingDay = (date: Date, holidays: Holiday[] = []): boolean => {
   const holidaySet = new Set(
     holidays.map(h => new Date(h.date).toISOString().split('T')[0]),
   );
-  return !holidaySet.has(date.toISOString().split('T')[0]);
+  // Use local date string for the same reason as in addWorkingDays
+  return !holidaySet.has(toLocalDateStr(date));
 };
 
 /**
@@ -281,8 +300,8 @@ export default function SubscriptionPlan({
         selectedPlan: planId,
         workingDays,
         totalPrice,
-        startDate: effectiveStart.toISOString().split('T')[0],
-        endDate: effectiveEnd.toISOString().split('T')[0],
+        startDate: toLocalDateStr(effectiveStart),
+        endDate: toLocalDateStr(effectiveEnd),
         numberOfChildren: selectedCount,
         children: selectedChildIds,
       },
