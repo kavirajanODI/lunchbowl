@@ -55,20 +55,11 @@ const mealOptions: DropdownOption[] = allMeals.map(meal => ({
 
 // ################### MEAL PLANS (Dietitian) #######################
 
-const dietitianPlan1Meals = dietitianData.meal_plan.map(d => d.meal);
-// Plan 2 uses the first-meal-of-each-day from menus.json reversed to give users
-// a nutritionally different second option from the same pool of recipes.
-const dietitianPlan2Meals = menues.meal_plan
-  .filter(d => d.meals && d.meals.length > 0)
-  .map(d => d.meals[0])
-  .reverse();
-
-const mealPlans: Record<string, {name: string; meals: string[]}> = {
-  '1': {name: 'Meal Plan 1', meals: dietitianPlan1Meals},
-  '2': {name: 'Meal Plan 2', meals: dietitianPlan2Meals},
-};
+const dietitianPlanMeals = dietitianData.meal_plan.map(d => d.meal);
 
 // ################### WORKING DAYS HELPER #########################
+
+const _pad = (n: number) => String(n).padStart(2, '0');
 
 const getWorkingDays = (
   from: Date,
@@ -82,7 +73,8 @@ const getWorkingDays = (
   end.setHours(0, 0, 0, 0);
   while (cur <= end) {
     const dow = cur.getDay();
-    const iso = cur.toISOString().split('T')[0];
+    // Use local date components to avoid UTC-offset issues (e.g. IST = UTC+5:30)
+    const iso = `${cur.getFullYear()}-${_pad(cur.getMonth() + 1)}-${_pad(cur.getDate())}`;
     if (dow !== 0 && dow !== 6 && !holidays.some(h => h.date === iso)) {
       days.push(iso);
     }
@@ -122,10 +114,6 @@ const MenuSelectionScreen = ({
   const [savedMeals, setSavedMeals] = useState<
     Record<string, Record<string, Record<string, string>>>
   >({});
-  // Per-child dietitian plan selection: childId → planKey '1' or '2'
-  const [childPlanSelections, setChildPlanSelections] = useState<
-    Record<string, string>
-  >({});
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   // Plan shown in the View Plan popup
   const [viewPlanItem, setViewPlanItem] = useState<{
@@ -164,7 +152,6 @@ const MenuSelectionScreen = ({
 
   useEffect(() => {
     setSelectedDishes([]);
-    setChildPlanSelections({});
   }, [selectedTab]);
 
   const {holidays} = useDate();
@@ -340,29 +327,28 @@ const MenuSelectionScreen = ({
   const SaveMenue = async () => {
     setLoading(true);
     try {
-      // Edit lock check: meals scheduled for today or earlier cannot be changed
-      // (next-day logic — any action today only takes effect tomorrow)
-      if (isWithin48Hours(selectedDate)) {
-        Alert.alert(
-          'Locked',
-          'Meal can be changed only before the previous day cutoff.',
-        );
-        setLoading(false);
-        return;
-      }
-
-      const errorMsg = validateMenuDate(selectedDate, holidays);
-      if (errorMsg) {
-        Alert.alert('Not Allowed', errorMsg);
-        setLoading(false);
-        return;
-      }
-
       let childrenPayload: any;
 
       switch (selectedTab) {
         // ############# CUSTOM PLAN #############
         case 'custom': {
+          // Edit lock and date validation only apply to single-date custom saves
+          if (isWithin48Hours(selectedDate)) {
+            Alert.alert(
+              'Locked',
+              'Meal can be changed only before the previous day cutoff.',
+            );
+            setLoading(false);
+            return;
+          }
+
+          const errorMsg = validateMenuDate(selectedDate, holidays);
+          if (errorMsg) {
+            Alert.alert('Not Allowed', errorMsg);
+            setLoading(false);
+            return;
+          }
+
           let datesToSave: string[];
 
           if (saveForUpcoming && endDate) {
@@ -373,7 +359,8 @@ const MenuSelectionScreen = ({
               holidays,
             );
           } else {
-            datesToSave = [selectedDate.toISOString().split('T')[0]];
+            const sd = selectedDate;
+            datesToSave = [`${sd.getFullYear()}-${_pad(sd.getMonth() + 1)}-${_pad(sd.getDate())}`];
           }
 
           childrenPayload = {
@@ -396,18 +383,6 @@ const MenuSelectionScreen = ({
 
         // ############# DIETITIAN PLAN #############
         case 'dietitian': {
-          const hasSelections = childrenData.every(
-            c => !!childPlanSelections[c.id],
-          );
-          if (!hasSelections) {
-            Alert.alert(
-              'Error',
-              'Please select a Dietitian plan for every child before saving',
-            );
-            setLoading(false);
-            return;
-          }
-
           // Generate working days within the selected month that fall in the subscription range
           const monthStart = new Date(
             selectedMonth.getFullYear(),
@@ -439,19 +414,15 @@ const MenuSelectionScreen = ({
             data: {
               userId,
               planId,
-              children: childrenData.map(child => {
-                const planKey = childPlanSelections[child.id] || '1';
-                const planMeals = mealPlans[planKey].meals;
-                return {
-                  childId: child.id,
-                  // Cycle through plan meals for each working day.
-                  // If working days > plan length, meals repeat from the beginning.
-                  meals: workingDays.map((date, i) => ({
-                    mealDate: new Date(date).toISOString(),
-                    mealName: planMeals[i % planMeals.length],
-                  })),
-                };
-              }),
+              children: childrenData.map(child => ({
+                childId: child.id,
+                // Cycle through plan meals for each working day.
+                // If working days > plan length, meals repeat from the beginning.
+                meals: workingDays.map((date, i) => ({
+                  mealDate: new Date(date).toISOString(),
+                  mealName: dietitianPlanMeals[i % dietitianPlanMeals.length],
+                })),
+              })),
             },
           };
           break;
@@ -487,7 +458,7 @@ const MenuSelectionScreen = ({
     setLoading(true);
     try {
       if (!userId) throw new Error('User ID not found. Please login again.');
-      const dateStr = selectedDate.toISOString().split('T')[0];
+      const dateStr = `${selectedDate.getFullYear()}-${_pad(selectedDate.getMonth() + 1)}-${_pad(selectedDate.getDate())}`;
       const payload = {
         _id: userId,
         path: 'save-meals',
@@ -605,7 +576,7 @@ const MenuSelectionScreen = ({
 
       const orderId = `LB-HOLIDAY-TEST-${Date.now()}`;
       const transactionId = `TEST_HOLIDAY_TXN_${Date.now()}`;
-      const mealDateStr = selectedDate.toISOString().split('T')[0];
+      const mealDateStr = `${selectedDate.getFullYear()}-${_pad(selectedDate.getMonth() + 1)}-${_pad(selectedDate.getDate())}`;
 
       const result: any = await HolidayService.localHolidayPaymentSuccess({
         userId,
@@ -888,56 +859,34 @@ const MenuSelectionScreen = ({
                   })}
                 </ScrollView>
               ) : (
-                // ---------- Dietitian Plan (per-child) ----------
+                // ---------- Dietitian Plan ----------
                 <View style={{marginTop: hp('1%')}}>
-                  {childrenData.map(child => (
-                    <View key={child.id} style={styles.childDietSection}>
-                      <Text style={styles.childName}>{child.name}</Text>
-                      {Object.entries(mealPlans).map(([key, plan]) => {
-                        const isSelected =
-                          (childPlanSelections[child.id] ?? '') === key;
-                        return (
-                          <TouchableOpacity
-                            key={key}
-                            style={[
-                              styles.planCard,
-                              isSelected && styles.selectedPlanCard,
-                            ]}
-                            onPress={() =>
-                              setChildPlanSelections(prev => ({
-                                ...prev,
-                                [child.id]: key,
-                              }))
-                            }>
-                            <View style={styles.planHeader}>
-                              <View style={styles.planInfo}>
-                                <View
-                                  style={[
-                                    styles.radioOuter,
-                                    isSelected && styles.radioOuterSelected,
-                                  ]}>
-                                  {isSelected && (
-                                    <View style={styles.radioInner} />
-                                  )}
-                                </View>
-                                <Text
-                                  style={[
-                                    styles.planTitle,
-                                    isSelected && {color: Colors.primaryOrange},
-                                  ]}>
-                                  {plan.name}
-                                </Text>
-                              </View>
-                              <TouchableOpacity
-                                onPress={() => setViewPlanItem(plan)}>
-                                <Text style={styles.viewPlanText}>VIEW PLAN</Text>
-                              </TouchableOpacity>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
+                  <View
+                    style={[styles.planCard, styles.selectedPlanCard]}
+                    >
+                    <View style={styles.planHeader}>
+                      <View style={styles.planInfo}>
+                        <View style={[styles.radioOuter, styles.radioOuterSelected]}>
+                          <View style={styles.radioInner} />
+                        </View>
+                        <Text style={[styles.planTitle, {color: Colors.primaryOrange}]}>
+                          Dietitian Meal Plan
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() =>
+                          setViewPlanItem({
+                            name: 'Dietitian Meal Plan',
+                            meals: dietitianPlanMeals,
+                          })
+                        }>
+                        <Text style={styles.viewPlanText}>VIEW PLAN</Text>
+                      </TouchableOpacity>
                     </View>
-                  ))}
+                  </View>
+                  <Text style={styles.noteText}>
+                    This plan will be applied to all working days (excluding weekends &amp; holidays) of the selected month for every child.
+                  </Text>
                 </View>
               )}
             </View>
