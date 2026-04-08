@@ -217,7 +217,7 @@ const FoodListCard: React.FC<Props> = ({
                        <Text style={styles.deletedLabel}>Deleted</Text>
                        {isHolidayOrWeekend(item.date) ? (
                          <Text style={styles.deletedMessage}>
-                           This holiday meal has been deleted.
+                           This holiday meal has been deleted. Holiday meals are purchased separately, so no wallet credit applies.
                          </Text>
                        ) : (
                          <>
