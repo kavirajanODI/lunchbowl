@@ -885,7 +885,7 @@ const MenuSelectionScreen = ({
                     </View>
                   </View>
                   <Text style={styles.noteText}>
-                    This plan will be applied to all working days (excluding weekends &amp; holidays) of the selected month for every child.
+                    This plan will be applied to all working days (excluding weekends & holidays) of the selected month for every child.
                   </Text>
                 </View>
               )}

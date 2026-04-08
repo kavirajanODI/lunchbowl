@@ -2299,7 +2299,11 @@ const getPaidHolidays = async (req, res) => {
       });
     }
 
-    const query = { userId, paymentStatus: "Paid" };
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid userId" });
+    }
+
+    const query = { userId: new mongoose.Types.ObjectId(userId), paymentStatus: "Paid" };
     // If a specific date (YYYY-MM-DD) is provided, validate and filter by mealDate
     if (date !== undefined) {
       // Validate the date is a proper YYYY-MM-DD string to prevent injection
