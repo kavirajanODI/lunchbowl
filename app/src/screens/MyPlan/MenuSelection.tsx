@@ -134,10 +134,10 @@ const MenuSelectionScreen = ({
   } | null>(null);
   const [showTip, setShowTip] = useState(false);
 
-  // For holiday payment: only one child can be selected at a time
-  const [selectedHolidayChildId, setSelectedHolidayChildId] = useState<
-    string | null
-  >(null);
+  // For holiday payment: multiple children can be selected via checkboxes
+  const [selectedHolidayChildIds, setSelectedHolidayChildIds] = useState<
+    string[]
+  >([]);
 
   //################ ERROR HANDLING #######################
 
@@ -227,16 +227,22 @@ const MenuSelectionScreen = ({
     [selectedDate],
   );
 
-  // ₹200 per child for holiday meals (only the selected child)
+  // ₹200 per child for holiday meals
   const holidayFeePerChild = 200;
-  const selectedHolidayChild = useMemo(
-    () =>
-      selectedHolidayChildId
-        ? childrenData.find(c => c.id === selectedHolidayChildId) ?? null
-        : null,
-    [selectedHolidayChildId, childrenData],
+  const selectedHolidayChildren = useMemo(
+    () => childrenData.filter(c => selectedHolidayChildIds.includes(c.id)),
+    [selectedHolidayChildIds, childrenData],
   );
-  const holidayTotalFee = selectedHolidayChild ? holidayFeePerChild : 0;
+  const holidayTotalFee = selectedHolidayChildren.length * holidayFeePerChild;
+
+  // PAY button disabled when no child selected OR any selected child has no meal chosen
+  const holidayPayDisabled = useMemo(() => {
+    if (selectedHolidayChildIds.length === 0) return true;
+    return selectedHolidayChildIds.some(id => {
+      const idx = childrenData.findIndex(c => c.id === id);
+      return idx < 0 || !selectedDishes[idx];
+    });
+  }, [selectedHolidayChildIds, childrenData, selectedDishes]);
 
   const formatDate = (date: Date) =>
     date.toLocaleDateString('en-GB', {
@@ -443,31 +449,29 @@ const MenuSelectionScreen = ({
     try {
       if (!userId) throw new Error('User ID not found. Please login again.');
 
-      // Validate that a child has been selected for holiday payment
-      if (!selectedHolidayChild) {
-        Alert.alert('Select Child', 'Please select a child for the holiday meal.');
+      // Validate that at least one child has been selected for holiday payment
+      if (selectedHolidayChildIds.length === 0) {
+        Alert.alert('Select Child', 'Please select at least one child for the holiday meal.');
         return;
       }
 
-      // Find the dish selected for this child
-      const childIndex = childrenData.findIndex(
-        c => c.id === selectedHolidayChild.id,
-      );
-      if (!selectedDishes[childIndex]) {
-        Alert.alert(
-          'Select Meal',
-          `Please select a meal for ${selectedHolidayChild.name}`,
-        );
-        return;
-      }
-
-      // Build payload with only the selected child
-      const childrenPayload = [
-        {
-          childId: selectedHolidayChild.id,
+      // Build payload with all selected children
+      const childrenPayload: {childId: string; mealName: string}[] = [];
+      for (const id of selectedHolidayChildIds) {
+        const childIndex = childrenData.findIndex(c => c.id === id);
+        const child = childrenData[childIndex];
+        if (!selectedDishes[childIndex]) {
+          Alert.alert(
+            'Select Meal',
+            `Please select a meal for ${child?.name ?? id}`,
+          );
+          return;
+        }
+        childrenPayload.push({
+          childId: id,
           mealName: selectedDishes[childIndex],
-        },
-      ];
+        });
+      }
 
       const paymentData = createHolidayPaymentRequest(
         ccavenueConfig,
@@ -503,32 +507,31 @@ const MenuSelectionScreen = ({
     try {
       if (!userId) throw new Error('User ID not found. Please login again.');
 
-      if (!selectedHolidayChild) {
-        Alert.alert('Select Child', 'Please select a child for the holiday meal.');
+      if (selectedHolidayChildIds.length === 0) {
+        Alert.alert('Select Child', 'Please select at least one child for the holiday meal.');
         return;
       }
 
-      const childIndex = childrenData.findIndex(
-        c => c.id === selectedHolidayChild.id,
-      );
-      if (!selectedDishes[childIndex]) {
-        Alert.alert(
-          'Select Meal',
-          `Please select a meal for ${selectedHolidayChild.name}`,
-        );
-        return;
+      const childrenPayload: {childId: string; mealName: string}[] = [];
+      for (const id of selectedHolidayChildIds) {
+        const childIndex = childrenData.findIndex(c => c.id === id);
+        const child = childrenData[childIndex];
+        if (!selectedDishes[childIndex]) {
+          Alert.alert(
+            'Select Meal',
+            `Please select a meal for ${child?.name ?? id}`,
+          );
+          return;
+        }
+        childrenPayload.push({
+          childId: id,
+          mealName: selectedDishes[childIndex],
+        });
       }
 
       const orderId = `LB-HOLIDAY-TEST-${Date.now()}`;
       const transactionId = `TEST_HOLIDAY_TXN_${Date.now()}`;
       const mealDateStr = selectedDate.toISOString().split('T')[0];
-
-      const childrenPayload = [
-        {
-          childId: selectedHolidayChild.id,
-          mealName: selectedDishes[childIndex],
-        },
-      ];
 
       const result: any = await HolidayService.localHolidayPaymentSuccess({
         userId,
@@ -643,28 +646,41 @@ const MenuSelectionScreen = ({
                 🏖 Holiday Meal Booking
               </Text>
               <Text style={styles.holidayFeeNote}>
-                Select one child below and choose their meal, then tap PAY.
+                Select one or more children below and choose their meal, then tap PAY.
               </Text>
-              {childrenData.map(child => (
-                <TouchableOpacity
-                  key={child.id}
-                  style={[
-                    styles.holidayChildOption,
-                    selectedHolidayChildId === child.id &&
-                      styles.holidayChildOptionSelected,
-                  ]}
-                  onPress={() => setSelectedHolidayChildId(child.id)}>
-                  <View style={styles.holidayChildRadioOuter}>
-                    {selectedHolidayChildId === child.id && (
-                      <View style={styles.holidayChildRadioInner} />
-                    )}
-                  </View>
-                  <Text style={styles.holidayChildName}>{child.name}</Text>
-                </TouchableOpacity>
-              ))}
-              {selectedHolidayChild && (
+              {childrenData.map(child => {
+                const isChecked = selectedHolidayChildIds.includes(child.id);
+                return (
+                  <TouchableOpacity
+                    key={child.id}
+                    style={[
+                      styles.holidayChildOption,
+                      isChecked && styles.holidayChildOptionSelected,
+                    ]}
+                    onPress={() =>
+                      setSelectedHolidayChildIds(prev =>
+                        isChecked
+                          ? prev.filter(id => id !== child.id)
+                          : [...prev, child.id],
+                      )
+                    }>
+                    <View
+                      style={[
+                        styles.holidayChildCheckOuter,
+                        isChecked && styles.holidayChildCheckChecked,
+                      ]}>
+                      {isChecked && (
+                        <Text style={styles.holidayChildCheckMark}>✓</Text>
+                      )}
+                    </View>
+                    <Text style={styles.holidayChildName}>{child.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {selectedHolidayChildIds.length > 0 && (
                 <Text style={styles.holidayFeeDetail}>
-                  ₹{holidayFeePerChild} × 1 child ={' '}
+                  ₹{holidayFeePerChild} × {selectedHolidayChildIds.length} child
+                  {selectedHolidayChildIds.length > 1 ? 'ren' : ''} ={' '}
                   <Text style={styles.holidayFeeTotal}>
                     ₹{holidayTotalFee}
                   </Text>
@@ -718,8 +734,8 @@ const MenuSelectionScreen = ({
                   style={styles.formContainer}
                   keyboardShouldPersistTaps="handled">
                   {(isHoliday
-                    ? childrenData.filter(
-                        c => c.id === selectedHolidayChildId,
+                    ? childrenData.filter(c =>
+                        selectedHolidayChildIds.includes(c.id),
                       )
                     : childrenData
                   ).map((child, index) => {
@@ -846,10 +862,10 @@ const MenuSelectionScreen = ({
 
       {/* Sticky footer buttons */}
       <View style={styles.stickyButtonsContainer}>
-        {isHoliday && selectedTab === 'custom' && selectedHolidayChild && (
+        {isHoliday && selectedTab === 'custom' && selectedHolidayChildIds.length > 0 && (
           <Text style={styles.holidayWarningText}>
-            ₹{holidayFeePerChild} × 1 child ({selectedHolidayChild.name}) ={' '}
-            ₹{holidayTotalFee} — Additional holiday charges apply.
+            ₹{holidayFeePerChild} × {selectedHolidayChildIds.length} child
+            {selectedHolidayChildIds.length > 1 ? 'ren' : ''} = ₹{holidayTotalFee} — Additional holiday charges apply.
           </Text>
         )}
         <View style={styles.stickyButtonsRow}>
@@ -873,12 +889,12 @@ const MenuSelectionScreen = ({
               ) : (
                 <PrimaryButton
                   title={
-                    selectedHolidayChild
+                    selectedHolidayChildIds.length > 0
                       ? `PAY ₹${holidayTotalFee}`
                       : 'SELECT CHILD'
                   }
                   onPress={handlePayNow}
-                  disabled={!selectedHolidayChild}
+                  disabled={holidayPayDisabled}
                   style={{width: wp('43%')}}
                 />
               )}
@@ -1043,21 +1059,24 @@ const styles = StyleSheet.create({
     borderColor: Colors.primaryOrange,
     backgroundColor: Colors.lightRed,
   },
-  holidayChildRadioOuter: {
+  holidayChildCheckOuter: {
     width: wp('5%'),
     height: wp('5%'),
-    borderRadius: wp('2.5%'),
+    borderRadius: wp('1%'),
     borderWidth: 2,
     borderColor: Colors.primaryOrange,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: wp('3%'),
+    backgroundColor: Colors.white,
   },
-  holidayChildRadioInner: {
-    width: wp('2.5%'),
-    height: wp('2.5%'),
-    borderRadius: wp('1.25%'),
+  holidayChildCheckChecked: {
     backgroundColor: Colors.primaryOrange,
+  },
+  holidayChildCheckMark: {
+    color: Colors.white,
+    fontSize: wp('3%'),
+    fontWeight: '700',
   },
   holidayChildName: {
     fontSize: wp('4%'),

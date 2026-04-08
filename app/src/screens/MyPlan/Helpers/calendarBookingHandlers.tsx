@@ -127,8 +127,8 @@ export const getGradientColors = (
   const booked = isBookedDate(day, currentYear, currentMonth, foodList);
   if (booked) {
     return booked.editable
-      ? [Colors.lightRed, Colors.lightRed] // editable booking
-      : [Colors.greeFadd, Colors.greeFadd]; // locked booking
+      ? [Colors.green, Colors.green]       // editable booking – matches web "savedmenu = green"
+      : [Colors.greeFadd, Colors.greeFadd]; // locked booking – darker green
   }
 
   if (

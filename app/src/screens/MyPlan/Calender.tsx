@@ -224,9 +224,9 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
                         label: 'Holiday / Weekend',
                       },
                       {
-                        color: [Colors.lightRed, Colors.lightRed],
+                        color: [Colors.green, Colors.green],
                         label: 'Meal Booked (Editable)',
-                      }, // editable meal same as ongoing
+                      },
                       {
                         color: [Colors.greeFadd, Colors.greeFadd],
                         label: 'Meal Booked (Locked)',

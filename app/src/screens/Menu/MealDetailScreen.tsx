@@ -17,19 +17,20 @@ import ErrorMessage from 'components/Error/BoostrapStyleError';
 import {SvgXml} from 'react-native-svg';
 import {sendIcon} from 'styles/svg-icons';
 import {BlurView} from '@react-native-community/blur';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useUserProfile} from 'context/UserDataContext';
 
 type MealDetailProps = {
   navigation: any;
   route: any;
 };
 
-const MealDetailScreen: React.FC<MealDetailProps> = ({route}) => {
+const MealDetailScreen: React.FC<MealDetailProps> = ({route, navigation}) => {
   const {mealId} = route.params;
   const {meals, loading, error} = useMeals();
   const meal = meals.find(m => m.id === mealId);
   const bottomSheetRef = useRef<BottomSheet>(null);
   const [sheetIndex, setSheetIndex] = useState(0);
+  const {profileData} = useUserProfile();
 
   const snapPoints = useMemo(() => [hp('30%'), hp('70%')], []);
 
@@ -127,10 +128,11 @@ const MealDetailScreen: React.FC<MealDetailProps> = ({route}) => {
       <View style={styles.buttoncontainer}>
         <PrimaryButton
           title="Book Now"
-          onPress={async () => {
-            const endDateStr = await AsyncStorage.getItem('@subscriptionEndDate');
+          onPress={() => {
+            const activeSub = profileData?.subscriptionPlan;
             const hasActiveSubscription =
-              !!endDateStr && new Date(endDateStr) > new Date();
+              !!activeSub?.endDate &&
+              new Date(activeSub.endDate) > new Date();
             if (hasActiveSubscription) {
               navigation.navigate('MyPlan', {screen: 'PlanCalendar'});
             } else {
