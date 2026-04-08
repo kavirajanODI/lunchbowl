@@ -11,8 +11,9 @@
 
 /**
  * Safely parse an environment variable as a number with a default fallback.
- * Using `?? default` instead of `|| default` ensures that env values of '0'
- * are respected (Number('0') === 0, which is falsy but valid).
+ * Uses a null/empty check + explicit Number() conversion so that valid env
+ * values of '0' are honoured (Number('0') === 0 is falsy, which a simple
+ * `||` default would incorrectly override).
  */
 const envNumber = (key, defaultValue) => {
   const val = process.env[key];

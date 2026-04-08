@@ -50,8 +50,8 @@ const formatDateShort = (d: Date): string => {
 const toLocalDateStr = (d: Date): string => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  const dateNum = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dateNum}`;
 };
 
 const addWorkingDays = (
@@ -124,8 +124,10 @@ export default function SubscriptionPlan({
   // Derive all configurable values from remote config (falls back to defaults)
   const PER_DAY_COST = config.pricePerDayPerChild;
   // Per the business rules, custom-date plans always use the single-child (base)
-  // discount tier regardless of how many children are selected.
-  // Value of 1 is passed as `children` to applyDiscount to force the single-child tier.
+  // discount tier regardless of how many children are selected (spec: custom-date
+  // ignores multi-child pricing). This is intentionally hardcoded rather than
+  // driven by remote config because it is a pricing-contract rule, not a tunable
+  // threshold — changing it would alter the meaning of the offer entirely.
   const BASE_DISCOUNT_CHILD_COUNT = 1;
 
   const [loading, setLoading] = useState(false);
