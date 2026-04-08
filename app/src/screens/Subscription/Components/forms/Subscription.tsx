@@ -111,6 +111,15 @@ const getEffectiveStartDate = (base: Date, holidays: Holiday[] = []): Date => {
   return newDate;
 };
 
+/**
+ * Returns true when two dates fall on the same local calendar day.
+ * Uses local date components so timezone offset doesn't shift the day.
+ */
+const isSameCalendarDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
 // ── Working Days Preview Modal ──────────────────────────────────────────────
 
 const MODAL_MONTH_NAMES = [
@@ -462,7 +471,12 @@ export default function SubscriptionPlan({
     if (!selectedPlan || selectedCount === 0) return;
 
     const customStart = customStartDates[selectedPlan.days] ?? null;
-    const isCustomDate = customStart != null;
+    // Treat the selection as a truly custom date only when it differs from the
+    // plan's default start date.  Picking tomorrow (the same day the plan would
+    // start automatically) must not strip multi-child discounts.
+    const isCustomDate =
+      customStart != null &&
+      !isSameCalendarDay(customStart, selectedPlan.startDate);
 
     const effectiveStart: Date = customStart ?? selectedPlan.startDate;
     const effectiveEnd: Date = isCustomDate
@@ -575,8 +589,14 @@ export default function SubscriptionPlan({
         {plans.map(plan => {
           const isSelected = selectedPlan?.days === plan.days;
           const customStart = customStartDates[plan.days] ?? null;
-          // A custom date is "active" only on the selected plan
-          const isCustomDate = isSelected && customStart != null;
+          // A custom date is "active" (i.e. changes pricing) only when it is
+          // selected on the active plan AND it differs from the plan's default
+          // start date.  Selecting the default start date should behave as if
+          // no custom date was chosen — multi-child discounts still apply.
+          const isCustomDate =
+            isSelected &&
+            customStart != null &&
+            !isSameCalendarDay(customStart, plan.startDate);
 
           // Effective pricing: recalculate if custom date is chosen (base discounts only)
           const effectiveBasePrice = plan.days * PER_DAY_COST * selectedCount;
@@ -720,8 +740,14 @@ export default function SubscriptionPlan({
 
         {/* ── Offers Available ──────────────────────────────────── */}
         {(() => {
+          const selectedCustomStart =
+            selectedPlan != null ? (customStartDates[selectedPlan.days] ?? null) : null;
+          // Show the warning only when the custom date is truly different from the
+          // plan's default start (i.e. it will actually suppress multi-child discounts).
           const selectedHasCustomDate =
-            selectedPlan != null && (customStartDates[selectedPlan.days] ?? null) != null;
+            selectedPlan != null &&
+            selectedCustomStart != null &&
+            !isSameCalendarDay(selectedCustomStart, selectedPlan.startDate);
           return (
             <View style={styles.offersCard}>
               <Text style={styles.offersTitle}>OFFERS AVAILABLE</Text>
