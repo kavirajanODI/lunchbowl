@@ -287,7 +287,7 @@ function WorkingDaysModal({
           <Text style={modalSt.infoLine}>
             Subscription Period: {formatDateRange(startDate)} – {formatDateRange(endDate)}
           </Text>
-          <Text style={modalSt.infoLine}>This plan activates after 48 hrs</Text>
+          <Text style={modalSt.infoLine}>This plan activates from the next business day</Text>
           <Text style={modalSt.infoLineBold}>Total Working Days: {totalWorkingDays}</Text>
         </View>
       </View>
@@ -727,7 +727,7 @@ export default function SubscriptionPlan({
               <Text style={styles.offersTitle}>OFFERS AVAILABLE</Text>
               {selectedHasCustomDate && (
                 <Text style={styles.customDateOfferNote}>
-                  ⚠️ Custom start date selected — multi-child discounts are not applied. Only base plan discounts are used.
+                  ⚠️ Custom start date selected — only single-child base pricing applies. Multi-child discounts require the default start date to ensure consistent calculations.
                 </Text>
               )}
               {selectedCount >= config.multiChildThreshold ? (
