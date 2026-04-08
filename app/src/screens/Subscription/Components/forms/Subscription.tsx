@@ -20,7 +20,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import HolidayService from 'services/MyPlansApi/HolidayService';
 import RegistrationService from 'services/RegistartionService/registartion';
 import {Holiday} from 'src/model/calendarModels';
-import {getNextCalendarDay} from 'utils/dateUtils';
+import {getNextCalendarDay, isSameCalendarDay} from 'utils/dateUtils';
 import {getDaysInMonth, getFirstDayOfMonth} from 'utils/calendarUtils';
 
 //####################### HELPER FUNCTIONS   ######################
@@ -110,15 +110,6 @@ const getEffectiveStartDate = (base: Date, holidays: Holiday[] = []): Date => {
   }
   return newDate;
 };
-
-/**
- * Returns true when two dates fall on the same local calendar day.
- * Uses local date components so timezone offset doesn't shift the day.
- */
-const isSameCalendarDay = (a: Date, b: Date): boolean =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
 
 // ── Working Days Preview Modal ──────────────────────────────────────────────
 
@@ -1244,7 +1235,7 @@ const modalSt = StyleSheet.create({
     flexWrap: 'wrap',
   },
   dayCell: {
-    width: `${100 / 7}%` as any,
+    width: '14.285714%',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,

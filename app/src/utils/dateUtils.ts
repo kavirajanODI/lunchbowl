@@ -38,3 +38,12 @@ export const getNextCalendarDay = (currentTime: Date = new Date()): Date => {
 
 /** @deprecated Use `getNextCalendarDay` instead. */
 export const getEffectiveStartDate = getNextCalendarDay;
+
+/**
+ * Returns true when two dates fall on the same local calendar day.
+ * Uses local date components so timezone offset doesn't shift the day.
+ */
+export const isSameCalendarDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
