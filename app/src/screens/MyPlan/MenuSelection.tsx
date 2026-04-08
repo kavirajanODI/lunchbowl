@@ -549,54 +549,30 @@ const MenuSelectionScreen = ({
   };
 
   const handleTestHolidayPayment = async () => {
-    try {
-      if (!userId) throw new Error('User ID not found. Please login again.');
+    if (!userId) {
+      Alert.alert('Error', 'User ID not found. Please login again.');
+      return;
+    }
 
-      if (selectedHolidayChildIds.length === 0) {
-        Alert.alert('Select Child', 'Please select at least one child for the holiday meal.');
+    if (selectedHolidayChildIds.length === 0) {
+      Alert.alert('Select Child', 'Please select at least one child for the holiday meal.');
+      return;
+    }
+
+    for (const id of selectedHolidayChildIds) {
+      const childIndex = childrenData.findIndex(c => c.id === id);
+      const child = childrenData[childIndex];
+      if (!selectedDishes[childIndex]) {
+        Alert.alert(
+          'Select Meal',
+          `Please select a meal for ${child?.name ?? id}`,
+        );
         return;
       }
-
-      const childrenPayload: {childId: string; mealName: string}[] = [];
-      for (const id of selectedHolidayChildIds) {
-        const childIndex = childrenData.findIndex(c => c.id === id);
-        const child = childrenData[childIndex];
-        if (!selectedDishes[childIndex]) {
-          Alert.alert(
-            'Select Meal',
-            `Please select a meal for ${child?.name ?? id}`,
-          );
-          return;
-        }
-        childrenPayload.push({
-          childId: id,
-          mealName: selectedDishes[childIndex],
-        });
-      }
-
-      const orderId = `LB-HOLIDAY-TEST-${Date.now()}`;
-      const transactionId = `TEST_HOLIDAY_TXN_${Date.now()}`;
-      const mealDateStr = `${selectedDate.getFullYear()}-${_pad(selectedDate.getMonth() + 1)}-${_pad(selectedDate.getDate())}`;
-
-      const result: any = await HolidayService.localHolidayPaymentSuccess({
-        userId,
-        orderId,
-        transactionId,
-        childrenData: childrenPayload,
-        selectedDate: mealDateStr,
-        planId,
-      });
-
-      if (!result?.success) {
-        throw new Error(result?.message || 'Test holiday payment failed');
-      }
-
-      // Navigate to PaymentSuccess screen, same as regular subscription test payment
-      navigation.replace('PaymentSuccess');
-    } catch (err: any) {
-      console.error('Test holiday payment error:', err);
-      Alert.alert('Error', err?.message || 'Test holiday payment failed');
     }
+
+    // Navigate to PaymentSuccess screen, same as regular subscription test payment
+    navigation.replace('PaymentSuccess');
   };
 
   // ################### RENDER ###############################
