@@ -26,19 +26,21 @@ import MenuService from 'services/MyPlansApi/MenuService';
 import menus from 'services/MenueService/Data/menus.json';
 
 const canEdit = (dateStr: string): boolean => {
-  const EDIT_ADVANCE_HOURS = 48;
+  // Next-day logic: a meal is editable only if its date is strictly after today.
   const mealDate = new Date(dateStr);
   mealDate.setHours(0, 0, 0, 0);
-  const cutoff = new Date(Date.now() + EDIT_ADVANCE_HOURS * 60 * 60 * 1000);
-  return mealDate >= cutoff;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return mealDate > today;
 };
 
 const canDelete = (dateStr: string): boolean => {
-  const DELETE_ADVANCE_HOURS = 24;
+  // Next-day logic: a meal can be deleted only if its date is strictly after today.
   const mealDate = new Date(dateStr);
   mealDate.setHours(0, 0, 0, 0);
-  const cutoff = new Date(Date.now() + DELETE_ADVANCE_HOURS * 60 * 60 * 1000);
-  return mealDate >= cutoff;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return mealDate > today;
 };
 
 const allMeals = menus.meal_plan.flatMap(day => day.meals);
@@ -59,6 +61,7 @@ interface Props {
   meals: Meal[];
   userId: string;
   planId: string;
+  holidays: {date: string}[];
   onMealUpdated: () => Promise<void>;
 }
 
@@ -78,9 +81,11 @@ const FoodListCard: React.FC<Props> = ({
   meals,
   userId,
   planId,
+  holidays,
   onMealUpdated,
 }) => {
   const navigation = useNavigation<any>();
+  const [isExpanded, setIsExpanded] = useState(true);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
@@ -153,6 +158,15 @@ const FoodListCard: React.FC<Props> = ({
     navigation.navigate('Home', {screen: 'WalletScreen'});
   };
 
+  /** Holiday / weekend meals were booked via separate payment — no edit/delete/wallet. */
+  const isHolidayOrWeekend = (dateStr: string): boolean => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6) return true; // Sun or Sat
+    return holidays.some(h => h.date === dateStr);
+  };
+
   const dateRangeStr =
     startDate && endDate
       ? `(${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)})`
@@ -160,15 +174,22 @@ const FoodListCard: React.FC<Props> = ({
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.headerBlock}>
-        <Typography style={styles.header} numberOfLines={1}>
-          {childName}
-        </Typography>
+      <TouchableOpacity
+        style={styles.headerBlock}
+        onPress={() => setIsExpanded(prev => !prev)}
+        activeOpacity={0.7}>
+        <View style={styles.headerRow}>
+          <Typography style={styles.header} numberOfLines={1}>
+            {childName}
+          </Typography>
+          <Text style={styles.chevron}>{isExpanded ? '▲' : '▼'}</Text>
+        </View>
         {!!dateRangeStr && (
           <Text style={styles.dateRange}>{dateRangeStr}</Text>
         )}
-      </View>
+      </TouchableOpacity>
 
+      {isExpanded && (
       <View style={styles.table}>
         <View style={styles.row}>
           <Typography style={[styles.cell, styles.tableHeader]} numberOfLines={1}>
@@ -191,44 +212,54 @@ const FoodListCard: React.FC<Props> = ({
                   {formatDisplayDate(item.date)}
                 </Typography>
                 <View style={styles.foodCell}>
-                  {item.deleted ? (
-                    <View style={styles.deletedContainer}>
-                      <Text style={styles.deletedLabel}>Deleted</Text>
-                      <Text style={styles.deletedMessage}>
-                        This meal is deleted. The meal amount is credited to your LunchBowl wallet.
-                      </Text>
-                      <TouchableOpacity onPress={goToWallet} style={styles.goToWalletBtn}>
-                        <Text style={styles.goToWalletText}>Go to Wallet →</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <>
-                      <Typography style={styles.foodText} numberOfLines={1}>
-                        {item.food}
-                      </Typography>
-                      <View style={styles.actionButtons}>
-                        {canEdit(item.date) && (
-                          <TouchableOpacity
-                            style={styles.editButton}
-                            onPress={() => handleEdit(item)}>
-                            <SvgXml
-                              xml={EditIcon}
-                              width={wp('4%')}
-                              height={wp('4%')}
-                            />
-                          </TouchableOpacity>
-                        )}
-                        {canDelete(item.date) && (
-                          <TouchableOpacity
-                            style={styles.deleteButton}
-                            onPress={() => handleDeletePress(item)}>
-                            <Text style={styles.deleteIcon}>🗑</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    </>
-                  )}
-                </View>
+                   {item.deleted ? (
+                     <View style={styles.deletedContainer}>
+                       <Text style={styles.deletedLabel}>Deleted</Text>
+                       {isHolidayOrWeekend(item.date) ? (
+                         <Text style={styles.deletedMessage}>
+                           This holiday meal has been deleted. Holiday meals are purchased separately, so no wallet credit applies.
+                         </Text>
+                       ) : (
+                         <>
+                           <Text style={styles.deletedMessage}>
+                             This meal is deleted. The meal amount is credited to your LunchBowl wallet.
+                           </Text>
+                           <TouchableOpacity onPress={goToWallet} style={styles.goToWalletBtn}>
+                             <Text style={styles.goToWalletText}>Go to Wallet →</Text>
+                           </TouchableOpacity>
+                         </>
+                       )}
+                     </View>
+                   ) : (
+                     <>
+                       <Typography style={styles.foodText} numberOfLines={1}>
+                         {item.food}
+                       </Typography>
+                       {!isHolidayOrWeekend(item.date) && (
+                       <View style={styles.actionButtons}>
+                         {canEdit(item.date) && (
+                           <TouchableOpacity
+                             style={styles.editButton}
+                             onPress={() => handleEdit(item)}>
+                             <SvgXml
+                               xml={EditIcon}
+                               width={wp('4%')}
+                               height={wp('4%')}
+                             />
+                           </TouchableOpacity>
+                         )}
+                         {canDelete(item.date) && (
+                           <TouchableOpacity
+                             style={styles.deleteButton}
+                             onPress={() => handleDeletePress(item)}>
+                             <Text style={styles.deleteIcon}>🗑</Text>
+                           </TouchableOpacity>
+                         )}
+                       </View>
+                       )}
+                     </>
+                   )}
+                 </View>
               </View>
               {index < meals.length - 1 && (
                 <View style={styles.separator} />
@@ -237,6 +268,7 @@ const FoodListCard: React.FC<Props> = ({
           ))
         )}
       </View>
+      )}
 
       {/* Edit Modal */}
       <BottomModal
@@ -326,6 +358,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp('2%'),
     paddingVertical: hp('0.8%'),
     marginBottom: hp('0.5%'),
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  chevron: {
+    fontSize: wp('3.5%'),
+    color: Colors.primaryOrange,
   },
   header: {
     fontSize: wp('4.2%'),

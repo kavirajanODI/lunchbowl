@@ -36,6 +36,7 @@ import { formatDate } from 'utils/dateUtils';
 import CalendarLegend from './Components/ColorsLegend';
 import HolidayListCard from './Components/HolidayListCard';
 import PlanCard from './Components/MyPlan';
+import { useMenu } from 'context/MenuContext';
 
 const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   //######### STATE VARIABLES  ##############################
@@ -54,12 +55,18 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   const {holidays} = useDate();
   const {userId} = useAuth();
   const {profileData, loading, refreshProfileData} = useUserProfile();
+  const {fetchChildren} = useMenu();
 
   //######### HOOKS ############################################
 
   useFocusEffect(
     useCallback(() => {
+      // Refresh user profile (plan card, payment status)
       refreshProfileData();
+      // Also refresh MenuContext so startDate/endDate are current after payment
+      if (userId) {
+        fetchChildren({_id: userId});
+      }
     }, [userId]),
   );
 
@@ -217,9 +224,9 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
                         label: 'Holiday / Weekend',
                       },
                       {
-                        color: [Colors.lightRed, Colors.lightRed],
+                        color: [Colors.green, Colors.green],
                         label: 'Meal Booked (Editable)',
-                      }, // editable meal same as ongoing
+                      },
                       {
                         color: [Colors.greeFadd, Colors.greeFadd],
                         label: 'Meal Booked (Locked)',

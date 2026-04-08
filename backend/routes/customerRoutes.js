@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const rateLimit = require("express-rate-limit");
 const {
   loginCustomer,
   registerCustomer,
@@ -14,6 +15,7 @@ const {
   getCustomerById,
   updateCustomer,
   deleteCustomer,
+  deleteAccount,
   addAllCustomers,
   addShippingAddress,
   getShippingAddress,
@@ -46,6 +48,20 @@ const {
 // Import CCAvenue routes
 const ccavenueRoutes = require("./ccavenue");
 router.use("/ccavenue", ccavenueRoutes);
+
+// Rate limiter for sensitive destructive operations (max 5 attempts per 15 min per IP)
+const deleteAccountLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: { success: false, message: 'Too many delete-account requests. Please try again later.' },
+});
+
+// Rate limiter for holiday payment queries (max 60 requests per 15 min per IP)
+const paidHolidaysLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+});
 
 //verify email
 router.post("/verify-email", emailVerificationLimit, verifyEmailAddress);
@@ -130,7 +146,7 @@ router.post("/payment/verify", verifyCCAvenuePayment);
 // CCAvenue Response Handler
 router.post("/payment/response", handleCCAvenueResponse);
 
-router.post("/get-paid-holidays", getPaidHolidays);
+router.post("/get-paid-holidays", paidHolidaysLimit, getPaidHolidays);
 
 router.post("/get-all-children", getAllChildrenForUser);
 
@@ -142,6 +158,8 @@ router.post("/get-payments", getPaymentsForUser);
 
 router.post("/delete-meal", deleteMeal);
 
+// Delete account and all associated user data
+router.delete("/delete-account/:userId", deleteAccountLimit, deleteAccount);
 
 
 

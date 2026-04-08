@@ -130,16 +130,9 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
         throw new Error(result?.message || 'Test payment failed');
       }
 
-      Alert.alert(
-        'Test Payment Successful',
-        `Transaction ID: ${transactionId}\nStatus: ${isRenewal ? 'Upcoming' : 'Success'}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.replace('PlanCalendar'),
-          },
-        ],
-      );
+      // Navigate to the Thank You screen (same screen used by the CC Avenue flow)
+      // so the user can see confirmation before going to My Plan.
+      navigation.replace('PaymentSuccess');
     } catch (err: any) {
       console.error('Test payment error:', err);
       Alert.alert('Error', err?.message || 'Test payment failed, please try again');

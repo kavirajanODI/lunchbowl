@@ -4,6 +4,7 @@ import {Platform, SafeAreaView, StatusBar, StyleSheet} from 'react-native';
 import Toast from 'react-native-toast-message';
 import useFirebaseNotifications from 'utils/Notifications';
 import {AuthProvider} from './src/context/AuthContext';
+import {AppConfigProvider} from './src/context/AppConfigContext';
 import MainNavigator from './src/navigations/MainNavigator';
 import './src/utils/firebaseConfig';
 import {ToastProvider} from 'components/Error/Toast/ToastProvider';
@@ -12,16 +13,18 @@ const App = () => {
   useFirebaseNotifications();
   return (
     <AuthProvider>
-      <ToastProvider>       
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor={Colors.white}
-          translucent={true}
-        />
-        <SafeAreaView style={styles.safeArea}>
-          <MainNavigator />
-        </SafeAreaView>
-      </ToastProvider>
+      <AppConfigProvider>
+        <ToastProvider>       
+          <StatusBar
+            barStyle="dark-content"
+            backgroundColor={Colors.white}
+            translucent={true}
+          />
+          <SafeAreaView style={styles.safeArea}>
+            <MainNavigator />
+          </SafeAreaView>
+        </ToastProvider>
+      </AppConfigProvider>
     </AuthProvider>
   );
 };

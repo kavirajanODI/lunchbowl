@@ -127,8 +127,8 @@ export const getGradientColors = (
   const booked = isBookedDate(day, currentYear, currentMonth, foodList);
   if (booked) {
     return booked.editable
-      ? [Colors.lightRed, Colors.lightRed] // editable booking
-      : [Colors.greeFadd, Colors.greeFadd]; // locked booking
+      ? [Colors.green, Colors.green]       // editable booking – matches web "savedmenu = green"
+      : [Colors.greeFadd, Colors.greeFadd]; // locked booking – darker green
   }
 
   if (
@@ -169,7 +169,7 @@ export const getTooltipText = (
   if (booked) {
     return booked.editable
       ? `Meal Booked (Editable): ${booked.childName}'s ${booked.meal} (${booked.date})`
-      : `Meal Booked (Locked): ${booked.childName}'s ${booked.meal} (${booked.date})\nOrders must be placed at least 48 hours in advance.`;
+      : `Meal Booked (Locked): ${booked.childName}'s ${booked.meal} (${booked.date})\nOrders must be placed before the previous day cutoff.`;
   }
 
   if (isStartDate(day, startDate, currentYear, currentMonth)) return `Plan Started: ${dateStr}`;

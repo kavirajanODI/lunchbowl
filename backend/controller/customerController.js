@@ -2291,7 +2291,7 @@ const getFormData = async (req, res) => {
 
 const getPaidHolidays = async (req, res) => {
   try {
-    const userId = req.body.userId;
+    const { userId, date } = req.body;
     if (!userId) {
       return res.status(400).json({
         success: false,
@@ -2299,11 +2299,22 @@ const getPaidHolidays = async (req, res) => {
       });
     }
 
-    // Find all paid holiday records for the user where paymentStatus is "Paid"
-    const paidHolidays = await HolidayPayment.find({
-      userId,
-      paymentStatus: "Paid",
-    }).lean();
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid userId" });
+    }
+
+    const query = { userId: new mongoose.Types.ObjectId(userId), paymentStatus: "Paid" };
+    // If a specific date (YYYY-MM-DD) is provided, validate and filter by mealDate
+    if (date !== undefined) {
+      // Validate the date is a proper YYYY-MM-DD string to prevent injection
+      if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ success: false, message: "Invalid date format. Use YYYY-MM-DD." });
+      }
+      query.mealDate = date;
+    }
+
+    // Find paid holiday records for the user where paymentStatus is "Paid"
+    const paidHolidays = await HolidayPayment.find(query).lean();
 
     if (!paidHolidays || paidHolidays.length === 0) {
       return res.status(404).json({
@@ -2332,6 +2343,67 @@ function isDateInCurrentMonth(date, currentMonth) {
   return mealDate.getMonth() === currentMonth;
 }
 
+/**
+ * Delete Account
+ *
+ * Permanently removes the user and all their associated data:
+ *   - Customer record
+ *   - Form (registration / parent details)
+ *   - Child records
+ *   - Subscription records
+ *   - UserMeal records
+ *   - UserPayment records
+ *   - Otp records
+ *
+ * Route: DELETE /api/customer/delete-account/:userId
+ */
+const deleteAccount = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'userId is required' });
+  }
+
+  let objectId;
+  try {
+    objectId = new ObjectId(userId);
+  } catch (err) {
+    return res.status(400).json({ success: false, message: 'Invalid userId format' });
+  }
+
+  try {
+    // Delete all related data in parallel for efficiency
+    const deletionTasks = [
+      Form.deleteMany({ user: objectId }),
+      Child.deleteMany({ user: objectId }),
+      Subscription.deleteMany({ user: objectId }),
+      UserMeal.deleteMany({ userId: objectId }),
+      UserPayment.deleteMany({ user: objectId }),
+      // Look up phone for OTP cleanup, then delete the customer record and OTPs
+      Customer.findById(objectId).select('phone').lean().then(customer => {
+        const tasks = [Customer.deleteOne({ _id: objectId })];
+        if (customer && customer.phone) {
+          tasks.push(Otp.deleteMany({ mobile: customer.phone }));
+        }
+        return Promise.all(tasks);
+      }),
+    ];
+
+    await Promise.all(deletionTasks);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Account and all associated data have been permanently deleted.',
+    });
+  } catch (err) {
+    console.error('deleteAccount error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'An error occurred while deleting the account. Please try again.',
+    });
+  }
+};
+
 module.exports = {
   loginCustomer,
   verifyPhoneNumber,
@@ -2347,6 +2419,7 @@ module.exports = {
   getCustomerById,
   updateCustomer,
   deleteCustomer,
+  deleteAccount,
   addShippingAddress,
   getShippingAddress,
   updateShippingAddress,

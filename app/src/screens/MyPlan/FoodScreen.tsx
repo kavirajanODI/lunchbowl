@@ -23,6 +23,7 @@ import SortButtons from 'components/Filters/SortButtons';
 import ToolTipSectionHeader from 'screens/Dashboard/Components/TooltipHeader';
 import {questionIcon} from 'styles/svg-icons';
 import {useFood} from 'context/FoodContext';
+import {useDate} from 'context/calenderContext';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import PrimaryButton from 'components/buttons/PrimaryButton';
@@ -39,6 +40,7 @@ const FoodScreen = () => {
   const {userId} = useAuth();
   const {foodList, loading, onViewFoodList} = useFood();
   const {childrenData, startDate, endDate, planId} = useMenu();
+  const {holidays} = useDate();
 
   useFocusEffect(
     useCallback(() => {
@@ -142,6 +144,16 @@ const FoodScreen = () => {
                   !searchText,
               );
 
+              // Sort meals within the child card based on the active sort key
+              if (sortKey === 'date') {
+                filteredMeals.sort(
+                  (a, b) =>
+                    new Date(a.date).getTime() - new Date(b.date).getTime(),
+                );
+              } else if (sortKey === 'cuisine') {
+                filteredMeals.sort((a, b) => a.food.localeCompare(b.food));
+              }
+
               return (
                 <FoodListCard
                   key={child.id}
@@ -153,6 +165,7 @@ const FoodScreen = () => {
                   meals={filteredMeals}
                   userId={userId ?? ''}
                   planId={planId}
+                  holidays={holidays}
                   onMealUpdated={onViewFoodList}
                 />
               );

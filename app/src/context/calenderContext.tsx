@@ -36,11 +36,16 @@ export const HolidayDateProvider: React.FC<{children: React.ReactNode}> = ({
     try {
       const response: any = await HolidayService.getAllHolidays();
       if (response?.data) {
-        const formattedHolidays = response.data.map((holiday: any) => ({
-          id: holiday._id,
-          name: holiday.name,
-          date: new Date(holiday.date).toISOString().split('T')[0],
-        }));
+        const formattedHolidays = response.data.map((holiday: any) => {
+          const d = new Date(holiday.date);
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          return {
+            id: holiday._id,
+            name: holiday.name,
+            date: `${d.getFullYear()}-${mm}-${dd}`,
+          };
+        });
         setHolidays(formattedHolidays);
       } else {
         console.error('Invalid holiday data:', response);

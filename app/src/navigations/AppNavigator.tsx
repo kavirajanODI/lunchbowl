@@ -11,6 +11,7 @@ import MenueNavigator from 'screens/Menu/MenueNavigator';
 import MyPlanNavigator from 'screens/MyPlan/MyPlanNavigator';
 import DashboardNavigator from './Dashboard/DashboardNavigator';
 import UserDashboardTabNavigator from './UserDashboardTabNavigator';
+import {UserProfileProvider} from 'context/UserDataContext';
 
 import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
 import {Colors} from 'assets/styles/colors';
@@ -123,15 +124,19 @@ const AppNavigator = () => {
       />
       <Tab.Screen
         name="Menu"
-        component={MenueNavigator}
         options={({route}) => {
           const routeName = getFocusedRouteNameFromRoute(route) ?? '';
           if (isTabHidden(routeName)) {
             return {tabBarStyle: {display: 'none'}};
           }
           return {};
-        }}
-      />
+        }}>
+        {() => (
+          <UserProfileProvider>
+            <MenueNavigator />
+          </UserProfileProvider>
+        )}
+      </Tab.Screen>
 
       <Tab.Screen
         name="MyPlan"

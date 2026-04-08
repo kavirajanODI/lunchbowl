@@ -38,6 +38,10 @@ class Holidays {
   }) {
     return await httpAxiosClient.post('/ccavenue/local-holiday-success', payload);
   }
+
+  async getPaidHolidaysByDate(userId: string, date: string) {
+    return await httpAxiosClient.post('/customer/get-paid-holidays', {userId, date});
+  }
 }
 
 export default new Holidays();

@@ -6,12 +6,7 @@ import ThemeInputPrimary from 'components/inputs/ThemeInputPrimary';
 import PrimaryButton from 'components/buttons/PrimaryButton';
 import styles from '../../Components/forms/Styles/styles';
 import PrimaryTextArea from 'components/inputs/TextArea';
-import {
-  heightPercentageToDP as hp,
-  widthPercentageToDP as wp,
-} from 'react-native-responsive-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useUserProfile } from 'context/UserDataContext';
 
 export default function ParentDetails({
   fatherFirstName,
@@ -108,7 +103,7 @@ export default function ParentDetails({
       <View style={styles.parentFormContainer}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: hp('50%')}}>
+          contentContainerStyle={{paddingBottom: 24}}>
           {/* Father’s Name */}
           <PrimaryFieldLabel label="Father’s First Name" required />
           <ThemeInputPrimary
@@ -223,19 +218,16 @@ export default function ParentDetails({
             multiline
             numberOfLines={4}
           />
-        </ScrollView>
 
-        {/* Submit Button */}
-        <View style={styles.parentSubmitButtonContainer}>
-          <PrimaryButton
-            title="Next"
-            onPress={submitRegistration}
-            disabled={!isFormValid}
-            style={{
-              width: wp('90%'),
-            }}
-          />
-        </View>
+          {/* Submit Button — inside scroll so it sits naturally at end of form */}
+          <View style={{marginTop: 20}}>
+            <PrimaryButton
+              title="Next"
+              onPress={submitRegistration}
+              disabled={!isFormValid}
+            />
+          </View>
+        </ScrollView>
       </View>
     </KeyboardAvoidingView>
   );

@@ -55,20 +55,11 @@ const mealOptions: DropdownOption[] = allMeals.map(meal => ({
 
 // ################### MEAL PLANS (Dietitian) #######################
 
-const dietitianPlan1Meals = dietitianData.meal_plan.map(d => d.meal);
-// Plan 2 uses the first-meal-of-each-day from menus.json reversed to give users
-// a nutritionally different second option from the same pool of recipes.
-const dietitianPlan2Meals = menues.meal_plan
-  .filter(d => d.meals && d.meals.length > 0)
-  .map(d => d.meals[0])
-  .reverse();
-
-const mealPlans: Record<string, {name: string; meals: string[]}> = {
-  '1': {name: 'Meal Plan 1', meals: dietitianPlan1Meals},
-  '2': {name: 'Meal Plan 2', meals: dietitianPlan2Meals},
-};
+const dietitianPlanMeals = dietitianData.meal_plan.map(d => d.meal);
 
 // ################### WORKING DAYS HELPER #########################
+
+const _pad = (n: number) => String(n).padStart(2, '0');
 
 const getWorkingDays = (
   from: Date,
@@ -82,7 +73,8 @@ const getWorkingDays = (
   end.setHours(0, 0, 0, 0);
   while (cur <= end) {
     const dow = cur.getDay();
-    const iso = cur.toISOString().split('T')[0];
+    // Use local date components to avoid UTC-offset issues (e.g. IST = UTC+5:30)
+    const iso = `${cur.getFullYear()}-${_pad(cur.getMonth() + 1)}-${_pad(cur.getDate())}`;
     if (dow !== 0 && dow !== 6 && !holidays.some(h => h.date === iso)) {
       days.push(iso);
     }
@@ -122,10 +114,6 @@ const MenuSelectionScreen = ({
   const [savedMeals, setSavedMeals] = useState<
     Record<string, Record<string, Record<string, string>>>
   >({});
-  // Per-child dietitian plan selection: childId → planKey '1' or '2'
-  const [childPlanSelections, setChildPlanSelections] = useState<
-    Record<string, string>
-  >({});
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   // Plan shown in the View Plan popup
   const [viewPlanItem, setViewPlanItem] = useState<{
@@ -134,10 +122,13 @@ const MenuSelectionScreen = ({
   } | null>(null);
   const [showTip, setShowTip] = useState(false);
 
-  // For holiday payment: only one child can be selected at a time
-  const [selectedHolidayChildId, setSelectedHolidayChildId] = useState<
-    string | null
-  >(null);
+  // For holiday payment: multiple children can be selected via checkboxes (UNPAID only)
+  const [selectedHolidayChildIds, setSelectedHolidayChildIds] = useState<
+    string[]
+  >([]);
+
+  // Children who have already paid for the currently selected holiday date
+  const [paidHolidayChildIds, setPaidHolidayChildIds] = useState<string[]>([]);
 
   //################ ERROR HANDLING #######################
 
@@ -161,7 +152,6 @@ const MenuSelectionScreen = ({
 
   useEffect(() => {
     setSelectedDishes([]);
-    setChildPlanSelections({});
   }, [selectedTab]);
 
   const {holidays} = useDate();
@@ -221,22 +211,62 @@ const MenuSelectionScreen = ({
   // Regular working day → show normal SAVE flow
   const isHoliday = !isSunday && (isCurrentDateHoliday || isCurrentDateWeekend);
 
-  // 48-hr lock: date is within 48 hours from now (past or imminent)
+  // When selectedDate changes and it is a holiday, fetch which children have already paid
+  useEffect(() => {
+    if (!userId || !isHoliday) {
+      setPaidHolidayChildIds([]);
+      setSelectedHolidayChildIds([]);
+      return;
+    }
+    const y = selectedDate.getFullYear();
+    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const d = String(selectedDate.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
+    HolidayService.getPaidHolidaysByDate(userId, dateStr).then(res => {
+      if (res?.success && Array.isArray(res.data)) {
+        const ids = res.data.map((p: any) => String(p.childId));
+        setPaidHolidayChildIds(ids);
+      } else {
+        setPaidHolidayChildIds([]);
+      }
+      // Reset unpaid selection when date changes
+      setSelectedHolidayChildIds([]);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, isHoliday, userId]);
+
+  // Edit lock: date is today or in the past (next-day logic — any action today takes effect tomorrow)
   const isLocked = useMemo(
     () => isWithin48Hours(selectedDate),
     [selectedDate],
   );
 
-  // ₹200 per child for holiday meals (only the selected child)
+  // ₹200 per child for holiday meals
   const holidayFeePerChild = 200;
-  const selectedHolidayChild = useMemo(
-    () =>
-      selectedHolidayChildId
-        ? childrenData.find(c => c.id === selectedHolidayChildId) ?? null
-        : null,
-    [selectedHolidayChildId, childrenData],
+  // Unpaid children selected via checkboxes
+  const selectedHolidayChildren = useMemo(
+    () => childrenData.filter(c => selectedHolidayChildIds.includes(c.id)),
+    [selectedHolidayChildIds, childrenData],
   );
-  const holidayTotalFee = selectedHolidayChild ? holidayFeePerChild : 0;
+  const holidayTotalFee = selectedHolidayChildren.length * holidayFeePerChild;
+
+  // PAY button disabled when no unpaid child selected OR any selected unpaid child has no meal chosen
+  const holidayPayDisabled = useMemo(() => {
+    if (selectedHolidayChildIds.length === 0) return true;
+    return selectedHolidayChildIds.some(id => {
+      const idx = childrenData.findIndex(c => c.id === id);
+      return idx < 0 || !selectedDishes[idx];
+    });
+  }, [selectedHolidayChildIds, childrenData, selectedDishes]);
+
+  // Paid children who have selected a meal → can be saved without re-payment
+  const paidChildrenWithMeal = useMemo(
+    () =>
+      childrenData.filter(
+        c => paidHolidayChildIds.includes(c.id) && selectedDishes[childrenData.indexOf(c)],
+      ),
+    [paidHolidayChildIds, childrenData, selectedDishes],
+  );
 
   const formatDate = (date: Date) =>
     date.toLocaleDateString('en-GB', {
@@ -297,28 +327,28 @@ const MenuSelectionScreen = ({
   const SaveMenue = async () => {
     setLoading(true);
     try {
-      // 48-hour edit lock check
-      if (isWithin48Hours(selectedDate)) {
-        Alert.alert(
-          'Locked',
-          'Meal can be changed only before 48 hours of the meal date.',
-        );
-        setLoading(false);
-        return;
-      }
-
-      const errorMsg = validateMenuDate(selectedDate, holidays);
-      if (errorMsg) {
-        Alert.alert('Not Allowed', errorMsg);
-        setLoading(false);
-        return;
-      }
-
       let childrenPayload: any;
 
       switch (selectedTab) {
         // ############# CUSTOM PLAN #############
         case 'custom': {
+          // Edit lock and date validation only apply to single-date custom saves
+          if (isWithin48Hours(selectedDate)) {
+            Alert.alert(
+              'Locked',
+              'Meal can be changed only before the previous day cutoff.',
+            );
+            setLoading(false);
+            return;
+          }
+
+          const errorMsg = validateMenuDate(selectedDate, holidays);
+          if (errorMsg) {
+            Alert.alert('Not Allowed', errorMsg);
+            setLoading(false);
+            return;
+          }
+
           let datesToSave: string[];
 
           if (saveForUpcoming && endDate) {
@@ -329,7 +359,8 @@ const MenuSelectionScreen = ({
               holidays,
             );
           } else {
-            datesToSave = [selectedDate.toISOString().split('T')[0]];
+            const sd = selectedDate;
+            datesToSave = [`${sd.getFullYear()}-${_pad(sd.getMonth() + 1)}-${_pad(sd.getDate())}`];
           }
 
           childrenPayload = {
@@ -352,18 +383,6 @@ const MenuSelectionScreen = ({
 
         // ############# DIETITIAN PLAN #############
         case 'dietitian': {
-          const hasSelections = childrenData.every(
-            c => !!childPlanSelections[c.id],
-          );
-          if (!hasSelections) {
-            Alert.alert(
-              'Error',
-              'Please select a Dietitian plan for every child before saving',
-            );
-            setLoading(false);
-            return;
-          }
-
           // Generate working days within the selected month that fall in the subscription range
           const monthStart = new Date(
             selectedMonth.getFullYear(),
@@ -395,19 +414,15 @@ const MenuSelectionScreen = ({
             data: {
               userId,
               planId,
-              children: childrenData.map(child => {
-                const planKey = childPlanSelections[child.id] || '1';
-                const planMeals = mealPlans[planKey].meals;
-                return {
-                  childId: child.id,
-                  // Cycle through plan meals for each working day.
-                  // If working days > plan length, meals repeat from the beginning.
-                  meals: workingDays.map((date, i) => ({
-                    mealDate: new Date(date).toISOString(),
-                    mealName: planMeals[i % planMeals.length],
-                  })),
-                };
-              }),
+              children: childrenData.map(child => ({
+                childId: child.id,
+                // Cycle through plan meals for each working day.
+                // If working days > plan length, meals repeat from the beginning.
+                meals: workingDays.map((date, i) => ({
+                  mealDate: new Date(date).toISOString(),
+                  mealName: dietitianPlanMeals[i % dietitianPlanMeals.length],
+                })),
+              })),
             },
           };
           break;
@@ -438,35 +453,70 @@ const MenuSelectionScreen = ({
     }
   };
 
+  // Save updated meal for children who have already paid for this holiday date
+  const savePaidHolidayMeal = async () => {
+    setLoading(true);
+    try {
+      if (!userId) throw new Error('User ID not found. Please login again.');
+      const dateStr = `${selectedDate.getFullYear()}-${_pad(selectedDate.getMonth() + 1)}-${_pad(selectedDate.getDate())}`;
+      const payload = {
+        _id: userId,
+        path: 'save-meals',
+        data: {
+          userId,
+          planId,
+          children: paidChildrenWithMeal.map(child => ({
+            childId: child.id,
+            meals: [{
+              mealDate: new Date(dateStr).toISOString(),
+              mealName: selectedDishes[childrenData.indexOf(child)],
+            }],
+          })),
+        },
+      };
+      const response = await MenuService.saveMenuSelection(payload);
+      if (response?.success) {
+        setAlertType('success');
+        setAlertMessage('Holiday meal updated successfully!');
+      } else {
+        setAlertType('error');
+        setAlertMessage(response?.error || 'Failed to update meal');
+      }
+      setAlertVisible(true);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to save meal');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePayNow = async () => {
     try {
       if (!userId) throw new Error('User ID not found. Please login again.');
 
-      // Validate that a child has been selected for holiday payment
-      if (!selectedHolidayChild) {
-        Alert.alert('Select Child', 'Please select a child for the holiday meal.');
+      // Validate that at least one child has been selected for holiday payment
+      if (selectedHolidayChildIds.length === 0) {
+        Alert.alert('Select Child', 'Please select at least one child for the holiday meal.');
         return;
       }
 
-      // Find the dish selected for this child
-      const childIndex = childrenData.findIndex(
-        c => c.id === selectedHolidayChild.id,
-      );
-      if (!selectedDishes[childIndex]) {
-        Alert.alert(
-          'Select Meal',
-          `Please select a meal for ${selectedHolidayChild.name}`,
-        );
-        return;
-      }
-
-      // Build payload with only the selected child
-      const childrenPayload = [
-        {
-          childId: selectedHolidayChild.id,
+      // Build payload with all selected children
+      const childrenPayload: {childId: string; mealName: string}[] = [];
+      for (const id of selectedHolidayChildIds) {
+        const childIndex = childrenData.findIndex(c => c.id === id);
+        const child = childrenData[childIndex];
+        if (!selectedDishes[childIndex]) {
+          Alert.alert(
+            'Select Meal',
+            `Please select a meal for ${child?.name ?? id}`,
+          );
+          return;
+        }
+        childrenPayload.push({
+          childId: id,
           mealName: selectedDishes[childIndex],
-        },
-      ];
+        });
+      }
 
       const paymentData = createHolidayPaymentRequest(
         ccavenueConfig,
@@ -499,62 +549,55 @@ const MenuSelectionScreen = ({
   };
 
   const handleTestHolidayPayment = async () => {
-    try {
-      if (!userId) throw new Error('User ID not found. Please login again.');
+    if (!userId) {
+      Alert.alert('Error', 'User ID not found. Please login again.');
+      return;
+    }
 
-      if (!selectedHolidayChild) {
-        Alert.alert('Select Child', 'Please select a child for the holiday meal.');
-        return;
-      }
+    if (selectedHolidayChildIds.length === 0) {
+      Alert.alert('Select Child', 'Please select at least one child for the holiday meal.');
+      return;
+    }
 
-      const childIndex = childrenData.findIndex(
-        c => c.id === selectedHolidayChild.id,
-      );
+    const childrenPayload: {childId: string; mealName: string}[] = [];
+    for (const id of selectedHolidayChildIds) {
+      const childIndex = childrenData.findIndex(c => c.id === id);
+      const child = childrenData[childIndex];
       if (!selectedDishes[childIndex]) {
         Alert.alert(
           'Select Meal',
-          `Please select a meal for ${selectedHolidayChild.name}`,
+          `Please select a meal for ${child?.name ?? id}`,
         );
         return;
       }
+      childrenPayload.push({childId: id, mealName: selectedDishes[childIndex]});
+    }
 
-      const orderId = `LB-HOLIDAY-TEST-${Date.now()}`;
-      const transactionId = `TEST_HOLIDAY_TXN_${Date.now()}`;
-      const mealDateStr = selectedDate.toISOString().split('T')[0];
+    setLoading(true);
+    try {
+      const orderId = `LB${Date.now()}${Math.floor(Math.random() * 1000)}`;
+      const transactionId = `TEST_TXN_${Date.now()}`;
+      const dateStr = `${selectedDate.getFullYear()}-${_pad(selectedDate.getMonth() + 1)}-${_pad(selectedDate.getDate())}`;
 
-      const childrenPayload = [
-        {
-          childId: selectedHolidayChild.id,
-          mealName: selectedDishes[childIndex],
-        },
-      ];
-
-      const result: any = await HolidayService.localHolidayPaymentSuccess({
+      const result = await HolidayService.localHolidayPaymentSuccess({
         userId,
         orderId,
         transactionId,
         childrenData: childrenPayload,
-        selectedDate: mealDateStr,
+        selectedDate: dateStr,
         planId,
       });
 
       if (!result?.success) {
-        throw new Error(result?.message || 'Test holiday payment failed');
+        throw new Error(result?.message || 'Test payment failed');
       }
 
-      Alert.alert(
-        'Test Payment Successful',
-        `Holiday meal booked!\nTransaction ID: ${transactionId}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.replace('PlanCalendar'),
-          },
-        ],
-      );
+      navigation.replace('PaymentSuccess');
     } catch (err: any) {
       console.error('Test holiday payment error:', err);
-      Alert.alert('Error', err?.message || 'Test holiday payment failed');
+      Alert.alert('Error', err?.message || 'Test payment failed, please try again');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -641,41 +684,80 @@ const MenuSelectionScreen = ({
               <Text style={styles.holidayFeeTitle}>
                 🏖 Holiday Meal Booking
               </Text>
-              <Text style={styles.holidayFeeNote}>
-                Select one child below and choose their meal, then tap PAY.
-              </Text>
-              {childrenData.map(child => (
-                <TouchableOpacity
-                  key={child.id}
-                  style={[
-                    styles.holidayChildOption,
-                    selectedHolidayChildId === child.id &&
-                      styles.holidayChildOptionSelected,
-                  ]}
-                  onPress={() => setSelectedHolidayChildId(child.id)}>
-                  <View style={styles.holidayChildRadioOuter}>
-                    {selectedHolidayChildId === child.id && (
-                      <View style={styles.holidayChildRadioInner} />
-                    )}
-                  </View>
-                  <Text style={styles.holidayChildName}>{child.name}</Text>
-                </TouchableOpacity>
-              ))}
-              {selectedHolidayChild && (
-                <Text style={styles.holidayFeeDetail}>
-                  ₹{holidayFeePerChild} × 1 child ={' '}
-                  <Text style={styles.holidayFeeTotal}>
-                    ₹{holidayTotalFee}
+
+              {/* Paid children — always visible, can update meal */}
+              {childrenData.some(c => paidHolidayChildIds.includes(c.id)) && (
+                <>
+                  <Text style={styles.holidayFeeNote}>
+                    ✅ Already paid — you can update their meal:
                   </Text>
-                </Text>
+                  {childrenData
+                    .filter(c => paidHolidayChildIds.includes(c.id))
+                    .map(child => (
+                      <View key={`paid-${child.id}`} style={[styles.holidayChildOption, styles.holidayChildOptionSelected]}>
+                        <Text style={[styles.holidayChildName, {color: Colors.green}]}>
+                          ✓ {child.name}
+                        </Text>
+                      </View>
+                    ))}
+                </>
+              )}
+
+              {/* Unpaid children — select via checkboxes for payment */}
+              {childrenData.some(c => !paidHolidayChildIds.includes(c.id)) && (
+                <>
+                  <Text style={[styles.holidayFeeNote, {marginTop: hp('1%')}]}>
+                    Select children to book holiday meal:
+                  </Text>
+                  {childrenData
+                    .filter(c => !paidHolidayChildIds.includes(c.id))
+                    .map(child => {
+                      const isChecked = selectedHolidayChildIds.includes(child.id);
+                      return (
+                        <TouchableOpacity
+                          key={child.id}
+                          style={[
+                            styles.holidayChildOption,
+                            isChecked && styles.holidayChildOptionSelected,
+                          ]}
+                          onPress={() =>
+                            setSelectedHolidayChildIds(prev =>
+                              isChecked
+                                ? prev.filter(id => id !== child.id)
+                                : [...prev, child.id],
+                            )
+                          }>
+                          <View
+                            style={[
+                              styles.holidayChildCheckOuter,
+                              isChecked && styles.holidayChildCheckChecked,
+                            ]}>
+                            {isChecked && (
+                              <Text style={styles.holidayChildCheckMark}>✓</Text>
+                            )}
+                          </View>
+                          <Text style={styles.holidayChildName}>{child.name}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  {selectedHolidayChildIds.length > 0 && (
+                    <Text style={styles.holidayFeeDetail}>
+                      ₹{holidayFeePerChild} × {selectedHolidayChildIds.length} child
+                      {selectedHolidayChildIds.length > 1 ? 'ren' : ''} ={' '}
+                      <Text style={styles.holidayFeeTotal}>
+                        ₹{holidayTotalFee}
+                      </Text>
+                    </Text>
+                  )}
+                </>
               )}
             </View>
           )}
 
-          {/* 48-hr lock notice */}
+          {/* Edit lock notice */}
           {selectedTab === 'custom' && !isSunday && isLocked && (
             <Text style={styles.lockedText}>
-              🔒 This date is locked for edits (within 48 hours).
+              🔒 This date is locked for edits (past the previous day cutoff).
             </Text>
           )}
 
@@ -717,8 +799,10 @@ const MenuSelectionScreen = ({
                   style={styles.formContainer}
                   keyboardShouldPersistTaps="handled">
                   {(isHoliday
-                    ? childrenData.filter(
-                        c => c.id === selectedHolidayChildId,
+                    ? childrenData.filter(c =>
+                        // paid children always shown; unpaid only when checked
+                        paidHolidayChildIds.includes(c.id) ||
+                        selectedHolidayChildIds.includes(c.id),
                       )
                     : childrenData
                   ).map((child, index) => {
@@ -769,56 +853,34 @@ const MenuSelectionScreen = ({
                   })}
                 </ScrollView>
               ) : (
-                // ---------- Dietitian Plan (per-child) ----------
+                // ---------- Dietitian Plan ----------
                 <View style={{marginTop: hp('1%')}}>
-                  {childrenData.map(child => (
-                    <View key={child.id} style={styles.childDietSection}>
-                      <Text style={styles.childName}>{child.name}</Text>
-                      {Object.entries(mealPlans).map(([key, plan]) => {
-                        const isSelected =
-                          (childPlanSelections[child.id] ?? '') === key;
-                        return (
-                          <TouchableOpacity
-                            key={key}
-                            style={[
-                              styles.planCard,
-                              isSelected && styles.selectedPlanCard,
-                            ]}
-                            onPress={() =>
-                              setChildPlanSelections(prev => ({
-                                ...prev,
-                                [child.id]: key,
-                              }))
-                            }>
-                            <View style={styles.planHeader}>
-                              <View style={styles.planInfo}>
-                                <View
-                                  style={[
-                                    styles.radioOuter,
-                                    isSelected && styles.radioOuterSelected,
-                                  ]}>
-                                  {isSelected && (
-                                    <View style={styles.radioInner} />
-                                  )}
-                                </View>
-                                <Text
-                                  style={[
-                                    styles.planTitle,
-                                    isSelected && {color: Colors.primaryOrange},
-                                  ]}>
-                                  {plan.name}
-                                </Text>
-                              </View>
-                              <TouchableOpacity
-                                onPress={() => setViewPlanItem(plan)}>
-                                <Text style={styles.viewPlanText}>VIEW PLAN</Text>
-                              </TouchableOpacity>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
+                  <View
+                    style={[styles.planCard, styles.selectedPlanCard]}
+                    >
+                    <View style={styles.planHeader}>
+                      <View style={styles.planInfo}>
+                        <View style={[styles.radioOuter, styles.radioOuterSelected]}>
+                          <View style={styles.radioInner} />
+                        </View>
+                        <Text style={[styles.planTitle, {color: Colors.primaryOrange}]}>
+                          Dietitian Meal Plan
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() =>
+                          setViewPlanItem({
+                            name: 'Dietitian Meal Plan',
+                            meals: dietitianPlanMeals,
+                          })
+                        }>
+                        <Text style={styles.viewPlanText}>VIEW PLAN</Text>
+                      </TouchableOpacity>
                     </View>
-                  ))}
+                  </View>
+                  <Text style={styles.noteText}>
+                    This plan will be applied to all working days (excluding weekends & holidays) of the selected month for every child.
+                  </Text>
                 </View>
               )}
             </View>
@@ -845,10 +907,10 @@ const MenuSelectionScreen = ({
 
       {/* Sticky footer buttons */}
       <View style={styles.stickyButtonsContainer}>
-        {isHoliday && selectedTab === 'custom' && selectedHolidayChild && (
+        {isHoliday && selectedTab === 'custom' && selectedHolidayChildIds.length > 0 && (
           <Text style={styles.holidayWarningText}>
-            ₹{holidayFeePerChild} × 1 child ({selectedHolidayChild.name}) ={' '}
-            ₹{holidayTotalFee} — Additional holiday charges apply.
+            ₹{holidayFeePerChild} × {selectedHolidayChildIds.length} child
+            {selectedHolidayChildIds.length > 1 ? 'ren' : ''} = ₹{holidayTotalFee} — Additional holiday charges apply.
           </Text>
         )}
         <View style={styles.stickyButtonsRow}>
@@ -862,22 +924,40 @@ const MenuSelectionScreen = ({
           {!isSunday && (
             <>
               {/* Locked dates: no save/pay */}
-              {isLocked ? null : !isHoliday || selectedTab === 'dietitian' ? (
+              {isLocked ? null : isHoliday && selectedTab === 'custom' ? (
+                // Holiday date: PAY when unpaid children selected; SAVE when only paid children have meal changes
+                <View style={{flexDirection: 'row', gap: wp('2%'), width: wp('43%')}}>
+                  {selectedHolidayChildIds.length > 0 ? (
+                    // Unpaid children selected → show PAY, no SAVE
+                    <PrimaryButton
+                      title={`PAY ₹${holidayTotalFee}`}
+                      onPress={handlePayNow}
+                      disabled={holidayPayDisabled}
+                      style={{flex: 1}}
+                    />
+                  ) : paidChildrenWithMeal.length > 0 ? (
+                    // No unpaid selected, paid children have meal changes → show SAVE
+                    <PrimaryButton
+                      title={loading ? 'Saving...' : 'SAVE'}
+                      onPress={savePaidHolidayMeal}
+                      disabled={loading}
+                      style={{flex: 1}}
+                    />
+                  ) : (
+                    // Nothing selected yet
+                    <PrimaryButton
+                      title="SELECT CHILD"
+                      onPress={() => {}}
+                      disabled={true}
+                      style={{flex: 1}}
+                    />
+                  )}
+                </View>
+              ) : (
                 <PrimaryButton
                   title={loading ? 'Saving...' : 'SAVE'}
                   onPress={SaveMenue}
                   disabled={loading}
-                  style={{width: wp('43%')}}
-                />
-              ) : (
-                <PrimaryButton
-                  title={
-                    selectedHolidayChild
-                      ? `PAY ₹${holidayTotalFee}`
-                      : 'SELECT CHILD'
-                  }
-                  onPress={handlePayNow}
-                  disabled={!selectedHolidayChild}
                   style={{width: wp('43%')}}
                 />
               )}
@@ -886,7 +966,7 @@ const MenuSelectionScreen = ({
         </View>
 
         {/* Test / local payment button for holidays (dev mode) */}
-        {isHoliday && selectedTab === 'custom' && !isLocked && (
+        {isHoliday && selectedTab === 'custom' && !isLocked && selectedHolidayChildIds.length > 0 && (
           <View style={styles.testButtonContainer}>
             <TouchableOpacity
               style={styles.testButton}
@@ -1042,21 +1122,24 @@ const styles = StyleSheet.create({
     borderColor: Colors.primaryOrange,
     backgroundColor: Colors.lightRed,
   },
-  holidayChildRadioOuter: {
+  holidayChildCheckOuter: {
     width: wp('5%'),
     height: wp('5%'),
-    borderRadius: wp('2.5%'),
+    borderRadius: wp('1%'),
     borderWidth: 2,
     borderColor: Colors.primaryOrange,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: wp('3%'),
+    backgroundColor: Colors.white,
   },
-  holidayChildRadioInner: {
-    width: wp('2.5%'),
-    height: wp('2.5%'),
-    borderRadius: wp('1.25%'),
+  holidayChildCheckChecked: {
     backgroundColor: Colors.primaryOrange,
+  },
+  holidayChildCheckMark: {
+    color: Colors.white,
+    fontSize: wp('3%'),
+    fontWeight: '700',
   },
   holidayChildName: {
     fontSize: wp('4%'),
@@ -1163,7 +1246,7 @@ const styles = StyleSheet.create({
     color: Colors.bodyText,
     textAlign: 'center',
   },
-  // 48-hr lock
+  // edit lock (next-day logic)
   lockedText: {
     fontSize: wp('3.2%'),
     fontFamily: Fonts.Urbanist.semiBold,

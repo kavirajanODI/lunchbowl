@@ -3,8 +3,9 @@ import Fonts from 'assets/styles/fonts';
 import ThemeGradientBackground from 'components/Backgrounds/GradientBackground';
 import {useAuth} from 'context/AuthContext';
 import {useUserProfile} from 'context/UserDataContext';
-import React from 'react';
+import React, {useState} from 'react';
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -18,6 +19,7 @@ import {
 } from 'react-native-responsive-screen';
 import {SvgXml} from 'react-native-svg';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
+import UserService from 'services/userService';
 import {
   aboutUs,
   faq,
@@ -50,17 +52,17 @@ const items = [
 const SupportItems = [{ id: '1', name: 'Log out', routeName: 'LogOut', icon: logout }];
 
 const SettingsScreen: React.FC<{navigation: any}> = ({navigation}) => {
-  const {logout: doLogout, user} = useAuth();
+  const {logout: doLogout, userId} = useAuth();
   const {profileData} = useUserProfile();
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const displayName =
-    user?.fullname ||
-    (profileData?.parentDetails?.fatherFirstName
-      ? `${profileData.parentDetails.fatherFirstName} ${profileData.parentDetails.fatherLastName}`
-      : 'User');
+    (profileData as any)?.parentDetails?.fatherFirstName
+      ? `${(profileData as any).parentDetails.fatherFirstName} ${(profileData as any).parentDetails.fatherLastName}`
+      : 'User';
 
-  const profileImage = (user as any)?.image
-    ? (user as any).image
+  const profileImage = (profileData as any)?.image
+    ? (profileData as any).image
     : 'https://randomuser.me/api/portraits/men/75.jpg';
 
   const handleSignOut = async () => {
@@ -69,6 +71,44 @@ const SettingsScreen: React.FC<{navigation: any}> = ({navigation}) => {
       navigation.reset({ index: 0, routes: [{name: 'Login'}] });
     } catch (error) {
       console.error('Failed to logout', error);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your account?\n\nThis will remove all your data including subscriptions, children, meal plans, and payment history. This action cannot be undone.',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: confirmDeleteAccount,
+        },
+      ],
+    );
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (!userId) {
+      Alert.alert('Error', 'Unable to identify your account. Please try again.');
+      return;
+    }
+    try {
+      setDeleteLoading(true);
+      const result = await UserService.deleteAccount(userId);
+      if (result.success) {
+        // Clear local session then navigate to login
+        await doLogout();
+        navigation.reset({index: 0, routes: [{name: 'Login'}]});
+      } else {
+        Alert.alert('Error', result.message || 'Failed to delete account. Please try again.');
+      }
+    } catch (err) {
+      console.error('Delete account error:', err);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -114,6 +154,22 @@ const SettingsScreen: React.FC<{navigation: any}> = ({navigation}) => {
                 {index < SupportItems.length - 1 && <View style={styles.divider} />}
               </React.Fragment>
             ))}
+
+            {/* Divider between Log out and Delete Account */}
+            <View style={styles.divider} />
+
+            <TouchableOpacity
+              style={styles.item}
+              onPress={handleDeleteAccount}
+              disabled={deleteLoading}>
+              <View style={styles.itemContent}>
+                <SvgXml xml={logout} style={styles.itemImage} />
+                <Text style={styles.deleteAccountText}>
+                  {deleteLoading ? 'Deleting…' : 'Delete Account'}
+                </Text>
+              </View>
+              <SvgXml xml={RightIconWhite} width={20} height={20} />
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -141,9 +197,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: hp(0.2), paddingHorizontal: wp(3.75), borderRadius: wp(5),
   },
-  itemText:       { fontSize: wp(4), color: Colors.bodyText, fontFamily: Fonts.Urbanist.bold },
-  logOutitemText: { fontSize: wp(4), color: Colors.red,      fontFamily: Fonts.Urbanist.bold },
-  itemImage:      { width: wp(6), height: wp(6), marginRight: wp(4) },
+  itemText:          { fontSize: wp(4), color: Colors.bodyText,      fontFamily: Fonts.Urbanist.bold },
+  logOutitemText:    { fontSize: wp(4), color: Colors.red,           fontFamily: Fonts.Urbanist.bold },
+  deleteAccountText: { fontSize: wp(4), color: Colors.red,           fontFamily: Fonts.Urbanist.bold },
+  itemImage:         { width: wp(6),    height: wp(6), marginRight: wp(4) },
 });
 
 export default SettingsScreen;

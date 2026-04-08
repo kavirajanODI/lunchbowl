@@ -3,6 +3,8 @@ import Fonts from 'assets/styles/fonts';
 import ThemeGradientBackground from 'components/Backgrounds/GradientBackground';
 import PrimaryButton from 'components/buttons/PrimaryButton';
 import {useUserProfile} from 'context/UserDataContext';
+import {useMenu} from 'context/MenuContext';
+import {useAuth} from 'context/AuthContext';
 import React, {useEffect} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {
@@ -19,11 +21,17 @@ const checkIcon = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org
 
 const PaymentSuccessScreen = ({navigation}: {navigation: any}) => {
   const {refreshProfileData} = useUserProfile();
+  const {fetchChildren} = useMenu();
+  const {userId} = useAuth();
 
   useEffect(() => {
     // Refresh profile so that PlanCalendar loads fresh subscription data
     refreshProfileData().catch(() => {});
-  }, [refreshProfileData]);
+    // Pre-warm MenuContext so the calendar renders immediately on My Plan
+    if (userId) {
+      fetchChildren({_id: userId});
+    }
+  }, [refreshProfileData, userId]);
 
   const handleGoToMyPlan = () => {
     navigation.replace('PlanCalendar');

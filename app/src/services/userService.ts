@@ -68,6 +68,24 @@ class UserService {
 
     }
   }
+
+  /**
+   * Permanently deletes the user's account and all related data from the database.
+   * The caller is responsible for logging the user out afterwards.
+   */
+  static async deleteAccount(userId: string): Promise<ApiResponseModel> {
+    try {
+      const response = await UserApi.deleteAccount(userId);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error deleting account',
+        data: null,
+        error: handleApiError(error),
+      };
+    }
+  }
 }
 
 export default UserService;
