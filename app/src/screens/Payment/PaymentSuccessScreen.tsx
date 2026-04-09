@@ -2,6 +2,7 @@ import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import ThemeGradientBackground from 'components/Backgrounds/GradientBackground';
 import PrimaryButton from 'components/buttons/PrimaryButton';
+import SecondaryButton from 'components/buttons/SecondaryButton';
 import {useUserProfile} from 'context/UserDataContext';
 import {useMenu} from 'context/MenuContext';
 import {useAuth} from 'context/AuthContext';
@@ -34,7 +35,13 @@ const PaymentSuccessScreen = ({navigation}: {navigation: any}) => {
   }, [refreshProfileData, userId]);
 
   const handleGoToMyPlan = () => {
-    navigation.replace('PlanCalendar');
+    // navigate up to the tab navigator and switch to the MyPlan tab
+    navigation.navigate('MyPlan' as never);
+  };
+
+  const handleGoToDashboard = () => {
+    // navigate up to the tab navigator and switch to the Home tab
+    navigation.navigate('Home' as never);
   };
 
   return (
@@ -56,6 +63,11 @@ const PaymentSuccessScreen = ({navigation}: {navigation: any}) => {
             title="Go to My Plan"
             onPress={handleGoToMyPlan}
             style={styles.button}
+          />
+          <SecondaryButton
+            title="Go to Dashboard"
+            onPress={handleGoToDashboard}
+            style={[styles.button, {marginTop: hp('2%')}]}
           />
         </View>
       </View>

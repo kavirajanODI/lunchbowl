@@ -5,6 +5,8 @@ import UnderConstruction from 'screens/404Screen';
 import TrialMealScreen from 'screens/TrialMeal/TrialMealScreen';
 import HomeScreen from 'screens/Dashboard/HomeScreen';
 import PaymentWebView from 'screens/PaymentWebView';
+import PaymentSuccessScreen from 'screens/Payment/PaymentSuccessScreen';
+import PaymentFailedScreen from 'screens/Payment/PaymentFailedScreen';
 import HistoryDetailPage from 'screens/History/HistoryDetailPage';
 import OrderHistoryScreen from 'screens/History/OrderHistoryScreen';
 import MealDetailScreen from 'screens/Menu/MealDetailScreen';
@@ -183,6 +185,16 @@ const DashboardNavigator = () => {
           <Stack.Screen
             name="EditChildDetailsScreen"
             component={EditChildDetailsScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="PaymentSuccess"
+            component={PaymentSuccessScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="PaymentFailed"
+            component={PaymentFailedScreen}
             options={{headerShown: false}}
           />
         </Stack.Navigator>

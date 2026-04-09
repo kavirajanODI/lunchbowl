@@ -2,6 +2,7 @@ import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import ThemeGradientBackground from 'components/Backgrounds/GradientBackground';
 import PrimaryButton from 'components/buttons/PrimaryButton';
+import SecondaryButton from 'components/buttons/SecondaryButton';
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {
@@ -18,7 +19,11 @@ const failIcon = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/
 
 const PaymentFailedScreen = ({navigation}: {navigation: any}) => {
   const handleGoToMyPlan = () => {
-    navigation.replace('PlanCalendar');
+    navigation.navigate('MyPlan' as never);
+  };
+
+  const handleGoToDashboard = () => {
+    navigation.navigate('Home' as never);
   };
 
   return (
@@ -40,6 +45,11 @@ const PaymentFailedScreen = ({navigation}: {navigation: any}) => {
             title="Go to My Plan"
             onPress={handleGoToMyPlan}
             style={styles.button}
+          />
+          <SecondaryButton
+            title="Go to Dashboard"
+            onPress={handleGoToDashboard}
+            style={[styles.button, {marginTop: hp('2%')}]}
           />
         </View>
       </View>

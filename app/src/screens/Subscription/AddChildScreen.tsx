@@ -20,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import CheckBox from '@react-native-community/checkbox';
 import {
   heightPercentageToDP as hp,
   widthPercentageToDP as wp,
@@ -82,6 +83,7 @@ const emptyChild = () => ({
   section: '',
   allergies: '',
   isExisting: false,
+  checked: true,
 });
 
 const validateChild = (child: any) =>
@@ -149,6 +151,7 @@ export default function AddChildScreen({navigation}: any) {
 
   const totalChildren = existingChildren.length + newChildren.length;
   const canAddMore = totalChildren < MAX_CHILDREN;
+  const anyChecked = newChildren.some((c: any) => c.checked);
 
   const handleAddNewChild = () => {
     if (totalChildren >= MAX_CHILDREN) return;
@@ -170,13 +173,29 @@ export default function AddChildScreen({navigation}: any) {
     });
   };
 
+  const toggleChecked = (index: number) => {
+    setNewChildren(prev => {
+      const updated = [...prev];
+      updated[index] = {...updated[index], checked: !updated[index].checked};
+      return updated;
+    });
+  };
+
   const toggleExpanded = (index: number) => {
     setExpandedIndex(prev => (prev === index ? -1 : index));
   };
 
   const handleNext = async () => {
-    // Validate all new children
+    const checkedChildren = newChildren.filter((c: any) => c.checked);
+
+    if (checkedChildren.length === 0) {
+      Alert.alert('No children selected', 'Please check at least one child to proceed to payment.');
+      return;
+    }
+
+    // Validate only checked children
     for (let i = 0; i < newChildren.length; i++) {
+      if (!newChildren[i].checked) continue;
       if (!validateChild(newChildren[i])) {
         setExpandedIndex(i);
         Alert.alert('Validation Error', `Please fill in all required fields for Child ${i + 1}.`);
@@ -191,10 +210,10 @@ export default function AddChildScreen({navigation}: any) {
 
     const workingDays = activeSubscription.workingDays || 22;
     const pricePerChild = workingDays * PER_DAY_COST;
-    const totalAmount = newChildren.length * pricePerChild;
+    const totalAmount = checkedChildren.length * pricePerChild;
 
     navigation.navigate('AddChildPaymentScreen', {
-      newChildren,
+      newChildren: checkedChildren,
       subscriptionId: activeSubscription._id,
       workingDays,
       pricePerChild,
@@ -275,7 +294,14 @@ export default function AddChildScreen({navigation}: any) {
                     onPress={() => toggleExpanded(index)}
                     activeOpacity={0.8}
                     style={accordionStyles.header}>
-                    <Text style={accordionStyles.headerTitle}>{displayName}</Text>
+                    <View style={accordionStyles.checkboxRow}>
+                      <CheckBox
+                        value={child.checked}
+                        onValueChange={() => toggleChecked(index)}
+                        tintColors={{true: Colors.primaryOrange, false: Colors.bodyText}}
+                      />
+                      <Text style={accordionStyles.headerTitle}>{displayName}</Text>
+                    </View>
                     <View style={accordionStyles.headerRight}>
                       {newChildren.length > 1 && (
                         <TouchableOpacity
@@ -420,6 +446,7 @@ export default function AddChildScreen({navigation}: any) {
               <PrimaryButton
                 title="NEXT"
                 onPress={handleNext}
+                disabled={!anyChecked}
                 style={styles.btn}
               />
             </View>
@@ -481,11 +508,17 @@ const accordionStyles = StyleSheet.create({
     padding: wp('4%'),
     backgroundColor: Colors.bg,
   },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   headerTitle: {
     fontSize: hp('2%'),
     fontFamily: Fonts.Urbanist.semiBold,
     color: Colors.black,
     flex: 1,
+    marginLeft: wp('2%'),
   },
   headerRight: {
     flexDirection: 'row',

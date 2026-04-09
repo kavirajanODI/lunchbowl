@@ -7,6 +7,8 @@ import EditChildDetailsScreen from 'screens/Settings/UserDashboard/EditChildDeta
 import AddChildScreen from 'screens/Subscription/AddChildScreen';
 import AddChildPaymentScreen from 'screens/Subscription/AddChildPaymentScreen';
 import PaymentWebView from 'screens/PaymentWebView';
+import PaymentSuccessScreen from 'screens/Payment/PaymentSuccessScreen';
+import PaymentFailedScreen from 'screens/Payment/PaymentFailedScreen';
 
 const Stack = createStackNavigator();
 
@@ -42,6 +44,16 @@ const UserDashboardTabNavigator = () => {
         <Stack.Screen
           name="WebViewScreen"
           component={PaymentWebView}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="PaymentSuccess"
+          component={PaymentSuccessScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="PaymentFailed"
+          component={PaymentFailedScreen}
           options={{headerShown: false}}
         />
       </Stack.Navigator>
