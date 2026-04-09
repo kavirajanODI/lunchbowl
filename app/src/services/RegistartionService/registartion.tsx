@@ -182,11 +182,17 @@ class RegistrationService {
   static async getAllSchools(): Promise<ApiResponseModel> {
     try {
       const response = await RegistrationApi.getAllSchools();
-      return response.data as ApiResponseModel;
+      const raw = response.data;
+      return {
+        success: true,
+        message: 'Schools fetched successfully',
+        data: Array.isArray(raw) ? raw : [],
+        error: null,
+      };
     } catch (error: any) {
       return {
         success: false,
-        message: 'Error fetching registration',
+        message: 'Error fetching schools',
         data: null,
         error: this.handleApiError(error),
       };
