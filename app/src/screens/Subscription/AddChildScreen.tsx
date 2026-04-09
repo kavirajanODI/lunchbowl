@@ -248,12 +248,9 @@ export default function AddChildScreen({navigation}: any) {
     try {
       const holidayRes: any = await HolidayService.getAllHolidays();
       if (holidayRes?.data) {
-        holidays = holidayRes.data.map((h: any) => {
-          const d = new Date(h.date);
-          const mm = String(d.getMonth() + 1).padStart(2, '0');
-          const dy = String(d.getDate()).padStart(2, '0');
-          return {date: `${d.getFullYear()}-${mm}-${dy}`};
-        });
+        holidays = holidayRes.data.map((h: any) => ({
+          date: toLocalYMD(new Date(h.date)),
+        }));
       }
     } catch (_) {
       // Non-fatal: proceed with no holidays
