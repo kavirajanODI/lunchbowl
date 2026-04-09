@@ -22,9 +22,11 @@ import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import styles from './Components/forms/Styles/styles';
 
+const PER_DAY_COST = 200;
+
 export default function AddChildPaymentScreen({route, navigation}: any) {
   const {userId} = useAuth();
-  const {newChildren, subscriptionId, workingDays, pricePerChild, totalAmount} =
+  const {newChildren, subscriptionId, remainingDays, pricePerChild, totalAmount, subscriptionEndDate} =
     route.params || {};
 
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
@@ -146,6 +148,25 @@ export default function AddChildPaymentScreen({route, navigation}: any) {
           <View style={localStyles.summaryCard}>
             <Text style={localStyles.summaryTitle}>Order Summary</Text>
 
+            {/* Plan details */}
+            <View style={localStyles.planDetailRow}>
+              <Text style={localStyles.planDetailLabel}>Remaining working days</Text>
+              <Text style={localStyles.planDetailValue}>{remainingDays ?? 0} days</Text>
+            </View>
+            <View style={localStyles.planDetailRow}>
+              <Text style={localStyles.planDetailLabel}>Rate per day</Text>
+              <Text style={localStyles.planDetailValue}>₹{PER_DAY_COST}</Text>
+            </View>
+            {subscriptionEndDate && (
+              <View style={localStyles.planDetailRow}>
+                <Text style={localStyles.planDetailLabel}>Plan end date</Text>
+                <Text style={localStyles.planDetailValue}>{subscriptionEndDate}</Text>
+              </View>
+            )}
+
+            <View style={localStyles.divider} />
+
+            {/* Per-child rows */}
             {(newChildren || []).map((child: any, index: number) => (
               <View key={index} style={localStyles.childRow}>
                 <Text style={localStyles.childName}>
@@ -234,6 +255,22 @@ const localStyles = StyleSheet.create({
     fontFamily: Fonts.Urbanist.bold,
     color: Colors.black,
     marginBottom: hp('1.5%'),
+  },
+  planDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: hp('0.6%'),
+  },
+  planDetailLabel: {
+    fontSize: hp('1.7%'),
+    fontFamily: Fonts.Urbanist.regular,
+    color: Colors.bodyText,
+  },
+  planDetailValue: {
+    fontSize: hp('1.7%'),
+    fontFamily: Fonts.Urbanist.semiBold,
+    color: Colors.black,
   },
   childRow: {
     flexDirection: 'row',

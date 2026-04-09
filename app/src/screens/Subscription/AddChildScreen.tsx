@@ -29,6 +29,7 @@ import {SvgXml} from 'react-native-svg';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
 import RegistrationService from 'services/RegistartionService/registartion';
 import UserService from 'services/userService';
+import HolidayService from 'services/MyPlansApi/HolidayService';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import {RemoveTrash} from 'styles/svg-icons';
@@ -36,6 +37,35 @@ import styles from './Components/forms/Styles/styles';
 
 const MAX_CHILDREN = 3;
 const PER_DAY_COST = 200;
+
+// Returns YYYY-MM-DD for a Date using local calendar (avoids UTC-offset shift)
+const toLocalYMD = (d: Date): string => {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+};
+
+// Count working days (Mon–Fri, non-holiday) from `from` to `to` inclusive
+const countWorkingDays = (
+  from: Date,
+  to: Date,
+  holidays: {date: string}[],
+): number => {
+  let count = 0;
+  const cur = new Date(from);
+  cur.setHours(0, 0, 0, 0);
+  const end = new Date(to);
+  end.setHours(0, 0, 0, 0);
+  while (cur <= end) {
+    const dow = cur.getDay();
+    const iso = toLocalYMD(cur);
+    if (dow !== 0 && dow !== 6 && !holidays.some(h => h.date === iso)) {
+      count++;
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+};
 
 const classOptions = [
   {label: 'LKG', value: 'LKG'},
@@ -208,16 +238,56 @@ export default function AddChildScreen({navigation}: any) {
       return;
     }
 
-    const workingDays = activeSubscription.workingDays || 22;
-    const pricePerChild = workingDays * PER_DAY_COST;
+    if (!activeSubscription.endDate) {
+      Alert.alert('Error', 'Subscription end date not found. Please contact support.');
+      return;
+    }
+
+    // Fetch public holidays so we can exclude them from the working-day count
+    let holidays: {date: string}[] = [];
+    try {
+      const holidayRes: any = await HolidayService.getAllHolidays();
+      if (holidayRes?.data) {
+        holidays = holidayRes.data.map((h: any) => {
+          const d = new Date(h.date);
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dy = String(d.getDate()).padStart(2, '0');
+          return {date: `${d.getFullYear()}-${mm}-${dy}`};
+        });
+      }
+    } catch (_) {
+      // Non-fatal: proceed with no holidays
+    }
+
+    // Calculate remaining working days from tomorrow to subscription end date
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const subEnd = new Date(activeSubscription.endDate);
+    subEnd.setHours(0, 0, 0, 0);
+
+    const remainingDays =
+      subEnd >= tomorrow ? countWorkingDays(tomorrow, subEnd, holidays) : 0;
+
+    if (remainingDays === 0) {
+      Alert.alert(
+        'Subscription Ending',
+        'There are no remaining working days in the current subscription period. Please renew your plan first.',
+      );
+      return;
+    }
+
+    const pricePerChild = remainingDays * PER_DAY_COST;
     const totalAmount = checkedChildren.length * pricePerChild;
+    const subscriptionEndDate = toLocalYMD(subEnd);
 
     navigation.navigate('AddChildPaymentScreen', {
       newChildren: checkedChildren,
       subscriptionId: activeSubscription._id,
-      workingDays,
+      remainingDays,
       pricePerChild,
       totalAmount,
+      subscriptionEndDate,
     });
   };
 
