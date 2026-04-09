@@ -69,6 +69,7 @@ export default function EditParentDetailsScreen({navigation}: any) {
       !motherFirstName.trim() ||
       !motherLastName.trim() ||
       !mobile.trim() ||
+      !email.trim() ||
       !address.trim() ||
       !pincode.trim() ||
       !city.trim() ||
@@ -76,6 +77,10 @@ export default function EditParentDetailsScreen({navigation}: any) {
       !country.trim()
     ) {
       Alert.alert('Validation', 'Please fill in all required fields.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      Alert.alert('Validation', 'Please enter a valid email address.');
       return;
     }
     if (!/^[0-9]{10}$/.test(mobile.trim())) {
