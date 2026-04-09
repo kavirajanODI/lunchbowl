@@ -29,6 +29,8 @@ import TransactionDetailScreen from 'screens/Settings/TransactionHistory/Transac
 import AddChildScreen from 'screens/Subscription/AddChildScreen';
 import AddChildPaymentScreen from 'screens/Subscription/AddChildPaymentScreen';
 import {UserProfileProvider} from 'context/UserDataContext';
+import EditParentDetailsScreen from 'screens/Settings/UserDashboard/EditParentDetailsScreen';
+import EditChildDetailsScreen from 'screens/Settings/UserDashboard/EditChildDetailsScreen';
 
 const Stack = createStackNavigator();
 const DashboardNavigator = () => {
@@ -171,6 +173,16 @@ const DashboardNavigator = () => {
           <Stack.Screen
             name="AddChildPaymentScreen"
             component={AddChildPaymentScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="EditParentDetailsScreen"
+            component={EditParentDetailsScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="EditChildDetailsScreen"
+            component={EditChildDetailsScreen}
             options={{headerShown: false}}
           />
         </Stack.Navigator>

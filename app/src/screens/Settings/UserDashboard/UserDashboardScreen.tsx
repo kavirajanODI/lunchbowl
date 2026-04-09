@@ -5,6 +5,7 @@ import {LoadingModal} from 'components/LoadingModal/LoadingModal';
 import NoDataFound from 'components/Error/NoDataMessage';
 import {useAuth} from 'context/AuthContext';
 import {useUserProfile} from 'context/UserDataContext';
+import {Edit} from 'lucide-react-native';
 import React, {useCallback, useState} from 'react';
 import {
   RefreshControl,
@@ -45,6 +46,7 @@ const UserDashboardScreen = ({navigation}: any) => {
 
   const activeSub = profileData?.subscriptionPlan ?? null;
   const children: any[] = (profileData as any)?.children ?? [];
+  const parent = profileData?.parentDetails ?? null;
 
   const daysToExpiry = activeSub?.endDate
     ? Math.ceil(
@@ -83,6 +85,40 @@ const UserDashboardScreen = ({navigation}: any) => {
 
         {/* Greeting */}
         <Text style={styles.greeting}>Hello, {displayName} 👋</Text>
+
+        {/* Parent Details Card */}
+        {parent && (
+          <View style={styles.parentCard}>
+            <View style={styles.cardHeaderRow}>
+              <Text style={styles.sectionTitle}>Parent Details</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('EditParentDetailsScreen')}
+                hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+                <Edit size={18} color={Colors.primaryOrange} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.parentName}>
+              {parent.fatherFirstName} {parent.fatherLastName}
+              {parent.motherFirstName
+                ? `  &  ${parent.motherFirstName} ${parent.motherLastName}`
+                : ''}
+            </Text>
+            {!!parent.mobile && (
+              <Text style={styles.parentDetail}>📞 {parent.mobile}</Text>
+            )}
+            {!!parent.email && (
+              <Text style={styles.parentDetail}>✉️ {parent.email}</Text>
+            )}
+            {!!parent.address && (
+              <Text style={styles.parentDetail}>
+                📍 {parent.address}
+                {parent.city ? `, ${parent.city}` : ''}
+                {parent.state ? `, ${parent.state}` : ''}
+                {parent.pincode ? ` - ${parent.pincode}` : ''}
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Plan Expiry Card */}
         <View style={styles.card}>
@@ -147,9 +183,18 @@ const UserDashboardScreen = ({navigation}: any) => {
 
             return (
               <View key={child._id} style={styles.childCard}>
-                <Text style={styles.childName}>
-                  {child.childFirstName} {child.childLastName}
-                </Text>
+                <View style={styles.cardHeaderRow}>
+                  <Text style={styles.childName}>
+                    {child.childFirstName} {child.childLastName}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate('EditChildDetailsScreen', {child})
+                    }
+                    hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+                    <Edit size={18} color={Colors.primaryOrange} />
+                  </TouchableOpacity>
+                </View>
                 <View style={styles.childRow}>
                   <Text style={styles.childLabel}>Plan Duration</Text>
                   <Text style={styles.childValue}>
@@ -198,6 +243,35 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.Urbanist.bold,
     color: Colors.black,
     marginBottom: hp('2.5%'),
+  },
+  parentCard: {
+    backgroundColor: Colors.white,
+    borderRadius: wp('4%'),
+    padding: wp('5%'),
+    marginBottom: hp('2%'),
+    elevation: 2,
+    shadowColor: Colors.black,
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: hp('1%'),
+  },
+  parentName: {
+    fontSize: hp('2%'),
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.black,
+    marginBottom: hp('0.8%'),
+  },
+  parentDetail: {
+    fontSize: hp('1.8%'),
+    fontFamily: Fonts.Urbanist.medium,
+    color: Colors.bodyText,
+    marginBottom: hp('0.4%'),
   },
   card: {
     backgroundColor: Colors.primaryOrange,
@@ -307,7 +381,7 @@ const styles = StyleSheet.create({
     fontSize: hp('2.2%'),
     fontFamily: Fonts.Urbanist.bold,
     color: Colors.black,
-    marginBottom: hp('1%'),
+    flex: 1,
   },
   childRow: {
     flexDirection: 'row',

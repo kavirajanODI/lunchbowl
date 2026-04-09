@@ -143,7 +143,7 @@ export default function AddChildScreen({navigation}: any) {
 
   const schoolOptions = schools.map((s: any) => ({
     label: s.name,
-    value: String(s._id),
+    value: s.name,
     Locationlabel: s.location,
   }));
 
