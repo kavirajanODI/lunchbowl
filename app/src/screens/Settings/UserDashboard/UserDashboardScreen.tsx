@@ -20,6 +20,7 @@ import {
   widthPercentageToDP as wp,
 } from 'react-native-responsive-screen';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
+import {useFocusEffect} from '@react-navigation/native';
 
 const PLAN_LABELS: Record<string, string> = {
   '1': '1 Month',
@@ -37,6 +38,12 @@ const UserDashboardScreen = ({navigation}: any) => {
     await refreshProfileData();
     setRefreshing(false);
   }, [refreshProfileData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfileData();
+    }, [refreshProfileData]),
+  );
 
   const displayName =
     user?.fullname ||

@@ -107,6 +107,7 @@ const MenuSelectionScreen = ({
   const {profileData} = useUserProfile();
   const [applySameDish, setApplySameDish] = useState(false);
   const [saveForUpcoming, setSaveForUpcoming] = useState(false);
+  const [selectedDietitianChildIds, setSelectedDietitianChildIds] = useState<string[]>([]);
 
   const [selectedDate, setSelectedDate] = useState(passedDate);
   const [selectedDishes, setSelectedDishes] = useState<string[]>([]);
@@ -153,6 +154,10 @@ const MenuSelectionScreen = ({
   useEffect(() => {
     setSelectedDishes([]);
   }, [selectedTab]);
+
+  useEffect(() => {
+    setSelectedDietitianChildIds(childrenData.map(c => c.id));
+  }, [childrenData]);
 
   const {holidays} = useDate();
 
@@ -408,21 +413,32 @@ const MenuSelectionScreen = ({
             return;
           }
 
+          if (selectedDietitianChildIds.length === 0) {
+            Alert.alert(
+              'No child selected',
+              'Please select at least one child to apply the Dietitian Meal Plan.',
+            );
+            setLoading(false);
+            return;
+          }
+
           childrenPayload = {
             _id: userId,
             path: 'save-meals',
             data: {
               userId,
               planId,
-              children: childrenData.map(child => ({
-                childId: child.id,
-                // Cycle through plan meals for each working day.
-                // If working days > plan length, meals repeat from the beginning.
-                meals: workingDays.map((date, i) => ({
-                  mealDate: new Date(date).toISOString(),
-                  mealName: dietitianPlanMeals[i % dietitianPlanMeals.length],
+              children: childrenData
+                .filter(child => selectedDietitianChildIds.includes(child.id))
+                .map(child => ({
+                  childId: child.id,
+                  // Cycle through plan meals for each working day.
+                  // If working days > plan length, meals repeat from the beginning.
+                  meals: workingDays.map((date, i) => ({
+                    mealDate: new Date(date).toISOString(),
+                    mealName: dietitianPlanMeals[i % dietitianPlanMeals.length],
+                  })),
                 })),
-              })),
             },
           };
           break;
@@ -833,7 +849,14 @@ const MenuSelectionScreen = ({
                         <View style={styles.checkboxContainer}>
                           <CheckBox
                             value={applySameDish}
-                            onValueChange={v => setApplySameDish(v)}
+                            onValueChange={v => {
+                              setApplySameDish(v);
+                              if (v && selectedDishes[0]) {
+                                setSelectedDishes(
+                                  childrenData.map(() => selectedDishes[0]),
+                                );
+                              }
+                            }}
                             tintColors={{
                               true: Colors.primaryOrange,
                               false: Colors.default,
@@ -879,8 +902,27 @@ const MenuSelectionScreen = ({
                     </View>
                   </View>
                   <Text style={styles.noteText}>
-                    This plan will be applied to all working days (excluding weekends & holidays) of the selected month for every child.
+                    This plan will be applied to all working days (excluding weekends & holidays) of the selected month for the selected children.
                   </Text>
+                  {childrenData.map(child => (
+                    <View key={child.id} style={styles.checkboxContainer}>
+                      <CheckBox
+                        value={selectedDietitianChildIds.includes(child.id)}
+                        onValueChange={checked => {
+                          setSelectedDietitianChildIds(prev =>
+                            checked
+                              ? [...prev, child.id]
+                              : prev.filter(id => id !== child.id),
+                          );
+                        }}
+                        tintColors={{
+                          true: Colors.primaryOrange,
+                          false: Colors.default,
+                        }}
+                      />
+                      <Text style={styles.checkboxLabel}>{child.name}</Text>
+                    </View>
+                  ))}
                 </View>
               )}
             </View>

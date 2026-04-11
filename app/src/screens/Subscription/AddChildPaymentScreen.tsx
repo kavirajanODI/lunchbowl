@@ -114,8 +114,14 @@ export default function AddChildPaymentScreen({route, navigation}: any) {
         [
           {
             text: 'Go to My Plan',
-            onPress: () =>
-              navigation.navigate('MyPlan', {screen: 'PlanCalendar'}),
+            onPress: () => {
+              navigation.popToTop();
+              navigation.navigate('MyPlan', {screen: 'PlanCalendar'});
+            },
+          },
+          {
+            text: 'Go to Dashboard',
+            onPress: () => navigation.popToTop(),
           },
         ],
       );
