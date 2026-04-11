@@ -1,4 +1,4 @@
-import React, {createContext, useContext, useState, useEffect} from 'react';
+import React, {createContext, useContext, useState, useEffect, useCallback} from 'react';
 // import UserService from 'services/UserService';
 import {useAuth} from 'context/AuthContext';
 import UserService from 'services/userService';
@@ -69,7 +69,7 @@ export const UserProfileProvider: React.FC<{children: React.ReactNode}> = ({
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchProfileData = async () => {
+  const fetchProfileData = useCallback(async () => {
     if (!userId) return;
     try {
       setLoading(true);
@@ -98,7 +98,7 @@ export const UserProfileProvider: React.FC<{children: React.ReactNode}> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     fetchProfileData();
