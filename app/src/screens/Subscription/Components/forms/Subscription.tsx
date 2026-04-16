@@ -16,6 +16,7 @@ import {
   View,
   Platform,
 } from 'react-native';
+import {heightPercentageToDP as hp} from 'react-native-responsive-screen';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import HolidayService from 'services/MyPlansApi/HolidayService';
 import RegistrationService from 'services/RegistartionService/registartion';
@@ -576,7 +577,7 @@ export default function SubscriptionPlan({
   const isNextButtonDisabled = selectedCount === 0 || !isPlanSelected;
 
   return (
-    <View style={{flex: 1}}>
+    <View style={{flex: 1, paddingBottom: hp('10%')}}>
       <LoadingModal loading={loading} setLoading={setLoading} />
       {error && <ErrorMessage error={error} onClose={handleCloseError} />}
 
