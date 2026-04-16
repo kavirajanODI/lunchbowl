@@ -13,6 +13,7 @@ import {useUserProfile} from 'context/UserDataContext';
 import React, {useEffect, useState} from 'react';
 import {
   Alert,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -99,6 +100,9 @@ export default function TrialMealScreen({navigation}: any) {
   const [loadingSchools, setLoadingSchools] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedSchoolName, setSelectedSchoolName] = useState('');
+  const [showRequestSchoolModal, setShowRequestSchoolModal] = useState(false);
+  const [requestSchoolName, setRequestSchoolName] = useState('');
+  const [requestLocation, setRequestLocation] = useState('');
 
   // Step 2 form fields
   const [parentFirstName, setParentFirstName] = useState('');
@@ -165,6 +169,38 @@ export default function TrialMealScreen({navigation}: any) {
     }
     setDatePreference(selected);
     setErrors(prev => ({...prev, datePreference: ''}));
+  };
+
+  const handleRequestSchoolSubmit = async () => {
+    if (!requestSchoolName.trim() || !requestLocation.trim()) {
+      Alert.alert('Error', 'Please enter school name and location');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await RegistrationService.requestSchool({
+        schoolName: requestSchoolName.trim(),
+        location: requestLocation.trim(),
+        parentName: user?.name || '',
+        phone: user?.phone_number || user?.phone || '',
+        email: user?.email || email || '',
+      });
+
+      if (response?.success === false) {
+        Alert.alert('Error', response.message || 'Failed to submit request');
+        return;
+      }
+
+      setShowRequestSchoolModal(false);
+      setRequestSchoolName('');
+      setRequestLocation('');
+      Alert.alert('Success', 'Request submitted successfully');
+    } catch {
+      Alert.alert('Error', 'Failed to submit request');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const validateStep2 = (): boolean => {
@@ -356,6 +392,11 @@ export default function TrialMealScreen({navigation}: any) {
             {errors.school ? (
               <Text style={styles.errorText}>{errors.school}</Text>
             ) : null}
+            <TouchableOpacity
+              style={styles.requestSchoolCta}
+              onPress={() => setShowRequestSchoolModal(true)}>
+              <Text style={styles.requestSchoolCtaText}>Can’t find your school?</Text>
+            </TouchableOpacity>
 
             <View style={styles.nextButtonContainer}>
               <PrimaryButton
@@ -585,6 +626,41 @@ export default function TrialMealScreen({navigation}: any) {
           </ScrollView>
         )}
       </View>
+      <Modal
+        visible={showRequestSchoolModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRequestSchoolModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Request Your School</Text>
+            <PrimaryFieldLabel label="School Name" required />
+            <ThemeInputPrimary
+              value={requestSchoolName}
+              onChangeText={setRequestSchoolName}
+              placeholder="Enter school name"
+            />
+            <PrimaryFieldLabel label="Location" required />
+            <ThemeInputPrimary
+              value={requestLocation}
+              onChangeText={setRequestLocation}
+              placeholder="Enter location"
+            />
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={styles.modalSecondaryButton}
+                onPress={() => setShowRequestSchoolModal(false)}>
+                <Text style={styles.modalSecondaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalPrimaryButton}
+                onPress={handleRequestSchoolSubmit}>
+                <Text style={styles.modalPrimaryButtonText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ThemeGradientBackground>
   );
 }
@@ -615,6 +691,15 @@ const styles = StyleSheet.create({
   },
   nextButtonContainer: {
     marginTop: hp('3%'),
+  },
+  requestSchoolCta: {
+    marginTop: hp('1%'),
+    marginBottom: hp('1%'),
+  },
+  requestSchoolCtaText: {
+    color: Colors.primaryOrange,
+    fontSize: wp('3.6%'),
+    fontFamily: Fonts.Urbanist.semiBold,
   },
   errorText: {
     color: Colors.red,
@@ -705,5 +790,52 @@ const styles = StyleSheet.create({
     marginLeft: wp('2%'),
     fontFamily: Fonts.Urbanist.bold,
     textTransform: 'uppercase',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    paddingHorizontal: wp('6%'),
+  },
+  modalCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: wp('5%'),
+  },
+  modalTitle: {
+    fontSize: wp('5%'),
+    fontFamily: Fonts.Urbanist.bold,
+    color: Colors.black,
+    marginBottom: hp('1.5%'),
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: hp('1%'),
+    gap: wp('3%'),
+  },
+  modalPrimaryButton: {
+    backgroundColor: Colors.primaryOrange,
+    borderRadius: 8,
+    paddingHorizontal: wp('5%'),
+    paddingVertical: hp('1.2%'),
+  },
+  modalPrimaryButtonText: {
+    color: Colors.white,
+    fontFamily: Fonts.Urbanist.semiBold,
+    fontSize: hp('1.8%'),
+  },
+  modalSecondaryButton: {
+    backgroundColor: Colors.white,
+    borderColor: Colors.primaryOrange,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: wp('5%'),
+    paddingVertical: hp('1.2%'),
+  },
+  modalSecondaryButtonText: {
+    color: Colors.primaryOrange,
+    fontFamily: Fonts.Urbanist.semiBold,
+    fontSize: hp('1.8%'),
   },
 });

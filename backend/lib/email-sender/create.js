@@ -1,4 +1,5 @@
 const fs = require("fs");
+const pathLib = require("path");
 const PDFDocument = require("pdfkit");
 const fetch = require("node-fetch");
 
@@ -34,6 +35,14 @@ const handleCreateInvoice = async (invoice, path) => {
   //   }
   //   console.log('The file was saved!');
   // });
+
+  if (path) {
+    const dir = pathLib.dirname(path);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(path, Buffer.from(pdfBuffer));
+  }
 
   return pdfBuffer;
 };

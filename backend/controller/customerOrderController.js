@@ -2,11 +2,14 @@ require("dotenv").config();
 const stripe = require("stripe");
 const Razorpay = require("razorpay");
 const MailChecker = require("mailchecker");
+const path = require("path");
+const fs = require("fs");
 // const stripe = require("stripe")(`${process.env.STRIPE_KEY}` || null); /// use hardcoded key if env not work
 
 const mongoose = require("mongoose");
 
 const Order = require("../models/Order");
+const UserPayment = require("../models/Payment");
 const Setting = require("../models/Setting");
 const { sendEmail } = require("../lib/email-sender/sender");
 const { formatAmountForStripe } = require("../lib/stripe/stripe");
@@ -251,8 +254,18 @@ const sendEmailInvoiceToCustomer = async (req, res) => {
           "Invalid or disposable email address. Please provide a valid email.",
       });
     }
-    // console.log("sendEmailInvoiceToCustomer");
-    const pdf = await handleCreateInvoice(req.body, `${req.body.invoice}.pdf`);
+    const safeOrderId = String(
+      req.body.orderId || req.body.order_id || req.body._id || req.body.invoice
+    ).replace(/[^A-Za-z0-9_-]/g, "");
+    const fileName = `INV-${safeOrderId}-${Date.now()}.pdf`;
+    const invoicesDir = path.join(process.cwd(), "uploads", "invoices");
+    if (!fs.existsSync(invoicesDir)) {
+      fs.mkdirSync(invoicesDir, { recursive: true });
+    }
+    const absoluteInvoicePath = path.join(invoicesDir, fileName);
+    const invoiceUrl = `/uploads/invoices/${fileName}`;
+
+    const pdf = await handleCreateInvoice(req.body, absoluteInvoicePath);
 
     const option = {
       date: req.body.date,
@@ -289,6 +302,23 @@ const sendEmailInvoiceToCustomer = async (req, res) => {
         },
       ],
     };
+    if (req.body._id && mongoose.Types.ObjectId.isValid(req.body._id)) {
+      await Order.updateOne(
+        { _id: mongoose.Types.ObjectId(req.body._id) },
+        { $set: { invoiceUrl } }
+      );
+    }
+
+    if (req.body.user && (req.body.orderId || req.body.order_id)) {
+      await UserPayment.updateOne(
+        {
+          user: req.body.user,
+          "payments.order_id": { $in: [req.body.orderId, req.body.order_id] },
+        },
+        { $set: { "payments.$.invoiceUrl": invoiceUrl } }
+      );
+    }
+
     const message = `Invoice successfully sent to the customer ${user.name}`;
     sendEmail(body, res, message);
   } catch (err) {
