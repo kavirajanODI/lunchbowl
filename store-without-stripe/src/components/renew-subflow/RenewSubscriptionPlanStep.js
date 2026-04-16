@@ -209,13 +209,20 @@ const RenewSubscriptionPlanStep = ({
   const { data: childrenList = [], loading: childrenLoading } = useAsync(() =>
     CategoryServices.getChildren(_id)
   );
+  const availableChildren = useMemo(
+    () =>
+      Array.isArray(childrenList)
+        ? childrenList
+        : (childrenList?.children || []),
+    [childrenList]
+  );
   const [selectedChildren, setSelectedChildren] = useState([]);
 
   useEffect(() => {
-    if (childrenList?.children?.length > 0) {
-      setSelectedChildren([childrenList.children[0]._id]);
+    if (availableChildren.length > 0) {
+      setSelectedChildren([availableChildren[0]._id]);
     }
-  }, [childrenList]);
+  }, [availableChildren]);
 
   useEffect(() => {
     if (childrenList?.activeSubscription?.endDate) {
@@ -436,11 +443,11 @@ const RenewSubscriptionPlanStep = ({
           {holidaysLoading && <LinearProgress />}
           {childrenLoading && <LinearProgress />}
 
-          {childrenList?.children?.length > 0 && (
+          {availableChildren.length > 0 && (
             <Box mb={2} className="renewptitlebox">
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }} className="renewplantitle">Select Child*</Typography>
               <div className="childalllistboxs flex items-center">
-                {childrenList?.children?.map(child => (
+                {availableChildren.map(child => (
                   <div className="childlistboxs flex items-center">
                     <FormControlLabel className="childlistfbox"
                       key={child._id}

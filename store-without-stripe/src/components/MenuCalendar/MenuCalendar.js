@@ -205,8 +205,10 @@ const MenuCalendar = () => {
       const alternateIndex = subscriptionPlans.findIndex(
         (p) => p.status === alternateTab
       );
-      if (alternateIndex !== -1) {
+      if (alternateIndex !== -1 && alternateTab !== planTab) {
         setPlanTab(alternateTab);
+      }
+      if (alternateIndex !== -1 && selectedPlanIndex !== alternateIndex) {
         setSelectedPlanIndex(alternateIndex);
       }
       return;
