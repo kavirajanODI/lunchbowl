@@ -18,7 +18,8 @@ export const hiddenTabRoutes: string[] = [
   'HelpCenterScreen',
   'DietaryTipDetailsScreen',
   'DietaryTipsScreen',
-  'HistoryDetailPage'
+  'HistoryDetailPage',
+  'RenewSubscription',
 
 ];
 
