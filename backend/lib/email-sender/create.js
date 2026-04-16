@@ -44,7 +44,7 @@ const handleCreateInvoice = async (invoice, path) => {
       }
       fs.writeFileSync(path, Buffer.from(pdfBuffer));
     } catch (err) {
-      throw new Error(`Failed to store invoice file: ${err.message}`);
+      throw new Error(`Failed to store invoice file at ${path}: ${err.message}`);
     }
   }
 

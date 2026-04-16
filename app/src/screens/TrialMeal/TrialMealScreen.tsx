@@ -812,13 +812,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: hp('1%'),
-    gap: wp('3%'),
   },
   modalPrimaryButton: {
     backgroundColor: Colors.primaryOrange,
     borderRadius: 8,
     paddingHorizontal: wp('5%'),
     paddingVertical: hp('1.2%'),
+    marginLeft: wp('3%'),
   },
   modalPrimaryButtonText: {
     color: Colors.white,

@@ -65,8 +65,10 @@ const TransactionDetailScreen = ({route}: any) => {
     if (!url) {
       return;
     }
+    const normalizedBase = BASE_URL.replace(/\/$/, '');
+    const normalizedPath = url.startsWith('/') ? url : `/${url}`;
     try {
-      await Linking.openURL(BASE_URL + url);
+      await Linking.openURL(`${normalizedBase}${normalizedPath}`);
     } catch {
       Alert.alert('Error', 'Unable to open invoice');
     }
