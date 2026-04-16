@@ -17,15 +17,17 @@ import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import {calculateWalletRedemption} from 'utils/subscriptionLogic';
 
-export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
+export default function PaymentOptions({prevStep, navigation, isRenewal, planPriceProp, numChildrenProp}: any) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const {userId} = useAuth();
 
   // Wallet state
   const [walletPoints, setWalletPoints] = useState<number>(0);
   const [applyWallet, setApplyWallet] = useState<boolean>(false);
-  const [planPrice, setPlanPrice] = useState<number>(0);
-  const [numChildren, setNumChildren] = useState<number>(1);
+  // For renewal, planPrice is passed as a prop from the parent (the newly selected
+  // plan price). For initial registration, it is fetched from the API.
+  const [planPrice, setPlanPrice] = useState<number>(planPriceProp ?? 0);
+  const [numChildren, setNumChildren] = useState<number>(numChildrenProp ?? 1);
 
   // Derived wallet calculation
   const {maxRedeemable, redeemedPoints: walletUsed, remainingWalletPoints: remainingWallet, finalAmount: finalPayable} =
@@ -45,7 +47,10 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
     try {
       const [walletRes, formRes]: [any, any] = await Promise.all([
         PaymentService.getWallet(userId),
-        RegistrationService.getRegisterdUserData(userId),
+        // Skip the registration data fetch when the plan price has been
+        // passed in from the parent (renewal case) to avoid overwriting
+        // the correct renewal price with stale data.
+        planPriceProp ? Promise.resolve(null) : RegistrationService.getRegisterdUserData(userId),
       ]);
 
       if (walletRes?.success) {

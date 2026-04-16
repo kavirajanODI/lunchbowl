@@ -4,7 +4,8 @@ import PaginationDots from 'components/paginations.tsx/PrimaryPagination';
 import Typography from 'components/Text/Typography';
 import {useAuth} from 'context/AuthContext';
 import {useRegistration} from 'context/RegistrationContext';
-import React, {useEffect, useState} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   Alert,
   ScrollView,
@@ -35,8 +36,20 @@ export default function RenewSubscription({navigation}: any) {
   const {userId} = useAuth();
   const {refreshRegistration} = useRegistration();
   const [step, setStep] = useState<RenewStep>(1);
-  const [selectedPlan, setSelectedPlan] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  // Hide the floating tab bar while this screen is active so it never
+  // overlaps the form content or BACK/NEXT buttons.
+  useFocusEffect(
+    useCallback(() => {
+      const parent = navigation.getParent();
+      parent?.setOptions({tabBarStyle: {display: 'none'}});
+      return () => {
+        parent?.setOptions({tabBarStyle: undefined});
+      };
+    }, [navigation]),
+  );
 
   // Step 1: Child selection
   const [children, setChildren] = useState<any[]>([]);
@@ -220,6 +233,8 @@ export default function RenewSubscription({navigation}: any) {
             prevStep={prevStep}
             navigation={navigation}
             isRenewal
+            planPriceProp={selectedPlan?.price ?? 0}
+            numChildrenProp={selectedChildren.length || 1}
           />
         )}
       </View>
