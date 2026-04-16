@@ -37,6 +37,7 @@ const MenuCalendar = () => {
   // New for multi-plan support
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+  const [selectedStatus, setSelectedStatus] = useState("active");
 
   // Plan-dependent state
   const [children, setChildren] = useState([]);
@@ -186,6 +187,34 @@ const MenuCalendar = () => {
     };
     fetchAllData();
   }, []);
+
+  useEffect(() => {
+    if (!subscriptionPlans.length) return;
+    const currentPlanStatus = subscriptionPlans[selectedPlanIndex]?.status;
+    if (currentPlanStatus === "active" || currentPlanStatus === "upcoming") {
+      setSelectedStatus(currentPlanStatus);
+      return;
+    }
+    if (subscriptionPlans.some((plan) => plan.status === "active")) {
+      setSelectedStatus("active");
+      return;
+    }
+    if (subscriptionPlans.some((plan) => plan.status === "upcoming")) {
+      setSelectedStatus("upcoming");
+    }
+  }, [subscriptionPlans, selectedPlanIndex]);
+
+  useEffect(() => {
+    if (!subscriptionPlans.length) return;
+    const matchingIndexes = subscriptionPlans
+      .map((plan, index) => (plan.status === selectedStatus ? index : -1))
+      .filter((index) => index !== -1);
+
+    if (!matchingIndexes.length) return;
+    if (!matchingIndexes.includes(selectedPlanIndex)) {
+      setSelectedPlanIndex(matchingIndexes[0]);
+    }
+  }, [selectedStatus, subscriptionPlans, selectedPlanIndex]);
 
   // --- Plan tab change: map children/calendar date range for selected plan
   useEffect(() => {
@@ -585,23 +614,58 @@ const MenuCalendar = () => {
     );
   }
 
+  const statusTabs = ["active", "upcoming"].filter((status) =>
+    subscriptionPlans.some((plan) => plan.status === status)
+  );
+  const visiblePlanIndexesByStatus = subscriptionPlans
+    .map((plan, index) => (plan.status === selectedStatus ? index : -1))
+    .filter((index) => index !== -1);
+  const visiblePlanIndexes = visiblePlanIndexesByStatus.length
+    ? visiblePlanIndexesByStatus
+    : subscriptionPlans.map((_, index) => index);
+  const selectedVisiblePlanTab = visiblePlanIndexes.indexOf(selectedPlanIndex);
+
 
   return (
     <>
+      {statusTabs.length > 0 && (
+        <Tabs
+          value={Math.max(statusTabs.indexOf(selectedStatus), 0)}
+          onChange={(e, val) => setSelectedStatus(statusTabs[val])}
+          variant="scrollable"
+          scrollButtons="auto"
+          className="menucalnmaintab"
+        >
+          {statusTabs.map((status) => (
+            <Tab
+              key={status}
+              label={status === "active" ? "Active" : "Upcoming"}
+            />
+          ))}
+        </Tabs>
+      )}
+
       {/* Plan Tabs */}
       <Tabs
-        value={selectedPlanIndex}
-        onChange={(e, val) => setSelectedPlanIndex(val)}
+        value={selectedVisiblePlanTab === -1 ? 0 : selectedVisiblePlanTab}
+        onChange={(e, val) => {
+          const newPlanIndex = visiblePlanIndexes[val];
+          if (typeof newPlanIndex === "number") {
+            setSelectedPlanIndex(newPlanIndex);
+          }
+        }}
         variant="scrollable"
         scrollButtons="auto"
         className="menucalnmaintab"
       >
-        {subscriptionPlans.map((plan, i) => (
+        {visiblePlanIndexes.map((planIndex) => {
+          const plan = subscriptionPlans[planIndex];
+          return (
           <Tab
-            key={i}
-            label={`${dayjs(plan.startDate).format("DD MMM")} - ${dayjs(plan.endDate).format("DD MMM")} (${plan.status})`}
+            key={plan.id || planIndex}
+            label={`${dayjs(plan.startDate).format("DD MMM")} - ${dayjs(plan.endDate).format("DD MMM")}`}
           />
-        ))}
+        )})}
       </Tabs>
     <Box
       className="MCMainPanel"
