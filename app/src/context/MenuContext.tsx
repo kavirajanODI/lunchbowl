@@ -7,6 +7,12 @@ import React, {
 } from 'react';
 import UserService from 'services/userService';
 import {useAuth} from './AuthContext';
+import {
+  getSubscriptionBuckets,
+  resolveSelectedSubscription,
+  SubscriptionItem,
+  SubscriptionTab,
+} from 'utils/subscriptionLogic';
 interface Child {
   id: string;
   name: string;
@@ -17,6 +23,10 @@ interface MenuContextType {
   startDate: string;
   endDate: string;
   planId: string;
+  selectedTab: SubscriptionTab;
+  setSelectedTab: React.Dispatch<React.SetStateAction<SubscriptionTab>>;
+  activeSubscription: SubscriptionItem | null;
+  upcomingSubscription: SubscriptionItem | null;
   fetchChildren: (data: RequestData) => Promise<void>;
 }
 
@@ -39,6 +49,11 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
   const {userId} = useAuth();
   const [childrenData, setChildrenData] = useState<Child[]>([]);
   const [planId, setPlanId] = useState<string>('');
+  const [selectedTab, setSelectedTab] = useState<SubscriptionTab>('active');
+  const [activeSubscription, setActiveSubscription] =
+    useState<SubscriptionItem | null>(null);
+  const [upcomingSubscription, setUpcomingSubscription] =
+    useState<SubscriptionItem | null>(null);
 
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -56,36 +71,70 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
         return;
       }
 
-      const subs: any[] = Array.isArray(resData.subscriptions)
+      const subs: SubscriptionItem[] = Array.isArray(resData.subscriptions)
         ? resData.subscriptions
         : [];
-      const activeSub =
-        subs.find((s: any) => s.status === 'active') ??
-        subs[subs.length - 1] ??
-        null;
+      const {activeSubscription, upcomingSubscription, upcomingSubscriptions} =
+        getSubscriptionBuckets(subs);
+      setActiveSubscription(activeSubscription);
+      setUpcomingSubscription(upcomingSubscription);
 
-      if (activeSub) {
-        setStartDate(toYMD(activeSub.startDate));
-        setEndDate(toYMD(activeSub.endDate));
-        // Use the subscription document's MongoDB _id as the plan identifier
-        setPlanId((activeSub._id || activeSub.planId || '') as string);
+      const nextTab: SubscriptionTab =
+        selectedTab === 'upcoming' && !upcomingSubscription
+          ? 'active'
+          : selectedTab === 'active' && !activeSubscription
+          ? 'upcoming'
+          : selectedTab;
+      if (nextTab !== selectedTab) {
+        setSelectedTab(nextTab);
+      }
+
+      const selectedSubscription = resolveSelectedSubscription(
+        nextTab,
+        activeSubscription,
+        upcomingSubscriptions,
+      );
+
+      let hasSubscriptionChildren = false;
+      if (selectedSubscription?.startDate && selectedSubscription?.endDate) {
+        setStartDate(toYMD(selectedSubscription.startDate));
+        setEndDate(toYMD(selectedSubscription.endDate));
+        setPlanId(
+          (selectedSubscription._id || selectedSubscription.planId || '') as string,
+        );
+        if (Array.isArray(selectedSubscription.children)) {
+          const formattedChildren = selectedSubscription.children.map(
+            (child: any) => ({
+              id: child._id ?? child.id,
+              name: `${child.childFirstName?.trim() || ''} ${
+                child.childLastName?.trim() || ''
+              }`.trim(),
+            }),
+          );
+          setChildrenData(formattedChildren);
+          hasSubscriptionChildren = formattedChildren.length > 0;
+        }
       } else {
-        console.error('No plans data found or response was not successful.');
+        setStartDate('');
+        setEndDate('');
+        setPlanId('');
       }
 
       // Fetch children from the dedicated endpoint; account-details does not include them
-      const childrenResponse = await UserService.getChildInformation(id);
-      const rawChildren: any[] = Array.isArray(childrenResponse?.children)
-        ? childrenResponse.children
-        : [];
-      const formattedChildren = rawChildren.map((child: any) => ({
-        id: child._id,
-        name: `${child.childFirstName?.trim() || ''} ${
-          child.childLastName?.trim() || ''
-        }`.trim(),
-      }));
-      console.log('📌 Formatted children:', formattedChildren);
-      setChildrenData(formattedChildren);
+      if (!hasSubscriptionChildren) {
+        const childrenResponse = await UserService.getChildInformation(id);
+        const rawChildren: any[] = Array.isArray(childrenResponse?.children)
+          ? childrenResponse.children
+          : [];
+        const formattedChildren = rawChildren.map((child: any) => ({
+          id: child._id,
+          name: `${child.childFirstName?.trim() || ''} ${
+            child.childLastName?.trim() || ''
+          }`.trim(),
+        }));
+        console.log('📌 Formatted children:', formattedChildren);
+        setChildrenData(formattedChildren);
+      }
     } catch (error) {
       console.error('Error fetching children:', error);
     }
@@ -97,11 +146,21 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
         _id: userId,
       });
     }
-  }, [userId]);
+  }, [userId, selectedTab]);
 
   return (
     <MenuContext.Provider
-      value={{childrenData, startDate, endDate, planId, fetchChildren}}>
+      value={{
+        childrenData,
+        startDate,
+        endDate,
+        planId,
+        selectedTab,
+        setSelectedTab,
+        activeSubscription,
+        upcomingSubscription,
+        fetchChildren,
+      }}>
       {children}
     </MenuContext.Provider>
   );

@@ -15,6 +15,7 @@ import {
 import ccavenueConfig from '../../../../config/ccavenueConfig';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
+import {calculateWalletRedemption} from 'utils/subscriptionLogic';
 
 export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
@@ -27,10 +28,13 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
   const [numChildren, setNumChildren] = useState<number>(1);
 
   // Derived wallet calculation
-  const maxRedeemable = Math.floor(planPrice * 0.8);
-  const walletUsed = applyWallet ? Math.min(walletPoints, maxRedeemable) : 0;
-  const remainingWallet = walletPoints - walletUsed;
-  const finalPayable = Math.max(0, planPrice - walletUsed);
+  const {maxRedeemable, redeemedPoints: walletUsed, remainingWalletPoints: remainingWallet, finalAmount: finalPayable} =
+    calculateWalletRedemption({
+      totalPrice: planPrice,
+      walletPoints,
+      applyWallet,
+      maxPercent: 0.8,
+    });
 
   useEffect(() => {
     fetchData();

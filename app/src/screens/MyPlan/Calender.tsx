@@ -55,7 +55,7 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   const {holidays} = useDate();
   const {userId} = useAuth();
   const {profileData, loading, refreshProfileData} = useUserProfile();
-  const {fetchChildren} = useMenu();
+  const {fetchChildren, startDate, endDate} = useMenu();
 
   //######### HOOKS ############################################
 
@@ -88,9 +88,28 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   });
 
   const handleMonthChange = (month: number, year: number) => {
+    if (startDate && endDate) {
+      const monthStart = new Date(year, month, 1);
+      const monthEnd = new Date(year, month + 1, 0);
+      const subStart = new Date(startDate);
+      const subEnd = new Date(endDate);
+      subStart.setHours(0, 0, 0, 0);
+      subEnd.setHours(0, 0, 0, 0);
+      if (monthEnd < subStart || monthStart > subEnd) {
+        return;
+      }
+    }
     setCurrentMonth(month);
     setCurrentYear(year);
   };
+
+  useEffect(() => {
+    if (!startDate) return;
+    const start = new Date(startDate);
+    if (Number.isNaN(start.getTime())) return;
+    setCurrentMonth(start.getMonth());
+    setCurrentYear(start.getFullYear());
+  }, [startDate]);
 
   //######### FORMAT SUBSCRIPTION PLAN FROM CONTEXT ###############
 

@@ -24,6 +24,10 @@ import Fonts from 'assets/styles/fonts';
 import PaymentOptions from './Components/forms/PaymentOptions';
 import styles from './Components/forms/Styles/styles';
 import SubscriptionPlan from './Components/forms/Subscription';
+import {
+  normalizeSelectedChildren,
+  toggleChildSelection as toggleChildSelectionIds,
+} from 'utils/subscriptionLogic';
 
 type RenewStep = 1 | 2 | 3;
 
@@ -51,7 +55,7 @@ export default function RenewSubscription({navigation}: any) {
       const kids = response?.children || [];
       setChildren(kids);
       // Default: select all existing children
-      setSelectedChildIds(kids.map((c: any) => c._id).filter(Boolean));
+      setSelectedChildIds(normalizeSelectedChildren(kids, kids.map((c: any) => c._id).filter(Boolean)));
     } catch (err) {
       console.error('Error fetching children for renewal:', err);
     } finally {
@@ -59,12 +63,8 @@ export default function RenewSubscription({navigation}: any) {
     }
   };
 
-  const toggleChildSelection = (childId: string) => {
-    setSelectedChildIds(prev =>
-      prev.includes(childId)
-        ? prev.filter(id => id !== childId)
-        : [...prev, childId],
-    );
+  const handleToggleChildSelection = (childId: string) => {
+    setSelectedChildIds(prev => toggleChildSelectionIds(prev, childId));
   };
 
   const formInfo: Record<RenewStep, {title: string; description: string}> = {
@@ -104,8 +104,12 @@ export default function RenewSubscription({navigation}: any) {
     nextStep();
   };
 
+  const normalizedSelectedChildIds = normalizeSelectedChildren(
+    children,
+    selectedChildIds,
+  );
   const selectedChildren = children.filter(c =>
-    selectedChildIds.includes(c._id),
+    normalizedSelectedChildIds.includes(c._id),
   );
 
   return (
@@ -141,7 +145,7 @@ export default function RenewSubscription({navigation}: any) {
               return (
                 <TouchableOpacity
                   key={child._id}
-                  onPress={() => toggleChildSelection(child._id)}
+                  onPress={() => handleToggleChildSelection(child._id)}
                   style={[
                     localStyles.childCard,
                     isSelected && localStyles.childCardSelected,
@@ -319,4 +323,3 @@ const localStyles = StyleSheet.create({
     color: Colors.white,
   },
 });
-
