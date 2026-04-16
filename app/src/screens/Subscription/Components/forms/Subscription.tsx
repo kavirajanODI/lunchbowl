@@ -582,6 +582,7 @@ export default function SubscriptionPlan({
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        style={{flex: 1}}
         contentContainerStyle={{paddingBottom: 12}}>
 
         {/* ── Child Selector ─────────────────────────────────────── */}
