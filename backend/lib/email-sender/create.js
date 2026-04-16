@@ -37,11 +37,15 @@ const handleCreateInvoice = async (invoice, path) => {
   // });
 
   if (path) {
-    const dir = pathLib.dirname(path);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    try {
+      const dir = pathLib.dirname(path);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(path, Buffer.from(pdfBuffer));
+    } catch (err) {
+      throw new Error(`Failed to store invoice file: ${err.message}`);
     }
-    fs.writeFileSync(path, Buffer.from(pdfBuffer));
   }
 
   return pdfBuffer;

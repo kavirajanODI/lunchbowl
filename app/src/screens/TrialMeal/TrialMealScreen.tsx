@@ -187,7 +187,7 @@ export default function TrialMealScreen({navigation}: any) {
         email: user?.email || email || '',
       });
 
-      if (response?.success === false) {
+      if (!response?.success) {
         Alert.alert('Error', response.message || 'Failed to submit request');
         return;
       }

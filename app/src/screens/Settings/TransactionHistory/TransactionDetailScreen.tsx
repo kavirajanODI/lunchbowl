@@ -2,7 +2,15 @@ import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import ThemeGradientBackground from 'components/Backgrounds/GradientBackground';
 import React from 'react';
-import {Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {
   heightPercentageToDP as hp,
   widthPercentageToDP as wp,
@@ -53,11 +61,15 @@ const TransactionDetailScreen = ({route}: any) => {
   const isSuccess = (status: string) =>
     (status || '').toLowerCase() === 'success';
 
-  const openInvoice = (url?: string) => {
+  const openInvoice = async (url?: string) => {
     if (!url) {
       return;
     }
-    Linking.openURL(BASE_URL + url);
+    try {
+      await Linking.openURL(BASE_URL + url);
+    } catch {
+      Alert.alert('Error', 'Unable to open invoice');
+    }
   };
 
   const DetailRow = ({label, value}: {label: string; value: string}) => (

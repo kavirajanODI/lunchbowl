@@ -1,6 +1,10 @@
 const SchoolRequest = require("../models/SchoolRequest");
 const { sendEmailAsync } = require("../lib/email-sender/sender");
 
+const schoolRequestAdminEmails =
+  process.env.SCHOOL_REQUEST_ADMIN_EMAILS ||
+  "contactus@lunchbowl.co.in, maniyarasanodi20@gmail.com";
+
 const requestSchool = async (req, res) => {
   try {
     const { schoolName, location, parentName, phone, email } = req.body;
@@ -22,7 +26,7 @@ const requestSchool = async (req, res) => {
 
     const adminBody = {
       from: process.env.EMAIL_USER,
-      to: "contactus@lunchbowl.co.in, maniyarasanodi20@gmail.com",
+      to: schoolRequestAdminEmails,
       subject: "New School Request - Trial Meal",
       html: `
         <h2>New School Request</h2>

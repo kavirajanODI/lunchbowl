@@ -3,7 +3,6 @@ const stripe = require("stripe");
 const Razorpay = require("razorpay");
 const MailChecker = require("mailchecker");
 const path = require("path");
-const fs = require("fs");
 // const stripe = require("stripe")(`${process.env.STRIPE_KEY}` || null); /// use hardcoded key if env not work
 
 const mongoose = require("mongoose");
@@ -254,14 +253,28 @@ const sendEmailInvoiceToCustomer = async (req, res) => {
           "Invalid or disposable email address. Please provide a valid email.",
       });
     }
-    const safeOrderId = String(
-      req.body.orderId || req.body.order_id || req.body._id || req.body.invoice
-    ).replace(/[^A-Za-z0-9_-]/g, "");
+    let safeOrderId = `${Date.now()}`;
+    if (req.body._id && mongoose.Types.ObjectId.isValid(req.body._id)) {
+      safeOrderId = String(req.body._id);
+    } else if (
+      req.body.orderId &&
+      /^[A-Za-z0-9_-]{1,64}$/.test(String(req.body.orderId))
+    ) {
+      safeOrderId = String(req.body.orderId);
+    } else if (
+      req.body.order_id &&
+      /^[A-Za-z0-9_-]{1,64}$/.test(String(req.body.order_id))
+    ) {
+      safeOrderId = String(req.body.order_id);
+    } else if (
+      req.body.invoice !== undefined &&
+      /^[0-9]{1,20}$/.test(String(req.body.invoice))
+    ) {
+      safeOrderId = String(req.body.invoice);
+    }
+
     const fileName = `INV-${safeOrderId}-${Date.now()}.pdf`;
     const invoicesDir = path.join(process.cwd(), "uploads", "invoices");
-    if (!fs.existsSync(invoicesDir)) {
-      fs.mkdirSync(invoicesDir, { recursive: true });
-    }
     const absoluteInvoicePath = path.join(invoicesDir, fileName);
     const invoiceUrl = `/uploads/invoices/${fileName}`;
 
@@ -309,13 +322,23 @@ const sendEmailInvoiceToCustomer = async (req, res) => {
       );
     }
 
-    if (req.body.user && (req.body.orderId || req.body.order_id)) {
+    const orderIds = [req.body.orderId, req.body.order_id]
+      .filter(Boolean)
+      .map((id) => String(id));
+
+    if (
+      req.body.user &&
+      mongoose.Types.ObjectId.isValid(req.body.user) &&
+      orderIds.length > 0
+    ) {
       await UserPayment.updateOne(
         {
-          user: req.body.user,
-          "payments.order_id": { $in: [req.body.orderId, req.body.order_id] },
+          user: mongoose.Types.ObjectId(req.body.user),
         },
-        { $set: { "payments.$.invoiceUrl": invoiceUrl } }
+        { $set: { "payments.$[payment].invoiceUrl": invoiceUrl } },
+        {
+          arrayFilters: [{ "payment.order_id": { $in: orderIds } }],
+        }
       );
     }
 
