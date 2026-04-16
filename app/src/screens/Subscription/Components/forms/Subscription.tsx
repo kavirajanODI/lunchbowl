@@ -11,12 +11,13 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
   Platform,
 } from 'react-native';
-import {heightPercentageToDP as hp} from 'react-native-responsive-screen';
+import {heightPercentageToDP as hp, widthPercentageToDP as wp} from 'react-native-responsive-screen';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import HolidayService from 'services/MyPlansApi/HolidayService';
 import RegistrationService from 'services/RegistartionService/registartion';
@@ -27,6 +28,7 @@ import {getDaysInMonth, getFirstDayOfMonth} from 'utils/calendarUtils';
 import {
   calculateEndDateByWorkingDays,
   calculateRenewalStartDate,
+  calculateWalletRedemption,
   getSubscriptionBuckets,
   normalizeSelectedChildren,
   toggleChildSelection as toggleChildSelectionIds,
@@ -312,6 +314,9 @@ export default function SubscriptionPlan({
   prevStep,
   nextStep,
   isRenewal,
+  walletPoints = 0,
+  applyWallet = false,
+  setApplyWallet,
 }: any) {
   //####################### STATE VARIABLES ######################
 
@@ -864,6 +869,67 @@ export default function SubscriptionPlan({
 
       </ScrollView>
 
+      {/* ── Wallet Redemption (renewal only, visible in this step) ─── */}
+      {isRenewal && walletPoints > 0 && selectedPlan && (() => {
+        const {
+          maxRedeemable,
+          redeemedPoints: walletUsed,
+          remainingWalletPoints: remainingWallet,
+          finalAmount: finalPayable,
+        } = calculateWalletRedemption({
+          totalPrice: selectedPlan.price ?? 0,
+          walletPoints,
+          applyWallet,
+          maxPercent: 0.8,
+        });
+
+        return (
+          <View style={walletStyles.walletSection}>
+            <View style={walletStyles.walletToggleRow}>
+              <View style={walletStyles.walletToggleLeft}>
+                <Text style={walletStyles.walletToggleLabel}>Redeem Wallet Points</Text>
+                <Text style={walletStyles.walletPointsAvail}>
+                  {walletPoints} points available
+                </Text>
+              </View>
+              <Switch
+                value={applyWallet}
+                onValueChange={setApplyWallet}
+                trackColor={{false: Colors.Storke, true: Colors.primaryOrange}}
+                thumbColor={Colors.white}
+              />
+            </View>
+
+            {applyWallet && (
+              <View style={walletStyles.breakdownTable}>
+                <View style={walletStyles.breakdownRow}>
+                  <Text style={walletStyles.breakdownLabel}>Plan Price</Text>
+                  <Text style={[walletStyles.breakdownValue, walletStyles.strikeText]}>
+                    ₹{(selectedPlan.price ?? 0).toFixed(2)}
+                  </Text>
+                </View>
+                <View style={walletStyles.breakdownRow}>
+                  <Text style={walletStyles.breakdownLabel}>Redeemed Points</Text>
+                  <Text style={[walletStyles.breakdownValue, walletStyles.greenText]}>
+                    −₹{walletUsed.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={[walletStyles.breakdownRow, walletStyles.finalRow]}>
+                  <Text style={walletStyles.finalLabel}>Final Payable</Text>
+                  <Text style={walletStyles.finalValue}>₹{finalPayable.toFixed(2)}</Text>
+                </View>
+                {walletPoints > maxRedeemable && (
+                  <Text style={walletStyles.walletNote}>
+                    ⓘ Only 80% of the plan price can be redeemed. Remaining{' '}
+                    {remainingWallet} points stay in wallet.
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        );
+      })()}
+
       {/* ── Back / Next buttons ───────────────────────────────── */}
       <View style={[styles.btnRow, styles.stickyBtnRow]}>
         <PrimaryButton title="BACK" onPress={prevStep} style={styles.backBtn} />
@@ -1362,5 +1428,83 @@ const modalSt = StyleSheet.create({
     color: Colors.primaryOrange,
     marginTop: 4,
     textAlign: 'center',
+  },
+});
+
+const walletStyles = StyleSheet.create({
+  walletSection: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: wp(4),
+    marginTop: hp(1.5),
+    marginHorizontal: 0,
+    borderWidth: 1,
+    borderColor: Colors.lightRed,
+  },
+  walletToggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  walletToggleLeft: {
+    flex: 1,
+  },
+  walletToggleLabel: {
+    fontSize: hp(2),
+    fontFamily: 'Urbanist-Bold',
+    color: Colors.black,
+  },
+  walletPointsAvail: {
+    fontSize: hp(1.6),
+    color: Colors.primaryOrange,
+    marginTop: 2,
+  },
+  breakdownTable: {
+    marginTop: hp(1.5),
+    borderTopWidth: 1,
+    borderTopColor: Colors.Storke,
+    paddingTop: hp(1.5),
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: hp(1),
+  },
+  breakdownLabel: {
+    fontSize: hp(1.8),
+    color: Colors.bodyText,
+  },
+  breakdownValue: {
+    fontSize: hp(1.8),
+    color: Colors.black,
+  },
+  strikeText: {
+    textDecorationLine: 'line-through',
+    color: Colors.bodyText,
+  },
+  greenText: {
+    color: Colors.green,
+  },
+  finalRow: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.Storke,
+    paddingTop: hp(1),
+    marginTop: hp(0.5),
+  },
+  finalLabel: {
+    fontSize: hp(2),
+    fontFamily: 'Urbanist-Bold',
+    color: Colors.black,
+  },
+  finalValue: {
+    fontSize: hp(2),
+    fontFamily: 'Urbanist-Bold',
+    color: Colors.primaryOrange,
+  },
+  walletNote: {
+    fontSize: hp(1.5),
+    color: Colors.bodyText,
+    fontStyle: 'italic',
+    marginTop: hp(0.5),
   },
 });

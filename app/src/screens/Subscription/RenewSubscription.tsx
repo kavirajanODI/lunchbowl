@@ -26,9 +26,11 @@ import PaymentOptions from './Components/forms/PaymentOptions';
 import styles from './Components/forms/Styles/styles';
 import SubscriptionPlan from './Components/forms/Subscription';
 import {
+  calculateWalletRedemption,
   normalizeSelectedChildren,
   toggleChildSelection as toggleChildSelectionIds,
 } from 'utils/subscriptionLogic';
+import PaymentService from 'services/PaymentService/paymentService';
 
 type RenewStep = 1 | 2 | 3;
 
@@ -38,6 +40,23 @@ export default function RenewSubscription({navigation}: any) {
   const [step, setStep] = useState<RenewStep>(1);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  // Wallet state — hoisted here so the toggle lives in step 2 and the
+  // payment values flow into step 3 without re-fetching.
+  const [walletPoints, setWalletPoints] = useState<number>(0);
+  const [applyWallet, setApplyWallet] = useState<boolean>(false);
+
+  const planPrice = selectedPlan?.price ?? 0;
+  const {
+    redeemedPoints: walletUsed,
+    remainingWalletPoints: remainingWallet,
+    finalAmount: finalPayable,
+  } = calculateWalletRedemption({
+    totalPrice: planPrice,
+    walletPoints,
+    applyWallet,
+    maxPercent: 0.8,
+  });
 
   // Hide the floating tab bar while this screen is active so it never
   // overlaps the form content or BACK/NEXT buttons.
@@ -58,7 +77,20 @@ export default function RenewSubscription({navigation}: any) {
 
   useEffect(() => {
     fetchChildren();
+    fetchWallet();
   }, [userId]);
+
+  const fetchWallet = async () => {
+    if (!userId) return;
+    try {
+      const res: any = await PaymentService.getWallet(userId);
+      if (res?.success) {
+        setWalletPoints(res?.data?.wallet?.points ?? 0);
+      }
+    } catch (err) {
+      console.error('Error fetching wallet for renewal:', err);
+    }
+  };
 
   const fetchChildren = async () => {
     if (!userId) return;
@@ -224,6 +256,9 @@ export default function RenewSubscription({navigation}: any) {
             prevStep={prevStep}
             nextStep={nextStep}
             isRenewal
+            walletPoints={walletPoints}
+            applyWallet={applyWallet}
+            setApplyWallet={setApplyWallet}
           />
         )}
 
@@ -233,8 +268,12 @@ export default function RenewSubscription({navigation}: any) {
             prevStep={prevStep}
             navigation={navigation}
             isRenewal
-            planPriceProp={selectedPlan?.price ?? 0}
+            planPriceProp={planPrice}
             numChildrenProp={selectedChildren.length || 1}
+            applyWalletProp={applyWallet}
+            walletUsedProp={walletUsed}
+            remainingWalletProp={remainingWallet}
+            finalPayableProp={finalPayable}
           />
         )}
       </View>
