@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
   Box,
@@ -37,6 +37,7 @@ const MenuCalendar = () => {
   // New for multi-plan support
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+  const [planTab, setPlanTab] = useState("active");
 
   // Plan-dependent state
   const [children, setChildren] = useState([]);
@@ -186,6 +187,34 @@ const MenuCalendar = () => {
     };
     fetchAllData();
   }, []);
+
+  const visiblePlanIndexes = useMemo(
+    () =>
+      subscriptionPlans.reduce((acc, plan, index) => {
+        if (plan.status === planTab) acc.push(index);
+        return acc;
+      }, []),
+    [subscriptionPlans, planTab]
+  );
+
+  useEffect(() => {
+    if (!subscriptionPlans.length) return;
+    const firstVisibleIndex = visiblePlanIndexes[0];
+    if (firstVisibleIndex === undefined) {
+      const alternateTab = planTab === "active" ? "upcoming" : "active";
+      const alternateIndex = subscriptionPlans.findIndex(
+        (p) => p.status === alternateTab
+      );
+      if (alternateIndex !== -1) {
+        setPlanTab(alternateTab);
+        setSelectedPlanIndex(alternateIndex);
+      }
+      return;
+    }
+    if (!visiblePlanIndexes.includes(selectedPlanIndex)) {
+      setSelectedPlanIndex(firstVisibleIndex);
+    }
+  }, [subscriptionPlans, planTab, visiblePlanIndexes, selectedPlanIndex]);
 
   // --- Plan tab change: map children/calendar date range for selected plan
   useEffect(() => {
@@ -588,6 +617,15 @@ const MenuCalendar = () => {
 
   return (
     <>
+      <Tabs
+        value={planTab}
+        onChange={(e, value) => setPlanTab(value)}
+        className="menucalnmaintab"
+      >
+        <Tab value="active" label="Active" />
+        <Tab value="upcoming" label="Upcoming" />
+      </Tabs>
+
       {/* Plan Tabs */}
       <Tabs
         value={selectedPlanIndex}
@@ -596,12 +634,16 @@ const MenuCalendar = () => {
         scrollButtons="auto"
         className="menucalnmaintab"
       >
-        {subscriptionPlans.map((plan, i) => (
+        {visiblePlanIndexes.map((i) => {
+          const plan = subscriptionPlans[i];
+          return (
           <Tab
             key={i}
-            label={`${dayjs(plan.startDate).format("DD MMM")} - ${dayjs(plan.endDate).format("DD MMM")} (${plan.status})`}
+            value={i}
+            label={`${dayjs(plan.startDate).format("DD MMM")} - ${dayjs(plan.endDate).format("DD MMM")}`}
           />
-        ))}
+          );
+        })}
       </Tabs>
     <Box
       className="MCMainPanel"

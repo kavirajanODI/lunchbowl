@@ -91,8 +91,8 @@ const calculateEndDateByWorkingDays = (startDate, workingDays, holidays) => {
 const calculatePlans = (holidays, childCount = 1, minStartDate) => {
   const discounts =
     childCount >= 2
-      ? { 22: 0.05, 66: 0.15, 132: 0.2 }
-      : { 22: 0, 66: 0.05, 132: 0.1 };
+      ? { 22: 0.05, 44: 0.1, 66: 0.15 }
+      : { 22: 0, 44: 0.05, 66: 0.1 };
   return [
     {
       id: 1,
@@ -107,6 +107,18 @@ const calculatePlans = (holidays, childCount = 1, minStartDate) => {
       endDate: calculateEndDateByWorkingDays(minStartDate, 22, holidays),
     },
     {
+      id: 2,
+      label: `44 Working Days`,
+      workingDays: 44,
+      price: Math.round(
+        44 * BASE_PRICE_PER_DAY * (1 - discounts[44]) * childCount
+      ),
+      discount: discounts[44],
+      isOneMonth: false,
+      startDate: minStartDate,
+      endDate: calculateEndDateByWorkingDays(minStartDate, 44, holidays),
+    },
+    {
       id: 3,
       label: `66 Working Days`,
       workingDays: 66,
@@ -118,20 +130,11 @@ const calculatePlans = (holidays, childCount = 1, minStartDate) => {
       startDate: minStartDate,
       endDate: calculateEndDateByWorkingDays(minStartDate, 66, holidays),
     },
-    {
-      id: 6,
-      label: `132 Working Days`,
-      workingDays: 132,
-      price: Math.round(
-        132 * BASE_PRICE_PER_DAY * (1 - discounts[132]) * childCount
-      ),
-      discount: discounts[132],
-      isOneMonth: false,
-      startDate: minStartDate,
-      endDate: calculateEndDateByWorkingDays(minStartDate, 132, holidays),
-    },
   ];
 };
+
+const formatSubscriptionDate = (date) =>
+  date ? dayjs(date).format("DD MMM YYYY") : "N/A";
 
 const RenewSubscriptionPlanStep = ({
   nextStep,
@@ -159,6 +162,13 @@ const RenewSubscriptionPlanStep = ({
   const [accountLoading, setAccountLoading] = useState(true);
 
   const walletPoints = accountDetails?.wallet?.points || 0;
+  const subscriptions = accountDetails?.subscriptions || [];
+  const existingSubscriptions = subscriptions
+    .filter((sub) => ["active", "upcoming"].includes(sub.status))
+    .sort((a, b) => dayjs(a.startDate).valueOf() - dayjs(b.startDate).valueOf());
+  const pastSubscriptions = subscriptions
+    .filter((sub) => !["active", "upcoming", "pending_payment"].includes(sub.status))
+    .sort((a, b) => dayjs(b.endDate).valueOf() - dayjs(a.endDate).valueOf());
 
   const [useWallet, setUseWallet] = useState(false);
 
@@ -202,8 +212,8 @@ const RenewSubscriptionPlanStep = ({
   const [selectedChildren, setSelectedChildren] = useState([]);
 
   useEffect(() => {
-    if (childrenList && childrenList.length > 0) {
-      setSelectedChildren([childrenList[0]._id]);
+    if (childrenList?.children?.length > 0) {
+      setSelectedChildren([childrenList.children[0]._id]);
     }
   }, [childrenList]);
 
@@ -452,6 +462,39 @@ const RenewSubscriptionPlanStep = ({
               )}
             </Box>
           )}
+
+          <Box
+            mt={2}
+            mb={2}
+            p={2}
+            sx={{ border: "1px solid #ddd", borderRadius: "12px", background: "#fff" }}
+          >
+            <Typography sx={{ color: "#FF6A00", fontWeight: 600, mb: 1 }} variant="subtitle2">
+              EXISTING SUBSCRIPTION DATES
+            </Typography>
+            {existingSubscriptions.length > 0 ? (
+              existingSubscriptions.map((sub) => (
+                <Typography key={sub._id} fontSize={13} color="#232323" sx={{ mb: 0.5 }}>
+                  {formatSubscriptionDate(sub.startDate)} - {formatSubscriptionDate(sub.endDate)} ({sub.status})
+                </Typography>
+              ))
+            ) : (
+              <Typography fontSize={13} color="#666">No active/upcoming subscriptions found.</Typography>
+            )}
+
+            <Typography sx={{ color: "#FF6A00", fontWeight: 600, mt: 2, mb: 1 }} variant="subtitle2">
+              PAST SUBSCRIPTION DATES
+            </Typography>
+            {pastSubscriptions.length > 0 ? (
+              pastSubscriptions.map((sub) => (
+                <Typography key={sub._id} fontSize={13} color="#232323" sx={{ mb: 0.5 }}>
+                  {formatSubscriptionDate(sub.startDate)} - {formatSubscriptionDate(sub.endDate)}
+                </Typography>
+              ))
+            ) : (
+              <Typography fontSize={13} color="#666">No past subscriptions found.</Typography>
+            )}
+          </Box>
 
           <Typography sx={{ color: "#FF6A00", fontWeight: 600, mt: 2, mb: 1 }} variant="subtitle2">
             SELECT YOUR SUBSCRIPTION PLAN*{" "}
@@ -830,12 +873,12 @@ const OffersSection = ({ numberOfChildren = 1 }) => (
           </li>
           <li>
             <Typography fontSize={14}>
-              Save <strong>15%</strong> on the 66 Working Days Plan (for 2+ children).
+              Save <strong>10%</strong> on the 44 Working Days Plan (for 2+ children).
             </Typography>
           </li>
           <li>
             <Typography fontSize={14}>
-              Save <strong>20%</strong> on the 132 Working Days Plan (for 2+ children).
+              Save <strong>15%</strong> on the 66 Working Days Plan (for 2+ children).
             </Typography>
           </li>
         </>
@@ -843,12 +886,12 @@ const OffersSection = ({ numberOfChildren = 1 }) => (
         <>
           <li>
             <Typography fontSize={14}>
-              Save <strong>5%</strong> on the 66 Working Days Plan.
+              Save <strong>5%</strong> on the 44 Working Days Plan.
             </Typography>
           </li>
           <li>
             <Typography fontSize={14}>
-              Save <strong>10%</strong> on the 132 Working Days Plan.
+              Save <strong>10%</strong> on the 66 Working Days Plan.
             </Typography>
           </li>
         </>

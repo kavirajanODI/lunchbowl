@@ -1,8 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import { Box, Typography, IconButton, Paper, Button } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
@@ -21,29 +19,12 @@ const WorkingDaysCalendar = ({
 }) => {
   if (!open) return null;
 
-  const [currentMonth, setCurrentMonth] = useState(startDate);
+  const currentMonth = dayjs(startDate).startOf("month");
   const endDate = calculateEndDateByWorkingDays(
     startDate,
     workingDays,
     holidays
   );
-
-  // Navigation functions
-  const prevMonth = () => {
-    setCurrentMonth(currentMonth.subtract(1, "month"));
-  };
-
-  const nextMonth = () => {
-    setCurrentMonth(currentMonth.add(1, "month"));
-  };
-
-  // Check if the month contains any part of the subscription period
-  const isRelevantMonth = (date) => {
-    return (
-      date.isSameOrAfter(startDate.startOf("month")) &&
-      date.isSameOrBefore(endDate.endOf("month"))
-    );
-  };
 
   // Generate calendar for the current month
   const renderCalendar = () => {
@@ -215,29 +196,10 @@ const WorkingDaysCalendar = ({
           </IconButton>
         </Box>
 
-        {/* Month navigation */}
         <Box display="flex" justifyContent="center" alignItems="center" mb={2}>
-          <IconButton
-            onClick={prevMonth}
-            disabled={!isRelevantMonth(currentMonth.subtract(1, "month"))}
-          >
-            <ArrowBackIosIcon fontSize="small" />
-          </IconButton>
-
-          <Typography
-            align="center"
-            fontWeight="bold"
-            sx={{ mx: 3, minWidth: 200 }}
-          >
+          <Typography align="center" fontWeight="bold" sx={{ mx: 3, minWidth: 200 }}>
             {currentMonth.format("MMMM, YYYY")}
           </Typography>
-
-          <IconButton
-            onClick={nextMonth}
-            disabled={!isRelevantMonth(currentMonth.add(1, "month"))}
-          >
-            <ArrowForwardIosIcon fontSize="small" />
-          </IconButton>
         </Box>
 
         {renderCalendar()}
