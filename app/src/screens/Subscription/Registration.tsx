@@ -155,7 +155,7 @@ export default function Registration({ navigation }: any) {
       setLoadingSchools(true);
       try {
         const response: any = await RegistrationService.getAllSchools();
-        if (response) setSchools(response);
+        if (response?.success && Array.isArray(response.data)) setSchools(response.data);
       } catch (error) {
         console.error('Error fetching schools:', error);
       } finally {

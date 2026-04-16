@@ -1,4 +1,4 @@
-import React, {createContext, useContext, useState, useEffect} from 'react';
+import React, {createContext, useContext, useState, useEffect, useCallback} from 'react';
 // import UserService from 'services/UserService';
 import {useAuth} from 'context/AuthContext';
 import UserService from 'services/userService';
@@ -69,7 +69,7 @@ export const UserProfileProvider: React.FC<{children: React.ReactNode}> = ({
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchProfileData = async () => {
+  const fetchProfileData = useCallback(async () => {
     if (!userId) return;
     try {
       setLoading(true);
@@ -85,14 +85,20 @@ export const UserProfileProvider: React.FC<{children: React.ReactNode}> = ({
           subs.find((s: any) => s.status === 'active') ??
           subs[subs.length - 1] ??
           null;
-        setProfileData({...data, subscriptionPlan: activeSub});
+        // Derive the children list from the active subscription so that
+        // profileData.children is always populated (the Form document does not
+        // carry a top-level children array – they live inside each Subscription).
+        const children: Child[] = Array.isArray(activeSub?.children)
+          ? activeSub.children
+          : [];
+        setProfileData({...data, subscriptionPlan: activeSub, children});
       }
     } catch (error) {
       console.error('Error fetching profile data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     fetchProfileData();

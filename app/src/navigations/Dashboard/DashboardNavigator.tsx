@@ -5,6 +5,8 @@ import UnderConstruction from 'screens/404Screen';
 import TrialMealScreen from 'screens/TrialMeal/TrialMealScreen';
 import HomeScreen from 'screens/Dashboard/HomeScreen';
 import PaymentWebView from 'screens/PaymentWebView';
+import PaymentSuccessScreen from 'screens/Payment/PaymentSuccessScreen';
+import PaymentFailedScreen from 'screens/Payment/PaymentFailedScreen';
 import HistoryDetailPage from 'screens/History/HistoryDetailPage';
 import OrderHistoryScreen from 'screens/History/OrderHistoryScreen';
 import MealDetailScreen from 'screens/Menu/MealDetailScreen';
@@ -29,6 +31,8 @@ import TransactionDetailScreen from 'screens/Settings/TransactionHistory/Transac
 import AddChildScreen from 'screens/Subscription/AddChildScreen';
 import AddChildPaymentScreen from 'screens/Subscription/AddChildPaymentScreen';
 import {UserProfileProvider} from 'context/UserDataContext';
+import EditParentDetailsScreen from 'screens/Settings/UserDashboard/EditParentDetailsScreen';
+import EditChildDetailsScreen from 'screens/Settings/UserDashboard/EditChildDetailsScreen';
 
 const Stack = createStackNavigator();
 const DashboardNavigator = () => {
@@ -171,6 +175,26 @@ const DashboardNavigator = () => {
           <Stack.Screen
             name="AddChildPaymentScreen"
             component={AddChildPaymentScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="EditParentDetailsScreen"
+            component={EditParentDetailsScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="EditChildDetailsScreen"
+            component={EditChildDetailsScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="PaymentSuccess"
+            component={PaymentSuccessScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="PaymentFailed"
+            component={PaymentFailedScreen}
             options={{headerShown: false}}
           />
         </Stack.Navigator>

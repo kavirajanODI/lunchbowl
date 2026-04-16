@@ -20,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import CheckBox from '@react-native-community/checkbox';
 import {
   heightPercentageToDP as hp,
   widthPercentageToDP as wp,
@@ -28,6 +29,7 @@ import {SvgXml} from 'react-native-svg';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
 import RegistrationService from 'services/RegistartionService/registartion';
 import UserService from 'services/userService';
+import HolidayService from 'services/MyPlansApi/HolidayService';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import {RemoveTrash} from 'styles/svg-icons';
@@ -35,6 +37,35 @@ import styles from './Components/forms/Styles/styles';
 
 const MAX_CHILDREN = 3;
 const PER_DAY_COST = 200;
+
+// Returns YYYY-MM-DD for a Date using local calendar (avoids UTC-offset shift)
+const toLocalYMD = (d: Date): string => {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+};
+
+// Count working days (Mon–Fri, non-holiday) from `from` to `to` inclusive
+const countWorkingDays = (
+  from: Date,
+  to: Date,
+  holidays: {date: string}[],
+): number => {
+  let count = 0;
+  const cur = new Date(from);
+  cur.setHours(0, 0, 0, 0);
+  const end = new Date(to);
+  end.setHours(0, 0, 0, 0);
+  while (cur <= end) {
+    const dow = cur.getDay();
+    const iso = toLocalYMD(cur);
+    if (dow !== 0 && dow !== 6 && !holidays.some(h => h.date === iso)) {
+      count++;
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+};
 
 const classOptions = [
   {label: 'LKG', value: 'LKG'},
@@ -82,6 +113,7 @@ const emptyChild = () => ({
   section: '',
   allergies: '',
   isExisting: false,
+  checked: true,
 });
 
 const validateChild = (child: any) =>
@@ -143,12 +175,13 @@ export default function AddChildScreen({navigation}: any) {
 
   const schoolOptions = schools.map((s: any) => ({
     label: s.name,
-    value: String(s._id),
+    value: s.name,
     Locationlabel: s.location,
   }));
 
   const totalChildren = existingChildren.length + newChildren.length;
   const canAddMore = totalChildren < MAX_CHILDREN;
+  const anyChecked = newChildren.some((c: any) => c.checked);
 
   const handleAddNewChild = () => {
     if (totalChildren >= MAX_CHILDREN) return;
@@ -170,13 +203,29 @@ export default function AddChildScreen({navigation}: any) {
     });
   };
 
+  const toggleChecked = (index: number) => {
+    setNewChildren(prev => {
+      const updated = [...prev];
+      updated[index] = {...updated[index], checked: !updated[index].checked};
+      return updated;
+    });
+  };
+
   const toggleExpanded = (index: number) => {
     setExpandedIndex(prev => (prev === index ? -1 : index));
   };
 
   const handleNext = async () => {
-    // Validate all new children
+    const checkedChildren = newChildren.filter((c: any) => c.checked);
+
+    if (checkedChildren.length === 0) {
+      Alert.alert('No children selected', 'Please check at least one child to proceed to payment.');
+      return;
+    }
+
+    // Validate only checked children
     for (let i = 0; i < newChildren.length; i++) {
+      if (!newChildren[i].checked) continue;
       if (!validateChild(newChildren[i])) {
         setExpandedIndex(i);
         Alert.alert('Validation Error', `Please fill in all required fields for Child ${i + 1}.`);
@@ -189,16 +238,53 @@ export default function AddChildScreen({navigation}: any) {
       return;
     }
 
-    const workingDays = activeSubscription.workingDays || 22;
-    const pricePerChild = workingDays * PER_DAY_COST;
-    const totalAmount = newChildren.length * pricePerChild;
+    if (!activeSubscription.endDate) {
+      Alert.alert('Error', 'Subscription end date not found. Please contact support.');
+      return;
+    }
+
+    // Fetch public holidays so we can exclude them from the working-day count
+    let holidays: {date: string}[] = [];
+    try {
+      const holidayRes: any = await HolidayService.getAllHolidays();
+      if (holidayRes?.data) {
+        holidays = holidayRes.data.map((h: any) => ({
+          date: toLocalYMD(new Date(h.date)),
+        }));
+      }
+    } catch (_) {
+      // Non-fatal: proceed with no holidays
+    }
+
+    // Calculate remaining working days from tomorrow to subscription end date
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const subEnd = new Date(activeSubscription.endDate);
+    subEnd.setHours(0, 0, 0, 0);
+
+    const remainingDays =
+      subEnd >= tomorrow ? countWorkingDays(tomorrow, subEnd, holidays) : 0;
+
+    if (remainingDays === 0) {
+      Alert.alert(
+        'Subscription Ending',
+        'There are no remaining working days in the current subscription period. Please renew your plan first.',
+      );
+      return;
+    }
+
+    const pricePerChild = remainingDays * PER_DAY_COST;
+    const totalAmount = checkedChildren.length * pricePerChild;
+    const subscriptionEndDate = toLocalYMD(subEnd);
 
     navigation.navigate('AddChildPaymentScreen', {
-      newChildren,
+      newChildren: checkedChildren,
       subscriptionId: activeSubscription._id,
-      workingDays,
+      remainingDays,
       pricePerChild,
       totalAmount,
+      subscriptionEndDate,
     });
   };
 
@@ -275,7 +361,14 @@ export default function AddChildScreen({navigation}: any) {
                     onPress={() => toggleExpanded(index)}
                     activeOpacity={0.8}
                     style={accordionStyles.header}>
-                    <Text style={accordionStyles.headerTitle}>{displayName}</Text>
+                    <View style={accordionStyles.checkboxRow}>
+                      <CheckBox
+                        value={child.checked}
+                        onValueChange={() => toggleChecked(index)}
+                        tintColors={{true: Colors.primaryOrange, false: Colors.bodyText}}
+                      />
+                      <Text style={accordionStyles.headerTitle}>{displayName}</Text>
+                    </View>
                     <View style={accordionStyles.headerRight}>
                       {newChildren.length > 1 && (
                         <TouchableOpacity
@@ -420,6 +513,7 @@ export default function AddChildScreen({navigation}: any) {
               <PrimaryButton
                 title="NEXT"
                 onPress={handleNext}
+                disabled={!anyChecked}
                 style={styles.btn}
               />
             </View>
@@ -481,11 +575,17 @@ const accordionStyles = StyleSheet.create({
     padding: wp('4%'),
     backgroundColor: Colors.bg,
   },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   headerTitle: {
     fontSize: hp('2%'),
     fontFamily: Fonts.Urbanist.semiBold,
     color: Colors.black,
     flex: 1,
+    marginLeft: wp('2%'),
   },
   headerRight: {
     flexDirection: 'row',
