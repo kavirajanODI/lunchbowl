@@ -582,7 +582,7 @@ export default function SubscriptionPlan({
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{paddingBottom: 24}}>
+        contentContainerStyle={{paddingBottom: 12}}>
 
         {/* ── Child Selector ─────────────────────────────────────── */}
         {childrenData && childrenData.length > 0 && (
@@ -860,17 +860,18 @@ export default function SubscriptionPlan({
           );
         })()}
 
-        {/* ── Back / Next buttons ───────────────────────────────── */}
-        <View style={styles.btnRow}>
-          <PrimaryButton title="BACK" onPress={prevStep} style={styles.backBtn} />
-          <PrimaryButton
-            title="NEXT"
-            onPress={handleNext}
-            disabled={isNextButtonDisabled}
-            style={styles.nextBtn}
-          />
-        </View>
       </ScrollView>
+
+      {/* ── Back / Next buttons ───────────────────────────────── */}
+      <View style={[styles.btnRow, styles.stickyBtnRow]}>
+        <PrimaryButton title="BACK" onPress={prevStep} style={styles.backBtn} />
+        <PrimaryButton
+          title="NEXT"
+          onPress={handleNext}
+          disabled={isNextButtonDisabled}
+          style={styles.nextBtn}
+        />
+      </View>
 
       {/* ── Working Days helper modal ───────────────────────────── */}
       {workingDaysModalFor !== null && (() => {
@@ -1169,6 +1170,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 8,
+  },
+  stickyBtnRow: {
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   backBtn: {
     flex: 1,
