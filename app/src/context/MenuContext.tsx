@@ -9,7 +9,6 @@ import UserService from 'services/userService';
 import {useAuth} from './AuthContext';
 import {
   getSubscriptionBuckets,
-  resolveSelectedSubscription,
   SubscriptionItem,
   SubscriptionTab,
 } from 'utils/subscriptionLogic';
@@ -27,6 +26,12 @@ interface MenuContextType {
   setSelectedTab: React.Dispatch<React.SetStateAction<SubscriptionTab>>;
   activeSubscription: SubscriptionItem | null;
   upcomingSubscription: SubscriptionItem | null;
+  /** All displayable subscriptions (active first, then upcoming in date order). */
+  allSubscriptions: SubscriptionItem[];
+  /** ID of the subscription currently driving the calendar view. */
+  selectedSubscriptionId: string | null;
+  /** Switch the calendar to a different subscription without re-fetching. */
+  selectSubscription: (id: string) => void;
   fetchChildren: (data: RequestData) => Promise<void>;
 }
 
@@ -54,9 +59,55 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
     useState<SubscriptionItem | null>(null);
   const [upcomingSubscription, setUpcomingSubscription] =
     useState<SubscriptionItem | null>(null);
+  const [allSubscriptions, setAllSubscriptions] = useState<SubscriptionItem[]>([]);
+  const [selectedSubscriptionId, setSelectedSubscriptionId] = useState<string | null>(null);
 
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+
+  // Apply a subscription's dates/children to the calendar context state.
+  const applySubscription = (
+    sub: SubscriptionItem | null,
+    fallbackUserId?: string,
+  ) => {
+    if (!sub?.startDate || !sub?.endDate) {
+      setStartDate('');
+      setEndDate('');
+      setPlanId('');
+      return;
+    }
+    setStartDate(toYMD(sub.startDate));
+    setEndDate(toYMD(sub.endDate));
+    setPlanId((sub._id || sub.planId || '') as string);
+    if (Array.isArray(sub.children) && sub.children.length > 0) {
+      const formatted = sub.children.map((child: any) => ({
+        id: child._id ?? child.id,
+        name: `${child.childFirstName?.trim() || ''} ${child.childLastName?.trim() || ''}`.trim(),
+      }));
+      setChildrenData(formatted);
+    } else if (fallbackUserId) {
+      // Children not embedded — fetch from dedicated endpoint
+      UserService.getChildInformation(fallbackUserId)
+        .then((res: any) => {
+          const raw: any[] = Array.isArray(res?.children) ? res.children : [];
+          setChildrenData(
+            raw.map((c: any) => ({
+              id: c._id,
+              name: `${c.childFirstName?.trim() || ''} ${c.childLastName?.trim() || ''}`.trim(),
+            })),
+          );
+        })
+        .catch(() => {});
+    }
+  };
+
+  /** Switch the calendar to a specific subscription without re-fetching API. */
+  const selectSubscription = (id: string) => {
+    const sub = allSubscriptions.find(s => (s._id as string) === id) ?? null;
+    if (!sub) return;
+    setSelectedSubscriptionId(id);
+    applySubscription(sub);
+  };
 
   const fetchChildren = async (data: RequestData) => {
     try {
@@ -74,74 +125,51 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
       const subs: SubscriptionItem[] = Array.isArray(resData.subscriptions)
         ? resData.subscriptions
         : [];
-      const {activeSubscription, upcomingSubscription, upcomingSubscriptions} =
+      const {activeSubscription: activeSub, upcomingSubscription: upcomingSub, upcomingSubscriptions} =
         getSubscriptionBuckets(subs);
-      setActiveSubscription(activeSubscription);
-      setUpcomingSubscription(upcomingSubscription);
+      setActiveSubscription(activeSub);
+      setUpcomingSubscription(upcomingSub);
 
-      if (!activeSubscription && !upcomingSubscription) {
+      // Build ordered flat list: active first, then upcoming by start date.
+      const allSubs: SubscriptionItem[] = [
+        ...(activeSub ? [activeSub] : []),
+        ...upcomingSubscriptions,
+      ];
+      setAllSubscriptions(allSubs);
+
+      if (!activeSub && !upcomingSub) {
         setStartDate('');
         setEndDate('');
         setPlanId('');
       }
 
+      // Determine which subscription to display.
+      // Preserve the user's current tab selection if it is still valid.
+      const defaultSub = activeSub ?? upcomingSubscriptions[0] ?? null;
+      const currentSub = selectedSubscriptionId
+        ? allSubs.find(s => (s._id as string) === selectedSubscriptionId) ?? null
+        : null;
+      const subToApply = currentSub ?? defaultSub;
+
+      if (!currentSub && defaultSub) {
+        setSelectedSubscriptionId((defaultSub._id as string) ?? null);
+      }
+
+      if (subToApply) {
+        applySubscription(subToApply, id);
+      }
+
+      // (Legacy selectedTab sync — keep active so existing callers still work)
       const nextTab: SubscriptionTab =
-        !activeSubscription && !upcomingSubscription
+        !activeSub && !upcomingSub
           ? selectedTab
-          : selectedTab === 'upcoming' && !upcomingSubscription
+          : selectedTab === 'upcoming' && !upcomingSub
           ? 'active'
-          : selectedTab === 'active' && !activeSubscription
+          : selectedTab === 'active' && !activeSub
           ? 'upcoming'
           : selectedTab;
       if (nextTab !== selectedTab) {
         setSelectedTab(nextTab);
-      }
-
-      const selectedSubscription = resolveSelectedSubscription(
-        nextTab,
-        activeSubscription,
-        upcomingSubscriptions,
-      );
-
-      let hasSubscriptionChildren = false;
-      if (selectedSubscription?.startDate && selectedSubscription?.endDate) {
-        setStartDate(toYMD(selectedSubscription.startDate));
-        setEndDate(toYMD(selectedSubscription.endDate));
-        setPlanId(
-          (selectedSubscription._id || selectedSubscription.planId || '') as string,
-        );
-        if (Array.isArray(selectedSubscription.children)) {
-          const formattedChildren = selectedSubscription.children.map(
-            (child: any) => ({
-              id: child._id ?? child.id,
-              name: `${child.childFirstName?.trim() || ''} ${
-                child.childLastName?.trim() || ''
-              }`.trim(),
-            }),
-          );
-          setChildrenData(formattedChildren);
-          hasSubscriptionChildren = formattedChildren.length > 0;
-        }
-      } else {
-        setStartDate('');
-        setEndDate('');
-        setPlanId('');
-      }
-
-      // Fetch children from the dedicated endpoint; account-details does not include them
-      if (!hasSubscriptionChildren) {
-        const childrenResponse = await UserService.getChildInformation(id);
-        const rawChildren: any[] = Array.isArray(childrenResponse?.children)
-          ? childrenResponse.children
-          : [];
-        const formattedChildren = rawChildren.map((child: any) => ({
-          id: child._id,
-          name: `${child.childFirstName?.trim() || ''} ${
-            child.childLastName?.trim() || ''
-          }`.trim(),
-        }));
-        console.log('📌 Formatted children:', formattedChildren);
-        setChildrenData(formattedChildren);
       }
     } catch (error) {
       console.error('Error fetching children:', error);
@@ -154,7 +182,9 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
         _id: userId,
       });
     }
-  }, [userId, selectedTab]);
+  // Intentionally not including selectedTab — switching tabs no longer triggers a re-fetch.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   return (
     <MenuContext.Provider
@@ -167,6 +197,9 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
         setSelectedTab,
         activeSubscription,
         upcomingSubscription,
+        allSubscriptions,
+        selectedSubscriptionId,
+        selectSubscription,
         fetchChildren,
       }}>
       {children}
