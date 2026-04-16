@@ -8,7 +8,12 @@ export type SubscriptionItem = {
   startDate?: string;
   endDate?: string;
   status?: string;
-  children?: any[];
+  children?: Array<{
+    _id?: string;
+    id?: string;
+    childFirstName?: string;
+    childLastName?: string;
+  }>;
 };
 
 const toLocalYMD = (date: Date): string => {
@@ -89,7 +94,6 @@ export const calculateRenewalStartDate = ({
   const activeEnd = asDate(activeSubscriptionEndDate);
   if (activeEnd) {
     activeEnd.setDate(activeEnd.getDate() + 1);
-    activeEnd.setHours(0, 0, 0, 0);
     return activeEnd;
   }
   return getNextCalendarDay(today);

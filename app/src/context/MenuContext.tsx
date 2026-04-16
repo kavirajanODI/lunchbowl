@@ -79,8 +79,16 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
       setActiveSubscription(activeSubscription);
       setUpcomingSubscription(upcomingSubscription);
 
+      if (!activeSubscription && !upcomingSubscription) {
+        setStartDate('');
+        setEndDate('');
+        setPlanId('');
+      }
+
       const nextTab: SubscriptionTab =
-        selectedTab === 'upcoming' && !upcomingSubscription
+        !activeSubscription && !upcomingSubscription
+          ? selectedTab
+          : selectedTab === 'upcoming' && !upcomingSubscription
           ? 'active'
           : selectedTab === 'active' && !activeSubscription
           ? 'upcoming'
