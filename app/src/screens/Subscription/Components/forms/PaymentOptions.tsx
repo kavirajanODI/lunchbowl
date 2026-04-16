@@ -1,12 +1,11 @@
 import React, {useEffect, useState} from 'react';
-import {Text, View, TouchableOpacity, StyleSheet, Alert, Switch} from 'react-native';
+import {Text, View, TouchableOpacity, StyleSheet, Alert} from 'react-native';
 import PrimaryButton from 'components/buttons/PrimaryButton';
 import {
   heightPercentageToDP as hp,
   widthPercentageToDP as wp,
 } from 'react-native-responsive-screen';
 import RegistrationService from 'services/RegistartionService/registartion';
-import PaymentService from 'services/PaymentService/paymentService';
 import {useAuth} from 'context/AuthContext';
 import {
   encryptRequest,
@@ -16,21 +15,27 @@ import ccavenueConfig from '../../../../config/ccavenueConfig';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 
-export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
+export default function PaymentOptions({
+  prevStep,
+  navigation,
+  isRenewal,
+  planPriceProp,
+  numChildrenProp,
+  applyWalletProp = false,
+  walletUsedProp = 0,
+  remainingWalletProp,
+  finalPayableProp,
+}: any) {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const {userId} = useAuth();
 
-  // Wallet state
-  const [walletPoints, setWalletPoints] = useState<number>(0);
-  const [applyWallet, setApplyWallet] = useState<boolean>(false);
-  const [planPrice, setPlanPrice] = useState<number>(0);
-  const [numChildren, setNumChildren] = useState<number>(1);
-
-  // Derived wallet calculation
-  const maxRedeemable = Math.floor(planPrice * 0.8);
-  const walletUsed = applyWallet ? Math.min(walletPoints, maxRedeemable) : 0;
-  const remainingWallet = walletPoints - walletUsed;
-  const finalPayable = Math.max(0, planPrice - walletUsed);
+  // Wallet values are now decided in step 2 and passed in as props.
+  // For the initial registration flow these are all zero/false.
+  const walletUsed: number = applyWalletProp ? (walletUsedProp ?? 0) : 0;
+  const remainingWallet: number = remainingWalletProp ?? 0;
+  // For initial registration, planPrice is still fetched from the API.
+  const [planPrice, setPlanPrice] = useState<number>(planPriceProp ?? 0);
+  const [numChildren, setNumChildren] = useState<number>(numChildrenProp ?? 1);
 
   useEffect(() => {
     fetchData();
@@ -39,14 +44,9 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
   const fetchData = async () => {
     if (!userId) return;
     try {
-      const [walletRes, formRes]: [any, any] = await Promise.all([
-        PaymentService.getWallet(userId),
-        RegistrationService.getRegisterdUserData(userId),
-      ]);
-
-      if (walletRes?.success) {
-        setWalletPoints(walletRes?.data?.wallet?.points ?? 0);
-      }
+      const formRes: any = planPriceProp
+        ? null
+        : await RegistrationService.getRegisterdUserData(userId);
 
       if (formRes?.success) {
         const plan = formRes?.data?.subscriptionPlan;
@@ -106,7 +106,10 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
     try {
       if (!userId) throw new Error('User ID not found. Please login again.');
 
-      const orderId = `LB${Date.now()}${Math.floor(Math.random() * 1000)}`;
+      // The backend routes by orderId prefix: R... → renewal, L... → new subscription.
+      const orderId = isRenewal
+        ? `RB${Date.now()}${Math.floor(Math.random() * 1000)}`
+        : `LB${Date.now()}${Math.floor(Math.random() * 1000)}`;
       const transactionId = `TEST_TXN_${Date.now()}`;
 
       let result: any;
@@ -153,54 +156,27 @@ export default function PaymentOptions({prevStep, navigation, isRenewal}: any) {
         </TouchableOpacity>
       </View>
 
-      {/* Wallet Redemption (renewal only, when wallet > 0) */}
-      {isRenewal && walletPoints > 0 && planPrice > 0 && (
+      {/* Wallet Applied Summary (renewal only — toggle lives in step 2) */}
+      {isRenewal && applyWalletProp && walletUsed > 0 && (
         <View style={localStyles.walletSection}>
-          <View style={localStyles.walletToggleRow}>
-            <View style={localStyles.walletToggleLeft}>
-              <Text style={localStyles.walletToggleLabel}>Apply Wallet Points</Text>
-              <Text style={localStyles.walletPointsAvail}>
-                {walletPoints} points available
-              </Text>
-            </View>
-            <Switch
-              value={applyWallet}
-              onValueChange={setApplyWallet}
-              trackColor={{false: Colors.Storke, true: Colors.primaryOrange}}
-              thumbColor={Colors.white}
-            />
+          <View style={localStyles.breakdownRow}>
+            <Text style={localStyles.breakdownLabel}>Plan Price</Text>
+            <Text style={[localStyles.breakdownValue, localStyles.strikeText]}>
+              ₹{planPrice.toFixed(2)}
+            </Text>
           </View>
-
-          {applyWallet && (
-            <View style={localStyles.breakdownTable}>
-              <View style={localStyles.breakdownRow}>
-                <Text style={localStyles.breakdownLabel}>No. of Children</Text>
-                <Text style={localStyles.breakdownValue}>{numChildren}</Text>
-              </View>
-              <View style={localStyles.breakdownRow}>
-                <Text style={localStyles.breakdownLabel}>Plan Price</Text>
-                <Text style={[localStyles.breakdownValue, localStyles.strikeText]}>
-                  ₹{planPrice.toFixed(2)}
-                </Text>
-              </View>
-              <View style={localStyles.breakdownRow}>
-                <Text style={localStyles.breakdownLabel}>Redeemed Points</Text>
-                <Text style={[localStyles.breakdownValue, localStyles.greenText]}>
-                  −₹{walletUsed.toFixed(2)}
-                </Text>
-              </View>
-              <View style={[localStyles.breakdownRow, localStyles.finalRow]}>
-                <Text style={localStyles.finalLabel}>Final Payable</Text>
-                <Text style={localStyles.finalValue}>₹{finalPayable.toFixed(2)}</Text>
-              </View>
-              {walletPoints > maxRedeemable && (
-                <Text style={localStyles.walletNote}>
-                  ⓘ Only 80% of the plan price can be redeemed. Remaining{' '}
-                  {remainingWallet} points stay in wallet.
-                </Text>
-              )}
-            </View>
-          )}
+          <View style={localStyles.breakdownRow}>
+            <Text style={localStyles.breakdownLabel}>Wallet Redeemed</Text>
+            <Text style={[localStyles.breakdownValue, localStyles.greenText]}>
+              −₹{walletUsed.toFixed(2)}
+            </Text>
+          </View>
+          <View style={[localStyles.breakdownRow, localStyles.finalRow]}>
+            <Text style={localStyles.finalLabel}>Final Payable</Text>
+            <Text style={localStyles.finalValue}>
+              ₹{(finalPayableProp ?? planPrice - walletUsed).toFixed(2)}
+            </Text>
+          </View>
         </View>
       )}
 

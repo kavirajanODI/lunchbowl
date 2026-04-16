@@ -11,17 +11,28 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
   Platform,
 } from 'react-native';
+import {heightPercentageToDP as hp, widthPercentageToDP as wp} from 'react-native-responsive-screen';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import HolidayService from 'services/MyPlansApi/HolidayService';
 import RegistrationService from 'services/RegistartionService/registartion';
+import UserService from 'services/userService';
 import {Holiday} from 'src/model/calendarModels';
 import {getNextCalendarDay, isSameCalendarDay} from 'utils/dateUtils';
 import {getDaysInMonth, getFirstDayOfMonth} from 'utils/calendarUtils';
+import {
+  calculateEndDateByWorkingDays,
+  calculateRenewalStartDate,
+  calculateWalletRedemption,
+  getSubscriptionBuckets,
+  normalizeSelectedChildren,
+  toggleChildSelection as toggleChildSelectionIds,
+} from 'utils/subscriptionLogic';
 
 //####################### HELPER FUNCTIONS   ######################
 
@@ -75,7 +86,7 @@ const addWorkingDays = (
     // Use local date string so the comparison is always in the user's timezone
     const dateStr = toLocalDateStr(temp);
 
-    if (day !== 0 && day !== 6 && !holidaySet.has(dateStr)) {
+    if (day !== 0 && !holidaySet.has(dateStr)) {
       count++;
     }
 
@@ -89,7 +100,7 @@ const addWorkingDays = (
 
 const isWorkingDay = (date: Date, holidays: Holiday[] = []): boolean => {
   const day = date.getDay();
-  if (day === 0 || day === 6) return false;
+  if (day === 0) return false;
   const holidaySet = new Set(
     holidays.map(h => new Date(h.date).toISOString().split('T')[0]),
   );
@@ -303,6 +314,9 @@ export default function SubscriptionPlan({
   prevStep,
   nextStep,
   isRenewal,
+  walletPoints = 0,
+  applyWallet = false,
+  setApplyWallet,
 }: any) {
   //####################### STATE VARIABLES ######################
 
@@ -334,11 +348,15 @@ export default function SubscriptionPlan({
 
   // Child selector: default all children selected
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
+  const [renewalStartDate, setRenewalStartDate] = useState<Date | null>(null);
 
   useEffect(() => {
     if (childrenData && childrenData.length > 0) {
       setSelectedChildIds(
-        childrenData.map((c: any) => c._id).filter(Boolean),
+        normalizeSelectedChildren(
+          childrenData,
+          childrenData.map((c: any) => c._id).filter(Boolean),
+        ),
       );
     }
   }, [childrenData]);
@@ -346,9 +364,7 @@ export default function SubscriptionPlan({
   const selectedCount = selectedChildIds.length;
 
   const toggleChild = (id: string) => {
-    setSelectedChildIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
-    );
+    setSelectedChildIds(prev => toggleChildSelectionIds(prev, id));
   };
 
   //####################### PLAN DISCOUNT  ######################
@@ -381,9 +397,13 @@ export default function SubscriptionPlan({
 
   //####################### GENERATE PLAN  ######################
 
-  const generatePlans = (holidayList: Holiday[], childrenCount: number = 1): Plan[] => {
+  const generatePlans = (
+    holidayList: Holiday[],
+    childrenCount: number = 1,
+    forcedStartDate?: Date | null,
+  ): Plan[] => {
     const today = new Date();
-    const start = getEffectiveStartDate(today, holidayList);
+    const start = forcedStartDate ?? getEffectiveStartDate(today, holidayList);
 
     const {planDurations} = config;
     const planDefs = [
@@ -393,7 +413,14 @@ export default function SubscriptionPlan({
     ];
 
     return planDefs.map(requiredDays => {
-      const end = addWorkingDays(start, requiredDays, holidayList);
+      const end =
+        isRenewal && forcedStartDate
+          ? calculateEndDateByWorkingDays({
+              startDate: forcedStartDate,
+              workingDays: requiredDays,
+              holidays: holidayList,
+            })
+          : addWorkingDays(start, requiredDays, holidayList);
 
       const basePricePerChild = requiredDays * PER_DAY_COST;
       const totalBasePrice = basePricePerChild * childrenCount;
@@ -447,10 +474,35 @@ export default function SubscriptionPlan({
     }, []),
   );
 
+  useEffect(() => {
+    const fetchRenewalStart = async () => {
+      if (!isRenewal || !userId) {
+        setRenewalStartDate(null);
+        return;
+      }
+      try {
+        const response: any = await UserService.getRegisteredUSerData(userId);
+        const subs: any[] = Array.isArray(response?.data?.subscriptions)
+          ? response.data.subscriptions
+          : [];
+        const {activeSubscription} = getSubscriptionBuckets(subs);
+        const renewalStart = calculateRenewalStartDate({
+          activeSubscriptionEndDate: activeSubscription?.endDate,
+        });
+        setRenewalStartDate(renewalStart);
+      } catch (error) {
+        console.error('Error resolving renewal start date:', error);
+        setRenewalStartDate(calculateRenewalStartDate({}));
+      }
+    };
+
+    fetchRenewalStart();
+  }, [isRenewal, userId]);
+
   // Regenerate plans whenever holidays, selected child count, or remote config changes
   useEffect(() => {
-    setPlans(generatePlans(holidays, selectedCount));
-  }, [holidays, selectedCount, config]);
+    setPlans(generatePlans(holidays, selectedCount, isRenewal ? renewalStartDate : null));
+  }, [holidays, selectedCount, config, isRenewal, renewalStartDate]);
 
   const handleCloseError = () => {
     setError(null);
@@ -461,7 +513,7 @@ export default function SubscriptionPlan({
   const handleNext = async () => {
     if (!selectedPlan || selectedCount === 0) return;
 
-    const customStart = customStartDates[selectedPlan.days] ?? null;
+    const customStart = isRenewal ? null : customStartDates[selectedPlan.days] ?? null;
     // Treat the selection as a truly custom date only when it differs from the
     // plan's default start date.  Picking tomorrow (the same day the plan would
     // start automatically) must not strip multi-child discounts.
@@ -472,6 +524,12 @@ export default function SubscriptionPlan({
     const effectiveStart: Date = customStart ?? selectedPlan.startDate;
     const effectiveEnd: Date = isCustomDate
       ? addWorkingDays(customStart, selectedPlan.days, holidays)
+      : isRenewal
+      ? calculateEndDateByWorkingDays({
+          startDate: effectiveStart,
+          workingDays: selectedPlan.days,
+          holidays,
+        })
       : selectedPlan.endDate;
 
     const workingDays = selectedPlan.days;
@@ -524,13 +582,14 @@ export default function SubscriptionPlan({
   const isNextButtonDisabled = selectedCount === 0 || !isPlanSelected;
 
   return (
-    <View style={{flex: 1}}>
+    <View style={{flex: 1, paddingBottom: hp('10%')}}>
       <LoadingModal loading={loading} setLoading={setLoading} />
       {error && <ErrorMessage error={error} onClose={handleCloseError} />}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{paddingBottom: 24}}>
+        style={{flex: 1}}
+        contentContainerStyle={{paddingBottom: 12}}>
 
         {/* ── Child Selector ─────────────────────────────────────── */}
         {childrenData && childrenData.length > 0 && (
@@ -579,7 +638,7 @@ export default function SubscriptionPlan({
         {/* ── Plan Cards ────────────────────────────────────────── */}
         {plans.map(plan => {
           const isSelected = selectedPlan?.days === plan.days;
-          const customStart = customStartDates[plan.days] ?? null;
+          const customStart = isRenewal ? null : customStartDates[plan.days] ?? null;
           // A custom date is "active" (i.e. changes pricing) only when it is
           // selected on the active plan AND it differs from the plan's default
           // start date.  Selecting the default start date should behave as if
@@ -669,8 +728,8 @@ export default function SubscriptionPlan({
                 </View>
 
                 {/* Date-picker + working-days info buttons (selected plan only) */}
-                {isSelected && (
-                  <View style={styles.planCardRightBtns}>
+                 {isSelected && !isRenewal && (
+                   <View style={styles.planCardRightBtns}>
                     <TouchableOpacity
                       style={styles.datePickerBtn}
                       onPress={() => {
@@ -808,17 +867,79 @@ export default function SubscriptionPlan({
           );
         })()}
 
-        {/* ── Back / Next buttons ───────────────────────────────── */}
-        <View style={styles.btnRow}>
-          <PrimaryButton title="BACK" onPress={prevStep} style={styles.backBtn} />
-          <PrimaryButton
-            title="NEXT"
-            onPress={handleNext}
-            disabled={isNextButtonDisabled}
-            style={styles.nextBtn}
-          />
-        </View>
       </ScrollView>
+
+      {/* ── Wallet Redemption (renewal only, visible in this step) ─── */}
+      {isRenewal && walletPoints > 0 && selectedPlan && (() => {
+        const {
+          maxRedeemable,
+          redeemedPoints: walletUsed,
+          remainingWalletPoints: remainingWallet,
+          finalAmount: finalPayable,
+        } = calculateWalletRedemption({
+          totalPrice: selectedPlan.price ?? 0,
+          walletPoints,
+          applyWallet,
+          maxPercent: 0.8,
+        });
+
+        return (
+          <View style={walletStyles.walletSection}>
+            <View style={walletStyles.walletToggleRow}>
+              <View style={walletStyles.walletToggleLeft}>
+                <Text style={walletStyles.walletToggleLabel}>Redeem Wallet Points</Text>
+                <Text style={walletStyles.walletPointsAvail}>
+                  {walletPoints} points available
+                </Text>
+              </View>
+              <Switch
+                value={applyWallet}
+                onValueChange={setApplyWallet}
+                trackColor={{false: Colors.Storke, true: Colors.primaryOrange}}
+                thumbColor={Colors.white}
+              />
+            </View>
+
+            {applyWallet && (
+              <View style={walletStyles.breakdownTable}>
+                <View style={walletStyles.breakdownRow}>
+                  <Text style={walletStyles.breakdownLabel}>Plan Price</Text>
+                  <Text style={[walletStyles.breakdownValue, walletStyles.strikeText]}>
+                    ₹{(selectedPlan.price ?? 0).toFixed(2)}
+                  </Text>
+                </View>
+                <View style={walletStyles.breakdownRow}>
+                  <Text style={walletStyles.breakdownLabel}>Redeemed Points</Text>
+                  <Text style={[walletStyles.breakdownValue, walletStyles.greenText]}>
+                    −₹{walletUsed.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={[walletStyles.breakdownRow, walletStyles.finalRow]}>
+                  <Text style={walletStyles.finalLabel}>Final Payable</Text>
+                  <Text style={walletStyles.finalValue}>₹{finalPayable.toFixed(2)}</Text>
+                </View>
+                {walletPoints > maxRedeemable && (
+                  <Text style={walletStyles.walletNote}>
+                    ⓘ Only 80% of the plan price can be redeemed. Remaining{' '}
+                    {remainingWallet} points stay in wallet.
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        );
+      })()}
+
+      {/* ── Back / Next buttons ───────────────────────────────── */}
+      <View style={[styles.btnRow, styles.stickyBtnRow]}>
+        <PrimaryButton title="BACK" onPress={prevStep} style={styles.backBtn} />
+        <PrimaryButton
+          title="NEXT"
+          onPress={handleNext}
+          disabled={isNextButtonDisabled}
+          style={styles.nextBtn}
+        />
+      </View>
 
       {/* ── Working Days helper modal ───────────────────────────── */}
       {workingDaysModalFor !== null && (() => {
@@ -843,7 +964,7 @@ export default function SubscriptionPlan({
       })()}
 
       {/* ── Per-plan date picker (rendered outside ScrollView so it overlays properly) */}
-      {showDatePickerFor !== null && (() => {
+      {!isRenewal && showDatePickerFor !== null && (() => {
         // Capture planDays before the state is cleared inside onChange
         const planDays = showDatePickerFor;
         const minDate = getEffectiveStartDate(new Date(), holidays);
@@ -1118,6 +1239,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 8,
   },
+  stickyBtnRow: {
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
   backBtn: {
     flex: 1,
     marginRight: 10,
@@ -1303,5 +1428,83 @@ const modalSt = StyleSheet.create({
     color: Colors.primaryOrange,
     marginTop: 4,
     textAlign: 'center',
+  },
+});
+
+const walletStyles = StyleSheet.create({
+  walletSection: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: wp(4),
+    marginTop: hp(1.5),
+    marginHorizontal: 0,
+    borderWidth: 1,
+    borderColor: Colors.lightRed,
+  },
+  walletToggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  walletToggleLeft: {
+    flex: 1,
+  },
+  walletToggleLabel: {
+    fontSize: hp(2),
+    fontFamily: 'Urbanist-Bold',
+    color: Colors.black,
+  },
+  walletPointsAvail: {
+    fontSize: hp(1.6),
+    color: Colors.primaryOrange,
+    marginTop: 2,
+  },
+  breakdownTable: {
+    marginTop: hp(1.5),
+    borderTopWidth: 1,
+    borderTopColor: Colors.Storke,
+    paddingTop: hp(1.5),
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: hp(1),
+  },
+  breakdownLabel: {
+    fontSize: hp(1.8),
+    color: Colors.bodyText,
+  },
+  breakdownValue: {
+    fontSize: hp(1.8),
+    color: Colors.black,
+  },
+  strikeText: {
+    textDecorationLine: 'line-through',
+    color: Colors.bodyText,
+  },
+  greenText: {
+    color: Colors.green,
+  },
+  finalRow: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.Storke,
+    paddingTop: hp(1),
+    marginTop: hp(0.5),
+  },
+  finalLabel: {
+    fontSize: hp(2),
+    fontFamily: 'Urbanist-Bold',
+    color: Colors.black,
+  },
+  finalValue: {
+    fontSize: hp(2),
+    fontFamily: 'Urbanist-Bold',
+    color: Colors.primaryOrange,
+  },
+  walletNote: {
+    fontSize: hp(1.5),
+    color: Colors.bodyText,
+    fontStyle: 'italic',
+    marginTop: hp(0.5),
   },
 });

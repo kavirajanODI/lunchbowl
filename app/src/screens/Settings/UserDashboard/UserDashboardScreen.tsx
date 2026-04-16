@@ -52,6 +52,7 @@ const UserDashboardScreen = ({navigation}: any) => {
       : 'User');
 
   const activeSub = profileData?.subscriptionPlan ?? null;
+  const upcomingSub = profileData?.upcomingSubscription ?? null;
   const children: any[] = (profileData as any)?.children ?? [];
   const parent = profileData?.parentDetails ?? null;
 
@@ -144,14 +145,20 @@ const UserDashboardScreen = ({navigation}: any) => {
               ⚠️ Expires in {daysToExpiry} day{daysToExpiry !== 1 ? 's' : ''}
             </Text>
           )}
-          <TouchableOpacity
-            style={[styles.renewButton, !canRenew && styles.renewButtonDisabled]}
-            disabled={!canRenew}
-            onPress={() => navigation.navigate('MyPlan', {screen: 'RenewSubscription'})}>
-            <Text style={[styles.renewButtonText, !canRenew && styles.renewButtonTextDisabled]}>
-              RENEW{!canRenew && daysToExpiry !== null ? ` (${daysToExpiry}d left)` : ''}
-            </Text>
-          </TouchableOpacity>
+          {upcomingSub ? (
+            <View style={styles.renewedBadge}>
+              <Text style={styles.renewedBadgeText}>✅ Renewed — Next plan starts {new Date(upcomingSub.startDate).toLocaleDateString('en-IN', {day: '2-digit', month: 'short', year: 'numeric'})}</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.renewButton, !canRenew && styles.renewButtonDisabled]}
+              disabled={!canRenew}
+              onPress={() => navigation.navigate('MyPlan', {screen: 'RenewSubscription'})}>
+              <Text style={[styles.renewButtonText, !canRenew && styles.renewButtonTextDisabled]}>
+                RENEW{!canRenew && daysToExpiry !== null ? ` (${daysToExpiry}d left)` : ''}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Add Child Button */}
@@ -323,6 +330,18 @@ const styles = StyleSheet.create({
   },
   renewButtonTextDisabled: {
     color: Colors.bodyText,
+  },
+  renewedBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: wp('3%'),
+    paddingVertical: hp('1.2%'),
+    paddingHorizontal: wp('3%'),
+    alignItems: 'center',
+  },
+  renewedBadgeText: {
+    fontSize: hp('1.7%'),
+    fontFamily: Fonts.Urbanist.semiBold,
+    color: Colors.white,
   },
   expiryWarning: {
     fontSize: hp('1.6%'),

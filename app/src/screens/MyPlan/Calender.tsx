@@ -9,6 +9,7 @@ import PrimaryButton from 'components/buttons/PrimaryButton';
 import WhatsAppButton from 'components/buttons/WhatsAppButton';
 import MyPlanSkeleton from 'components/skeletons/MyPlanSkeleton';
 import { useAuth } from 'context/AuthContext';
+import { useRegistration } from 'context/RegistrationContext';
 import { useUserProfile } from 'context/UserDataContext';
 import { useDate } from 'context/calenderContext';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -18,8 +19,10 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   Vibration,
   View,
 } from 'react-native';
@@ -33,10 +36,27 @@ import ToolTipSectionHeader from 'screens/Dashboard/Components/TooltipHeader';
 import MenueCalendar from 'screens/MyPlan/Components/MenueCalender';
 import { questionIcon } from 'styles/svg-icons';
 import { formatDate } from 'utils/dateUtils';
+import { classifySubscription, SubscriptionItem } from 'utils/subscriptionLogic';
 import CalendarLegend from './Components/ColorsLegend';
 import HolidayListCard from './Components/HolidayListCard';
 import PlanCard from './Components/MyPlan';
 import { useMenu } from 'context/MenuContext';
+
+// Format a subscription date range as "DD MMM – DD MMM (STATUS)"
+const formatSubTabLabel = (sub: SubscriptionItem): string => {
+  const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const fmt = (d: string | undefined) => {
+    if (!d) return '?';
+    const date = new Date(d);
+    return `${String(date.getDate()).padStart(2, '0')} ${MONTHS[date.getMonth()]}`;
+  };
+  const cls = classifySubscription(sub);
+  const statusLabel =
+    cls === 'active' ? 'ACTIVE' :
+    cls === 'upcoming' ? 'UPCOMING' :
+    (sub.status || '').toUpperCase();
+  return `${fmt(sub.startDate)} - ${fmt(sub.endDate)} (${statusLabel})`;
+};
 
 const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   //######### STATE VARIABLES  ##############################
@@ -55,12 +75,43 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   const {holidays} = useDate();
   const {userId} = useAuth();
   const {profileData, loading, refreshProfileData} = useUserProfile();
-  const {fetchChildren} = useMenu();
+  const {fetchChildren, startDate, endDate, allSubscriptions, selectedSubscriptionId, selectSubscription} = useMenu();
+
+  //######### SUBSCRIPTION REDIRECT ############################
+  // MyPlanNavigator always starts at PlanCalendar so that getFocusedRouteNameFromRoute
+  // works correctly and the tab bar can be hidden. Redirect here if the user should
+  // be on the registration or renewal flow instead.
+
+  const {
+    currentStep,
+    isSubscriptionExpired,
+    subscriptionEndDate,
+  } = useRegistration();
+  const hasActiveSubscription = !!subscriptionEndDate && !isSubscriptionExpired;
+
+  // Capture subscription state at mount time so the redirect only runs once.
+  // By the time MyPlanScreen renders, MyPlanNavigator's loading guard ensures
+  // all subscription data is already resolved.
+  const shouldRedirect = useRef(
+    !hasActiveSubscription &&
+      (isSubscriptionExpired || (currentStep !== null && currentStep < 4)),
+  );
+
+  useEffect(() => {
+    if (!shouldRedirect.current) return;
+    if (isSubscriptionExpired) {
+      navigation.replace('RenewSubscription');
+    } else if (currentStep !== null && currentStep < 4) {
+      navigation.replace('Registartion');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   //######### HOOKS ############################################
 
   useFocusEffect(
     useCallback(() => {
+      if (shouldRedirect.current) return;
       // Refresh user profile (plan card, payment status)
       refreshProfileData();
       // Also refresh MenuContext so startDate/endDate are current after payment
@@ -69,6 +120,10 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
       }
     }, [userId]),
   );
+
+  // Return null on the initial render when a redirect is about to happen
+  // so the user never sees a flash of PlanCalendar content.
+  if (shouldRedirect.current) return null;
 
   function onViewFoodList(): void {
     navigation.navigate('FoodList');
@@ -88,9 +143,28 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   });
 
   const handleMonthChange = (month: number, year: number) => {
+    if (startDate && endDate) {
+      const monthStart = new Date(year, month, 1);
+      const monthEnd = new Date(year, month + 1, 0);
+      const subStart = new Date(startDate);
+      const subEnd = new Date(endDate);
+      subStart.setHours(0, 0, 0, 0);
+      subEnd.setHours(0, 0, 0, 0);
+      if (monthEnd < subStart || monthStart > subEnd) {
+        return;
+      }
+    }
     setCurrentMonth(month);
     setCurrentYear(year);
   };
+
+  useEffect(() => {
+    if (!startDate) return;
+    const start = new Date(startDate);
+    if (Number.isNaN(start.getTime())) return;
+    setCurrentMonth(start.getMonth());
+    setCurrentYear(start.getFullYear());
+  }, [startDate]);
 
   //######### FORMAT SUBSCRIPTION PLAN FROM CONTEXT ###############
 
@@ -177,6 +251,32 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
               icon={questionIcon}
               onPress={() => setLegendVisible(true)}
             />
+
+            {/* Subscription tabs — one per active/upcoming subscription */}
+            {allSubscriptions.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.tabBar}
+                contentContainerStyle={styles.tabBarContent}>
+                {allSubscriptions.map(sub => {
+                  const subId = sub._id as string;
+                  const isSelected = subId === selectedSubscriptionId;
+                  return (
+                    <TouchableOpacity
+                      key={subId}
+                      style={[styles.tabItem, isSelected && styles.tabItemActive]}
+                      onPress={() => selectSubscription(subId)}
+                      activeOpacity={0.75}>
+                      <Text style={[styles.tabText, isSelected && styles.tabTextActive]}>
+                        {formatSubTabLabel(sub)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+
             <MenueCalendar
               onDateChange={date =>
                 navigation.navigate('MenuSelection', {selectedDate: date})
@@ -302,5 +402,33 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.Urbanist.bold,
     fontSize: hp('1.7%'),
     color: Colors.bodyText,
+  },
+  tabBar: {
+    marginTop: hp('1.5%'),
+    marginBottom: hp('1.5%'),
+  },
+  tabBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp('2%'),
+  },
+  tabItem: {
+    paddingVertical: hp('1%'),
+    paddingHorizontal: wp('3.5%'),
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.primaryOrange,
+    backgroundColor: Colors.white,
+  },
+  tabItemActive: {
+    backgroundColor: Colors.primaryOrange,
+  },
+  tabText: {
+    fontSize: hp('1.55%'),
+    fontFamily: Fonts.Urbanist.semiBold,
+    color: Colors.primaryOrange,
+  },
+  tabTextActive: {
+    color: Colors.white,
   },
 });

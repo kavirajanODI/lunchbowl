@@ -33,7 +33,7 @@ import MenuService from 'services/MyPlansApi/MenuService';
 import HolidayService from 'services/MyPlansApi/HolidayService';
 import {BackIcon, ForwardIcon, questionIcon} from 'styles/svg-icons';
 import {utcToLocal} from 'utils/localTime';
-import {isWithin48Hours, validateMenuDate} from 'utils/MenuValidation';
+import {isLockedForEdit, validateMenuDate} from 'utils/MenuValidation';
 import {createHolidayPaymentRequest, encryptRequest} from 'utils/paymentUtils';
 import {Colors} from '../../assets/styles/colors';
 import ccavenueConfig from '../../config/ccavenueConfig';
@@ -75,7 +75,7 @@ const getWorkingDays = (
     const dow = cur.getDay();
     // Use local date components to avoid UTC-offset issues (e.g. IST = UTC+5:30)
     const iso = `${cur.getFullYear()}-${_pad(cur.getMonth() + 1)}-${_pad(cur.getDate())}`;
-    if (dow !== 0 && dow !== 6 && !holidays.some(h => h.date === iso)) {
+    if (dow !== 0 && !holidays.some(h => h.date === iso)) {
       days.push(iso);
     }
     cur.setDate(cur.getDate() + 1);
@@ -242,7 +242,7 @@ const MenuSelectionScreen = ({
 
   // Edit lock: date is today or in the past (next-day logic — any action today takes effect tomorrow)
   const isLocked = useMemo(
-    () => isWithin48Hours(selectedDate),
+    () => isLockedForEdit(selectedDate),
     [selectedDate],
   );
 
@@ -319,11 +319,23 @@ const MenuSelectionScreen = ({
   const onPrevMonth = () => {
     const prev = new Date(selectedMonth);
     prev.setMonth(prev.getMonth() - 1);
+    if (subscriptionStart) {
+      const prevEnd = new Date(prev.getFullYear(), prev.getMonth() + 1, 0);
+      const start = new Date(subscriptionStart);
+      start.setHours(0, 0, 0, 0);
+      if (prevEnd < start) return;
+    }
     setSelectedMonth(prev);
   };
   const onNextMonth = () => {
     const next = new Date(selectedMonth);
     next.setMonth(next.getMonth() + 1);
+    if (subscriptionEnd) {
+      const nextStart = new Date(next.getFullYear(), next.getMonth(), 1);
+      const end = new Date(subscriptionEnd);
+      end.setHours(0, 0, 0, 0);
+      if (nextStart > end) return;
+    }
     setSelectedMonth(next);
   };
 
@@ -338,7 +350,7 @@ const MenuSelectionScreen = ({
         // ############# CUSTOM PLAN #############
         case 'custom': {
           // Edit lock and date validation only apply to single-date custom saves
-          if (isWithin48Hours(selectedDate)) {
+          if (isLockedForEdit(selectedDate)) {
             Alert.alert(
               'Locked',
               'Meal can be changed only before the previous day cutoff.',

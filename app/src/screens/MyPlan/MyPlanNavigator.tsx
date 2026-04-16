@@ -22,22 +22,11 @@ import { ChildProvider } from 'context/ChildContext';
 const Stack = createStackNavigator();
 
 const MyPlanNavigator = () => {
-  
-const { currentStep, loading, isSubscriptionExpired, subscriptionEndDate } = useRegistration();
+
+const { currentStep, loading } = useRegistration();
 if (loading || currentStep === null) {
   return <LoadingModal loading={true} setLoading={() => {}} />;
 }
-
-// A user with an active (non-expired) subscription should always go to the plan view,
-// even if the step API returns an incomplete step value.
-const hasActiveSubscription = !!subscriptionEndDate && !isSubscriptionExpired;
-
-// Route to plan view if subscription active, renewal if expired, registration if incomplete
-const initialScreen =
-  hasActiveSubscription ? 'PlanCalendar' :
-  isSubscriptionExpired ? 'RenewSubscription' :
-  currentStep < 4 ? 'Registartion' :
-  'PlanCalendar';
 
   return (
     <MenuProvider>
@@ -46,7 +35,7 @@ const initialScreen =
           <ChildProvider>
           <UserProfileProvider>
             <HolidayDateProvider>
-              <Stack.Navigator initialRouteName={initialScreen}>
+              <Stack.Navigator initialRouteName="PlanCalendar">
                 <Stack.Screen
                   name="MenuSelection"
                   component={MenuSelectionScreen}

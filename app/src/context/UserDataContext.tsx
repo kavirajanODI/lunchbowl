@@ -45,6 +45,7 @@ type SubscriptionPlan = {
 type ProfileData = {
   parentDetails: ParentDetails;
   subscriptionPlan: SubscriptionPlan;
+  upcomingSubscription: SubscriptionPlan | null;
   subscriptionCount: number;
   step: number;
   paymentStatus: string;
@@ -85,13 +86,15 @@ export const UserProfileProvider: React.FC<{children: React.ReactNode}> = ({
           subs.find((s: any) => s.status === 'active') ??
           subs[subs.length - 1] ??
           null;
+        const upcomingSub: SubscriptionPlan | null =
+          subs.find((s: any) => s.status === 'upcoming') ?? null;
         // Derive the children list from the active subscription so that
         // profileData.children is always populated (the Form document does not
         // carry a top-level children array – they live inside each Subscription).
         const children: Child[] = Array.isArray(activeSub?.children)
           ? activeSub.children
           : [];
-        setProfileData({...data, subscriptionPlan: activeSub, children});
+        setProfileData({...data, subscriptionPlan: activeSub, upcomingSubscription: upcomingSub, children});
       }
     } catch (error) {
       console.error('Error fetching profile data:', error);

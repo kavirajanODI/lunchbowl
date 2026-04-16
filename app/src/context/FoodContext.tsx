@@ -27,7 +27,7 @@ const FoodContext = createContext<FoodContextType | undefined>(undefined);
 
 export const FoodProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userId } = useAuth();
-  const { childrenData } = useMenu();
+  const { childrenData, planId } = useMenu();
 
   const [foodList, setFoodList] = useState<ChildWithMeals[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,13 +41,17 @@ export const FoodProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // API response: { success, data: { [planId]: { [date]: { [childId]: { mealName, deleted } } } } }
       const data = response?.data;
 
-      if (data && typeof data === 'object') {
-        const meals: Meal[] = [];
+        if (data && typeof data === 'object') {
+          const meals: Meal[] = [];
+          const scopedPlanData =
+            planId && data[planId] && typeof data[planId] === 'object'
+              ? [data[planId]]
+              : Object.values(data);
 
-        Object.values(data).forEach((planDates: any) => {
-          if (!planDates || typeof planDates !== 'object') return;
-          Object.entries(planDates).forEach(([date, childMeals]) => {
-            if (!childMeals || typeof childMeals !== 'object') return;
+          scopedPlanData.forEach((planDates: any) => {
+            if (!planDates || typeof planDates !== 'object') return;
+            Object.entries(planDates).forEach(([date, childMeals]) => {
+              if (!childMeals || typeof childMeals !== 'object') return;
             Object.entries(childMeals as Record<string, any>).forEach(
               ([childId, mealInfo]) => {
                 const mealName =
@@ -80,7 +84,7 @@ export const FoodProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  }, [userId, childrenData]);
+  }, [userId, childrenData, planId]);
 
   // 🔹 Automatically fetch foodList when provider mounts or user/children change
   useEffect(() => {
@@ -88,7 +92,7 @@ export const FoodProvider: React.FC<{ children: React.ReactNode }> = ({ children
       onViewFoodList();
     }
     
-  }, [userId, childrenData, onViewFoodList]);
+  }, [userId, childrenData, planId, onViewFoodList]);
 
   return (
     <FoodContext.Provider value={{ foodList, loading, onViewFoodList }}>
