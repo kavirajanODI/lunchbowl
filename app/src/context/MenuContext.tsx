@@ -6,6 +6,7 @@ import React, {
   useEffect,
 } from 'react';
 import UserService from 'services/userService';
+import RegistrationService from 'services/RegistartionService/registartion';
 import {useAuth} from './AuthContext';
 import {
   getSubscriptionBuckets,
@@ -113,7 +114,7 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
     try {
       const id = data._id;
       if (!id) return;
-      const response = await UserService.getRegisteredUSerData(id);
+      const response = await RegistrationService.registrationCheck({_id: id, path: 'Step-Check'});
       console.log('📌 Full response:', response);
 
       const resData = response?.data;
