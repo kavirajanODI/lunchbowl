@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {View, Text, StyleSheet} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Colors} from 'assets/styles/colors';
 import PrimaryButton from 'components/buttons/PrimaryButton';
 import {
@@ -10,12 +10,19 @@ import {
 import {useAuth} from 'context/AuthContext';
 import {useUserProfile} from 'context/UserDataContext';
 import FreeTrialModal from './FreeTrialModal';
+import {useCallback} from 'react';
 
 const FreeTrialCard: React.FC = () => {
   const navigation = useNavigation<any>();
   const {isLoggedIn, user, userId} = useAuth();
-  const {profileData} = useUserProfile();
+  const {profileData, refreshProfileData} = useUserProfile();
   const [modalVisible, setModalVisible] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfileData().catch(() => {});
+    }, [refreshProfileData]),
+  );
 
   // Hide if user has already availed trial meal OR has an active/any subscription.
   // freeTrial is checked from two sources:
@@ -24,7 +31,11 @@ const FreeTrialCard: React.FC = () => {
   const hasAvailedTrial =
     user?.freeTrial === true ||
     (profileData as any)?.user?.freeTrial === true;
-  const hasSubscription = !!(profileData?.subscriptionPlan);
+  const hasSubscription =
+    !!profileData?.subscriptionPlan ||
+    !!profileData?.upcomingSubscription ||
+    (Array.isArray((profileData as any)?.subscriptions) &&
+      (profileData as any).subscriptions.length > 0);
 
   if (hasAvailedTrial || hasSubscription) {
     return null;

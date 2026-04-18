@@ -18,10 +18,10 @@ async getUserData(userId: string) {
   );
 }
 
-  async getChildData(userId: string) {
+  async getChildData(userId: string, path?: string) {
     return await httpAxiosClient.post(
       `${this.childEndpoint}`,
-      { userId }
+      { userId, ...(path ? {path} : {}) }
     )
   }
 

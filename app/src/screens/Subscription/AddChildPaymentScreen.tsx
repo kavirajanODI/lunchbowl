@@ -4,6 +4,8 @@ import SecondaryButton from 'components/buttons/SecondaryButton';
 import {LoadingModal} from 'components/LoadingModal/LoadingModal';
 import Typography from 'components/Text/Typography';
 import {useAuth} from 'context/AuthContext';
+import {useRegistration} from 'context/RegistrationContext';
+import {useUserProfile} from 'context/UserDataContext';
 import React, {useState} from 'react';
 import {Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {
@@ -26,11 +28,22 @@ const PER_DAY_COST = 200;
 
 export default function AddChildPaymentScreen({route, navigation}: any) {
   const {userId} = useAuth();
+  const {refreshRegistration} = useRegistration();
+  const {refreshProfileData} = useUserProfile();
   const {newChildren, subscriptionId, remainingDays, pricePerChild, totalAmount, subscriptionEndDate} =
     route.params || {};
 
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const goToMyPlanTab = () => {
+    const parent = navigation.getParent?.();
+    if (parent?.navigate) {
+      parent.navigate('MyPlan', {screen: 'PlanCalendar'});
+      return;
+    }
+    navigation.replace('HomeScreen');
+  };
 
   const handleCcAvenuePayment = async () => {
     try {
@@ -108,6 +121,9 @@ export default function AddChildPaymentScreen({route, navigation}: any) {
         throw new Error(result?.message || 'Add child payment failed');
       }
 
+      await refreshRegistration().catch(() => {});
+      await refreshProfileData().catch(() => {});
+
       Alert.alert(
         'Payment Successful',
         `Children added successfully!\nTransaction ID: ${transactionId}\n\nNote: New children will be activated from the next business day.`,
@@ -116,7 +132,7 @@ export default function AddChildPaymentScreen({route, navigation}: any) {
             text: 'Go to My Plan',
             onPress: () => {
               navigation.popToTop();
-              navigation.navigate('MyPlan', {screen: 'PlanCalendar'});
+              goToMyPlanTab();
             },
           },
           {

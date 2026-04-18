@@ -147,7 +147,10 @@ export default function AddChildScreen({navigation}: any) {
     if (!userId) return;
     try {
       setFetchLoading(true);
-      const response: any = await UserService.getChildInformation(userId);
+      const response: any = await UserService.getChildInformation(
+        userId,
+        'Add-Child',
+      );
       const kids = response?.children || [];
       const subscription = response?.activeSubscription || null;
       setExistingChildren(kids);
@@ -256,15 +259,25 @@ export default function AddChildScreen({navigation}: any) {
       // Non-fatal: proceed with no holidays
     }
 
-    // Calculate remaining working days from tomorrow to subscription end date
+    // Calculate payable working days from the effective plan date:
+    // - next business day for active plans
+    // - subscription start date for upcoming plans
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
+    const subStart = activeSubscription.startDate
+      ? new Date(activeSubscription.startDate)
+      : null;
+    if (subStart) subStart.setHours(0, 0, 0, 0);
     const subEnd = new Date(activeSubscription.endDate);
     subEnd.setHours(0, 0, 0, 0);
+    const effectiveStart =
+      subStart && subStart > tomorrow ? subStart : tomorrow;
 
     const remainingDays =
-      subEnd >= tomorrow ? countWorkingDays(tomorrow, subEnd, holidays) : 0;
+      subEnd >= effectiveStart
+        ? countWorkingDays(effectiveStart, subEnd, holidays)
+        : 0;
 
     if (remainingDays === 0) {
       Alert.alert(

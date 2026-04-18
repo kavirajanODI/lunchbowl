@@ -4,8 +4,7 @@ import ThemeGradientBackground from 'components/Backgrounds/GradientBackground';
 import PrimaryButton from 'components/buttons/PrimaryButton';
 import SecondaryButton from 'components/buttons/SecondaryButton';
 import {useUserProfile} from 'context/UserDataContext';
-import {useMenu} from 'context/MenuContext';
-import {useAuth} from 'context/AuthContext';
+import {useRegistration} from 'context/RegistrationContext';
 import React, {useEffect} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {
@@ -22,26 +21,43 @@ const checkIcon = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org
 
 const PaymentSuccessScreen = ({navigation}: {navigation: any}) => {
   const {refreshProfileData} = useUserProfile();
-  const {fetchChildren} = useMenu();
-  const {userId} = useAuth();
+  const {refreshRegistration} = useRegistration();
 
   useEffect(() => {
-    // Refresh profile so that PlanCalendar loads fresh subscription data
-    refreshProfileData().catch(() => {});
-    // Pre-warm MenuContext so the calendar renders immediately on My Plan
-    if (userId) {
-      fetchChildren({_id: userId});
-    }
-  }, [refreshProfileData, userId]);
+    const hydrate = async () => {
+      await refreshRegistration().catch(() => {});
+      await refreshProfileData().catch(() => {});
+    };
+    hydrate();
+  }, [refreshProfileData, refreshRegistration]);
 
-  const handleGoToMyPlan = () => {
-    // navigate up to the tab navigator and switch to the MyPlan tab
-    navigation.navigate('MyPlan' as never);
+  const navigateParentTab = (tab: 'MyPlan' | 'Home') => {
+    const parent = navigation.getParent?.();
+    if (parent?.navigate) {
+      parent.navigate(
+        tab as never,
+        (tab === 'MyPlan'
+          ? {screen: 'PlanCalendar'}
+          : {screen: 'HomeScreen'}) as never,
+      );
+      return true;
+    }
+    return false;
+  };
+
+  const handleGoToMyPlan = async () => {
+    await refreshRegistration().catch(() => {});
+    await refreshProfileData().catch(() => {});
+
+    if (!navigateParentTab('MyPlan')) {
+      navigation.replace('PlanCalendar' as never);
+    }
   };
 
   const handleGoToDashboard = () => {
-    // navigate up to the tab navigator and switch to the Home tab
-    navigation.navigate('Home' as never);
+    if (!navigateParentTab('Home')) {
+      navigation.replace('HomeScreen' as never);
+    }
   };
 
   return (

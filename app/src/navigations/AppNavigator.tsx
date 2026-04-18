@@ -78,19 +78,19 @@ const AppNavigator = () => {
                   end={{x: 0, y: 1}}
                   style={styles.iconWrapperFocused}>
                   <View style={styles.topIndicator} />
-                  <SvgXml
-                    xml={iconXml ?? ''}
-                    width={wp('6.5%')}
-                    height={wp('6.5%')}
-                  />
-                </LinearGradient>
-              ) : (
-                <SvgXml
-                  xml={iconXml ?? ''}
-                  width={wp('6.5%')}
-                  height={wp('6.5%')}
-                />
-              )}
+                   <SvgXml
+                     xml={iconXml ?? ''}
+                     width={wp('5.8%')}
+                     height={wp('5.8%')}
+                   />
+                 </LinearGradient>
+               ) : (
+                 <SvgXml
+                   xml={iconXml ?? ''}
+                   width={wp('5.8%')}
+                   height={wp('5.8%')}
+                 />
+               )}
             </View>
           );
         },
@@ -103,9 +103,9 @@ const AppNavigator = () => {
         ),
         tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontFamily: Fonts.Urbanist.regular,
-          fontSize: 14,
-          marginTop: '25%',
+         fontFamily: Fonts.Urbanist.regular,
+          fontSize: 12,
+          marginTop: '18%',
         },
         tabBarActiveTintColor: Colors.primaryOrange,
         tabBarStyle: styles.tabBar,
@@ -168,15 +168,15 @@ const styles = StyleSheet.create({
     borderTopRightRadius: wp('8%'),
     backgroundColor: Colors.white,
     elevation: 10,
-    height: hp('10%'),
-    paddingBottom: hp('0.7%'),
+    height: hp('8.4%'),
+    paddingBottom: hp('0.4%'),
     overflow: 'hidden',
   },
 
   iconWrapper: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: hp('4%'),
+    marginTop: hp('2.8%'),
     marginLeft: wp('17%'),
   },
 
@@ -185,9 +185,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingLeft: hp('4%'),
     paddingRight: hp('4%'),
-    paddingTop: hp('4%'),
-    paddingBottom: hp('6%'),
-    marginTop: hp('2.9%'),
+    paddingTop: hp('3.2%'),
+    paddingBottom: hp('5%'),
+    marginTop: hp('2.3%'),
   },
 
   topIndicator: {

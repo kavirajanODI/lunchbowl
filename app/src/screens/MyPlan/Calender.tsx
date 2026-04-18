@@ -89,41 +89,36 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   } = useRegistration();
   const hasActiveSubscription = !!subscriptionEndDate && !isSubscriptionExpired;
 
-  // Capture subscription state at mount time so the redirect only runs once.
-  // By the time MyPlanScreen renders, MyPlanNavigator's loading guard ensures
-  // all subscription data is already resolved.
-  const shouldRedirect = useRef(
+  const shouldRedirect =
     !hasActiveSubscription &&
-      (isSubscriptionExpired || (currentStep !== null && currentStep < 4)),
-  );
+    (isSubscriptionExpired || (currentStep !== null && currentStep < 4));
 
   useEffect(() => {
-    if (!shouldRedirect.current) return;
+    if (!shouldRedirect) return;
     if (isSubscriptionExpired) {
       navigation.replace('RenewSubscription');
     } else if (currentStep !== null && currentStep < 4) {
       navigation.replace('Registartion');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [shouldRedirect, isSubscriptionExpired, currentStep, navigation]);
 
   //######### HOOKS ############################################
 
   useFocusEffect(
     useCallback(() => {
-      if (shouldRedirect.current) return;
+      if (shouldRedirect) return;
       // Refresh user profile (plan card, payment status)
       refreshProfileData();
       // Also refresh MenuContext so startDate/endDate are current after payment
       if (userId) {
         fetchChildren({_id: userId});
       }
-    }, [userId]),
+    }, [shouldRedirect, refreshProfileData, userId, fetchChildren]),
   );
 
   // Return null on the initial render when a redirect is about to happen
   // so the user never sees a flash of PlanCalendar content.
-  if (shouldRedirect.current) return null;
+  if (shouldRedirect) return null;
 
   function onViewFoodList(): void {
     navigation.navigate('FoodList');

@@ -17,7 +17,7 @@ const Walkslides = [
     id: 1,
     title: ['Create your', 'Account'],
     description:
-      'Lorem ipsum dolor sit amet consectetur. Facilisis in vitae nibh quis nulla. Vulputate lacus lacus euismod adipiscing adipi scing lacinia. Sed ut fermentum. ',
+      'Sign up in minutes and set up your family profile to get started with Lunch Bowl.',
     image: require('assets/images/WalkThrow/walk1.png'),
   },
   {
@@ -25,7 +25,7 @@ const Walkslides = [
     title: ['Choose Yours', 'Menu'],
 
     description:
-      'Lorem ipsum dolor sit amet consectetur. Facilisis in vitae nibh quis nulla. Vulputate lacus lacus euismod adipiscing adipi scing lacinia. Sed ut fermentum. ',
+      'Browse curated meals and pick what your child loves for each school day.',
     image: require('assets/images/WalkThrow/walk2.png'),
   },
   {
@@ -33,7 +33,7 @@ const Walkslides = [
     title: ['Place Your', 'Order'],
 
     description:
-      'Lorem ipsum dolor sit amet consectetur. Facilisis in vitae nibh quis nulla. Vulputate lacus lacus euismod adipiscing adipi scing lacinia. Sed ut fermentum. ',
+      'Confirm your plan and complete payment securely to activate your subscription.',
     image: require('assets/images/WalkThrow/walk3.png'),
   },
   {
@@ -41,7 +41,7 @@ const Walkslides = [
     title: ['Sit Back ', 'Relax'],
 
     description:
-      'Lorem ipsum dolor sit amet consectetur. Facilisis in vitae nibh quis nulla. Vulputate lacus lacus euismod adipiscing adipi scing lacinia. Sed ut fermentum. ',
+      'Track plans, holidays, and meal bookings anytime while we handle timely delivery.',
 
     image: require('assets/images/WalkThrow/walk4.png'),
   },

@@ -26,6 +26,7 @@ interface HeaderWithBackButtonDividerProps {
 
 const HeaderBackButton: React.FC<HeaderWithBackButtonDividerProps> = ({
   title,
+  onPress,
   titleStyle,
 }) => {
   const navigation = useNavigation();
@@ -34,7 +35,7 @@ const HeaderBackButton: React.FC<HeaderWithBackButtonDividerProps> = ({
     <View style={styles.headerContainer}>
       <View style={[styles.firstRow, {width: '90%'}]}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={onPress ?? (() => navigation.goBack())}
           style={styles.backWrapper}>
           <SvgXml xml={HeaderBackIcon} />
           <Typography style={[styles.headerText, titleStyle]} numberOfLines={1}>

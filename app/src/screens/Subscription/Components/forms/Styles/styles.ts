@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
         marginTop: hp('2%'),
     },
     childFormContainer: {
-        marginBottom: hp('35%'),
+        flex: 1,
 
     },
     addchildTabText: {
@@ -122,14 +122,8 @@ const styles = StyleSheet.create({
         fontSize: wp('3.7%'),
     },
     SubmitButtonContainer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: Colors.bg,
-        padding: 15,
-        borderTopWidth: 1,
-        borderColor: Colors.Storke,
+        marginTop: hp('1.5%'),
+        paddingBottom: hp('2%'),
         justifyContent: 'space-between',
         columnGap: wp('4%'),
     },

@@ -53,9 +53,12 @@ class UserService {
     }
   }
 
-  static async getChildInformation(userId: string): Promise<ApiResponseModel> {
+  static async getChildInformation(
+    userId: string,
+    path?: string,
+  ): Promise<ApiResponseModel> {
     try {
-      const respose = await UserApi.getChildData(userId);
+      const respose = await UserApi.getChildData(userId, path);
       return respose.data as ApiResponseModel
     }
     catch (error: any) {

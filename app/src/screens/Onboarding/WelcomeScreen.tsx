@@ -180,9 +180,8 @@ const WelcomeScreen: React.FC<{navigation: any}> = ({navigation}) => {
           <View style={WelcomeStyle.centerRow}>
             <Text style={WelcomeStyle.title}>Welcome to{'\n'}Lunch Bowl !</Text>
             <Text style={WelcomeStyle.description}>
-              Lorem ipsum dolor sit amet consectetur. Facilisis in vitae nibh
-              quis nulla. Vulputate lacus lacus euismod adipiscing adipi scing
-              lacinia. Sed ut fermentum.
+              Fresh, balanced lunch meals for school children — planned with
+              care, delivered with convenience, and managed in one simple app.
             </Text>
             <View style={WelcomeStyle.button}>
               <PrimaryButton

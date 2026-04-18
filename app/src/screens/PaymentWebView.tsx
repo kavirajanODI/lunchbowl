@@ -4,6 +4,7 @@ import {WebView} from 'react-native-webview';
 import {RouteProp, useRoute} from '@react-navigation/native';
 import AlertModal from 'components/Modal/AlertModal';
 import {useAuth} from 'context/AuthContext';
+import {useRegistration} from 'context/RegistrationContext';
 import {useUserProfile} from 'context/UserDataContext';
 import RegistrationService from 'services/RegistartionService/registartion';
 
@@ -23,6 +24,7 @@ export default function PaymentWebView({navigation}: any) {
   const [holidaySuccess, setHolidaySuccess] = useState(false);
   const {setUser} = useAuth();
   const {refreshProfileData} = useUserProfile();
+  const {refreshRegistration} = useRegistration();
 
   const ccAvenueUrl =
     'https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction';
@@ -30,7 +32,7 @@ export default function PaymentWebView({navigation}: any) {
     encRequest,
   )}&access_code=${encodeURIComponent(accessCode)}`;
 
-  const handleSuccess = () => {
+  const handleSuccess = async () => {
     if (paymentType === 'holiday') {
       setHolidaySuccess(true);
     } else if (paymentType === 'trialMeal') {
@@ -46,6 +48,8 @@ export default function PaymentWebView({navigation}: any) {
       navigation.replace('HomeScreen');
     } else {
       // Subscription payment success – show dedicated success screen
+      await refreshRegistration().catch(() => {});
+      await refreshProfileData().catch(() => {});
       navigation.replace('PaymentSuccess');
     }
   };
@@ -119,4 +123,3 @@ const styles = StyleSheet.create({
     marginTop: -25,
   },
 });
-

@@ -94,6 +94,7 @@ export default function MenueCalendar({
   const calendarDays: (string | number)[] = [];
   for (let i = 0; i < firstDayIndex; i++) calendarDays.push('');
   for (let day = 1; day <= daysInMonth; day++) calendarDays.push(day);
+  while (calendarDays.length % 7 !== 0) calendarDays.push('');
 
   // --------------------
   // Render
@@ -149,10 +150,9 @@ export default function MenueCalendar({
           const selected = selectedDate === dateStr;
 
           // Determine if this cell should appear greyed-out / non-interactive
-          const isSundayCell = index % 7 === 6;
           const outOfPlan =
             !isWithinRange(dayNumber, startDate, endDate, currentYear, currentMonth);
-          const isDisabled = isSundayCell || outOfPlan;
+          const isDisabled = outOfPlan;
 
           return (
             <TouchableOpacity
