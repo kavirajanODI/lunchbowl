@@ -35,13 +35,11 @@ const PaymentSuccessScreen = ({navigation}: {navigation: any}) => {
   }, [refreshProfileData, userId]);
 
   const handleGoToMyPlan = () => {
-    // navigate up to the tab navigator and switch to the MyPlan tab
-    navigation.navigate('MyPlan' as never);
+    navigation.navigate('PlanCalendar' as never);
   };
 
   const handleGoToDashboard = () => {
-    // navigate up to the tab navigator and switch to the Home tab
-    navigation.navigate('Home' as never);
+    navigation.navigate('Dashboard' as never);
   };
 
   return (

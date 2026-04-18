@@ -110,6 +110,28 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
     }, [userId]),
   );
 
+  useEffect(() => {
+    if (!startDate) return;
+    const start = new Date(startDate);
+    if (Number.isNaN(start.getTime())) return;
+    setCurrentMonth(start.getMonth());
+    setCurrentYear(start.getFullYear());
+  }, [startDate]);
+
+  // ############### SHACK TO VIEW SOME INFOS  ######################
+  useEffect(() => {
+    const subscription = Shake.addListener(() => {
+      setLegendVisible(true);
+    });
+    Shake.addListener(() => {
+      Vibration.vibrate(100);
+      setLegendVisible(true);
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   // Wait while navigating to renewal — avoids flashing calendar content.
   if (isSubscriptionExpired) return null;
 
@@ -160,14 +182,6 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
     setCurrentYear(year);
   };
 
-  useEffect(() => {
-    if (!startDate) return;
-    const start = new Date(startDate);
-    if (Number.isNaN(start.getTime())) return;
-    setCurrentMonth(start.getMonth());
-    setCurrentYear(start.getFullYear());
-  }, [startDate]);
-
   //######### FORMAT SUBSCRIPTION PLAN FROM CONTEXT ###############
 
   const subscriptionPlan = profileData?.subscriptionPlan
@@ -182,20 +196,6 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
         },
       ]
     : [];
-
-  // ############### SHACK TO VIEW SOME INFOS  ######################
-  useEffect(() => {
-    const subscription = Shake.addListener(() => {
-      setLegendVisible(true);
-    });
-    Shake.addListener(() => {
-      Vibration.vibrate(100);
-      setLegendVisible(true);
-    });
-    return () => {
-      subscription.remove();
-    };
-  }, []);
 
   return (
     <ThemeGradientBackground>
