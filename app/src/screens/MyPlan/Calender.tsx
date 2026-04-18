@@ -75,7 +75,7 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   const {holidays} = useDate();
   const {userId} = useAuth();
   const {profileData, loading, refreshProfileData} = useUserProfile();
-  const {fetchChildren, startDate, endDate, allSubscriptions, selectedSubscriptionId, selectSubscription} = useMenu();
+  const {fetchChildren, startDate, endDate, allSubscriptions, selectedSubscriptionId, selectSubscription, menuLoading} = useMenu();
 
   //######### SUBSCRIPTION REDIRECT ############################
   // MyPlanNavigator always starts at PlanCalendar so that getFocusedRouteNameFromRoute
@@ -106,6 +106,19 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle the case where the user has completed registration (step >= 4) but has
+  // no active or upcoming subscriptions. Once the MenuContext fetch finishes and
+  // returns an empty list, redirect to Registration which renders the
+  // "Looks like you're not Subscribed" / "LET'S GET STARTED" screen.
+  useEffect(() => {
+    if (menuLoading) return;
+    if (shouldRedirect.current) return; // already being redirected
+    if (allSubscriptions.length === 0) {
+      navigation.replace('Registartion');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menuLoading]);
 
   //######### HOOKS ############################################
 
@@ -205,7 +218,7 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
         renderItem={() => (
           <View style={styles.container}>
             <HeaderBackButton title="My Plan" />
-            {loading ? (
+            {(loading || menuLoading) ? (
               <MyPlanSkeleton />
             ) : subscriptionPlan.length > 0 ? (
               <>
