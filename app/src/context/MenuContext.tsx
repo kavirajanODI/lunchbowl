@@ -33,6 +33,8 @@ interface MenuContextType {
   /** Switch the calendar to a different subscription without re-fetching. */
   selectSubscription: (id: string) => void;
   fetchChildren: (data: RequestData) => Promise<void>;
+  /** True until the first fetchChildren call completes (success or error). */
+  menuLoading: boolean;
 }
 
 interface RequestData {
@@ -64,8 +66,7 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
 
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-
-  // Apply a subscription's dates/children to the calendar context state.
+  const [menuLoading, setMenuLoading] = useState(true);
   const applySubscription = (
     sub: SubscriptionItem | null,
     fallbackUserId?: string,
@@ -114,7 +115,6 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
       const id = data._id;
       if (!id) return;
       const response = await UserService.getRegisteredUSerData(id);
-      console.log('📌 Full response:', response);
 
       const resData = response?.data;
       if (!resData) {
@@ -173,6 +173,8 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
       }
     } catch (error) {
       console.error('Error fetching children:', error);
+    } finally {
+      setMenuLoading(false);
     }
   };
 
@@ -201,6 +203,7 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
         selectedSubscriptionId,
         selectSubscription,
         fetchChildren,
+        menuLoading,
       }}>
       {children}
     </MenuContext.Provider>

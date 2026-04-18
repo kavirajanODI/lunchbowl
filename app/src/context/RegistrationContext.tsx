@@ -34,7 +34,11 @@ export const RegistrationProvider = ({ children }: any) => {
     }
     try {
       const res: any = await RegistrationService.registrationCheck({ _id: userId, path: 'Step-Check' });
-      const fetchedStep = Number(res?.data?.step);
+      const rawStep = Number(res?.data?.step);
+      // Number(undefined) and Number(null) produce NaN for new users who have
+      // no step recorded yet. NaN < 4 === false, which silently disables the
+      // redirect to Registration and leaves a blank My Plan screen. Default to 0.
+      const fetchedStep = Number.isFinite(rawStep) ? rawStep : 0;
       setCurrentStep(fetchedStep);
       await AsyncStorage.setItem('@registrationStep', String(fetchedStep));
 
@@ -65,6 +69,8 @@ export const RegistrationProvider = ({ children }: any) => {
       ]);
       if (cachedStep) {
         setCurrentStep(Number(cachedStep));
+      } else {
+        setCurrentStep(0); // Fallback: prevents null from blocking navigator
       }
       if (cachedEndDate) {
         setSubscriptionEndDate(cachedEndDate);

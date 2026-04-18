@@ -2,12 +2,21 @@ import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import ThemeGradientBackground from 'components/Backgrounds/GradientBackground';
 import React from 'react';
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import {
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {
   heightPercentageToDP as hp,
   widthPercentageToDP as wp,
 } from 'react-native-responsive-screen';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
+import {IMAGE_BASE_URL as BASE_URL} from 'config/apiConfig';
 
 type Transaction = {
   _id: string;
@@ -21,6 +30,7 @@ type Transaction = {
   billing_email: string;
   payment_mode: string;
   currency: string;
+  invoiceUrl?: string;
 };
 
 const TransactionDetailScreen = ({route}: any) => {
@@ -50,6 +60,19 @@ const TransactionDetailScreen = ({route}: any) => {
 
   const isSuccess = (status: string) =>
     (status || '').toLowerCase() === 'success';
+
+  const openInvoice = async (url?: string) => {
+    if (!url) {
+      return;
+    }
+    const normalizedBase = BASE_URL.replace(/\/$/, '');
+    const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+    try {
+      await Linking.openURL(`${normalizedBase}${normalizedPath}`);
+    } catch {
+      Alert.alert('Error', 'Unable to open invoice');
+    }
+  };
 
   const DetailRow = ({label, value}: {label: string; value: string}) => (
     <View style={styles.detailRow}>
@@ -110,6 +133,16 @@ const TransactionDetailScreen = ({route}: any) => {
             label="Amount"
             value={`₹${(transaction.amount || 0).toLocaleString('en-IN')}`}
           />
+          {transaction.invoiceUrl ? (
+            <>
+              <View style={styles.rowDivider} />
+              <TouchableOpacity
+                style={styles.downloadInvoiceButton}
+                onPress={() => openInvoice(transaction.invoiceUrl)}>
+                <Text style={styles.downloadInvoiceButtonText}>Download Invoice</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
         </View>
       </ScrollView>
     </ThemeGradientBackground>
@@ -193,6 +226,19 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.Urbanist.semiBold,
     color: Colors.black,
     textAlign: 'right',
+  },
+  downloadInvoiceButton: {
+    alignSelf: 'flex-end',
+    borderWidth: 1,
+    borderColor: Colors.primaryOrange,
+    borderRadius: wp('2%'),
+    paddingHorizontal: wp('4%'),
+    paddingVertical: hp('0.9%'),
+  },
+  downloadInvoiceButtonText: {
+    color: Colors.primaryOrange,
+    fontSize: hp('1.8%'),
+    fontFamily: Fonts.Urbanist.semiBold,
   },
 });
 

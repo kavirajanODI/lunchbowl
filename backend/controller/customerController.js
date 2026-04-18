@@ -1524,9 +1524,17 @@ const getPaymentsForUser = async (req, res) => {
       return res.status(404).json({ message: "No payment data found for user" });
     }
 
+    const payments = (paymentDoc.payments || []).map((payment) => ({
+      ...payment.toObject(),
+      transactionId: payment.tracking_id || null,
+      orderId: payment.order_id || null,
+      amount: payment.amount || 0,
+      invoiceUrl: payment.invoiceUrl || null,
+    }));
+
     res.json({
       success: true,
-      payments: paymentDoc.payments,
+      payments,
       total_payments: paymentDoc.total_payments,
       total_amount: paymentDoc.total_amount,
     });

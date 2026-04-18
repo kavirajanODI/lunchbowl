@@ -34,6 +34,10 @@ const paymentTransactionSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  invoiceUrl: {
+    type: String,
+    default: null
+  },
   // Include any other CCAvenue response fields you need
   merchant_param1: String,
   merchant_param2: String,
