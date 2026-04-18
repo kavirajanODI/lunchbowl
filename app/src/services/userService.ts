@@ -58,8 +58,8 @@ class UserService {
     path?: string,
   ): Promise<ApiResponseModel> {
     try {
-      const respose = await UserApi.getChildData(userId, path);
-      return respose.data as ApiResponseModel
+      const response = await UserApi.getChildData(userId, path);
+      return response.data as ApiResponseModel
     }
     catch (error: any) {
       return {

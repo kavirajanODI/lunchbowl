@@ -46,9 +46,6 @@ const PaymentSuccessScreen = ({navigation}: {navigation: any}) => {
   };
 
   const handleGoToMyPlan = async () => {
-    await refreshRegistration().catch(() => {});
-    await refreshProfileData().catch(() => {});
-
     if (!navigateParentTab('MyPlan')) {
       navigation.replace('PlanCalendar' as never);
     }

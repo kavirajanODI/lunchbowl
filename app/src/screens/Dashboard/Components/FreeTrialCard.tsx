@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Colors} from 'assets/styles/colors';
@@ -10,7 +10,6 @@ import {
 import {useAuth} from 'context/AuthContext';
 import {useUserProfile} from 'context/UserDataContext';
 import FreeTrialModal from './FreeTrialModal';
-import {useCallback} from 'react';
 
 const FreeTrialCard: React.FC = () => {
   const navigation = useNavigation<any>();

@@ -265,18 +265,20 @@ export default function AddChildScreen({navigation}: any) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
-    const subStart = activeSubscription.startDate
+    const subscriptionStartDate = activeSubscription.startDate
       ? new Date(activeSubscription.startDate)
       : null;
-    if (subStart) subStart.setHours(0, 0, 0, 0);
+    if (subscriptionStartDate) subscriptionStartDate.setHours(0, 0, 0, 0);
     const subEnd = new Date(activeSubscription.endDate);
     subEnd.setHours(0, 0, 0, 0);
-    const effectiveStart =
-      subStart && subStart > tomorrow ? subStart : tomorrow;
+    const effectivePlanStartDate =
+      subscriptionStartDate && subscriptionStartDate > tomorrow
+        ? subscriptionStartDate
+        : tomorrow;
 
     const remainingDays =
-      subEnd >= effectiveStart
-        ? countWorkingDays(effectiveStart, subEnd, holidays)
+      subEnd >= effectivePlanStartDate
+        ? countWorkingDays(effectivePlanStartDate, subEnd, holidays)
         : 0;
 
     if (remainingDays === 0) {
