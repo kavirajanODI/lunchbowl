@@ -122,7 +122,6 @@ export default function Registration({ navigation, route }: any) {
     },
   ]);
 
-  const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState<Step>(1);
 
   // ############################ ERROR STATES ##################################
