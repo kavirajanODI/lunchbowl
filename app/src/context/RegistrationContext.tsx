@@ -65,6 +65,8 @@ export const RegistrationProvider = ({ children }: any) => {
       ]);
       if (cachedStep) {
         setCurrentStep(Number(cachedStep));
+      } else {
+        setCurrentStep(0); // Fallback: prevents null from blocking navigator
       }
       if (cachedEndDate) {
         setSubscriptionEndDate(cachedEndDate);

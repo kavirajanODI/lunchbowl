@@ -128,9 +128,9 @@ export default function TrialMealScreen({navigation}: any) {
       setLoadingSchools(true);
       try {
         const response: any = await RegistrationService.getAllSchools();
-        if (response && Array.isArray(response)) {
+        if (response?.success && Array.isArray(response.data)) {
           setSchools(
-            response.map((s: any) => ({
+            response.data.map((s: any) => ({
               label: `${s.name}${s.location ? ` - ${s.location}` : ''}`,
               value: s._id || s.name,
               name: s.name,
