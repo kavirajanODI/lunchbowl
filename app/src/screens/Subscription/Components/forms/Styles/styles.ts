@@ -102,6 +102,7 @@ const styles = StyleSheet.create({
 
     },
     parentFormContainer: {
+        flex: 1,
         marginTop: hp('2%'),
     },
     childFormContainer: {
