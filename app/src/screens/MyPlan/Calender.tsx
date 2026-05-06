@@ -93,19 +93,17 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   // Only evaluate redirect after the RegistrationContext has finished loading.
   // While loading is true, subscriptionEndDate is null which would incorrectly
   // make hasActiveSubscription false, causing a blank-screen redirect.
-  const shouldRedirect =
-    !registrationLoading &&
-    !hasActiveSubscription &&
-    currentStep !== null;
+  const shouldRedirect = !registrationLoading && !hasActiveSubscription;
 
   useEffect(() => {
     if (!shouldRedirect) return;
-    if (isSubscriptionExpired || currentStep! >= 4) {
+    if (isSubscriptionExpired || (currentStep !== null && currentStep >= 4)) {
       // Expired subscription OR registration complete but no plan yet →
       // send user to the plan-selection / renewal flow.
       navigation.replace('RenewSubscription');
     } else {
-      // Registration not yet complete → resume registration steps.
+      // Registration not yet complete (or API returned 404 and step is unknown)
+      // → send user to the registration flow.
       navigation.replace('Registartion');
     }
   }, [shouldRedirect, isSubscriptionExpired, currentStep, navigation]);
