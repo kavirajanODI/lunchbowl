@@ -8,7 +8,7 @@ import { MenuProvider } from 'context/MenuContext';
 import { useRegistration } from 'context/RegistrationContext';
 import { UserProfileProvider } from 'context/UserDataContext';
 import React from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import PaymentWebView from 'screens/PaymentWebView';
 import Registartion from 'screens/Subscription/Registration';
 import RenewSubscription from 'screens/Subscription/RenewSubscription';
@@ -29,7 +29,7 @@ const { currentStep, loading } = useRegistration();
 if (loading || currentStep === null) {
   return (
     <ThemeGradientBackground>
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <View style={styles.loadingContainer}>
         <GradientActivityIndicator />
       </View>
     </ThemeGradientBackground>
@@ -103,6 +103,14 @@ if (loading || currentStep === null) {
     </MenuProvider>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default MyPlanNavigator;
 
