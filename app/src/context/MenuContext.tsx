@@ -4,6 +4,7 @@ import React, {
   useContext,
   ReactNode,
   useEffect,
+  useCallback,
 } from 'react';
 import UserService from 'services/userService';
 import {useAuth} from './AuthContext';
@@ -66,7 +67,7 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
   const [endDate, setEndDate] = useState<string>('');
 
   // Apply a subscription's dates/children to the calendar context state.
-  const applySubscription = (
+  const applySubscription = useCallback((
     sub: SubscriptionItem | null,
     fallbackUserId?: string,
   ) => {
@@ -99,7 +100,9 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
         })
         .catch(() => {});
     }
-  };
+  // Only uses stable state setters and UserService (static) — no external state reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Switch the calendar to a specific subscription without re-fetching API. */
   const selectSubscription = (id: string) => {
@@ -109,7 +112,7 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
     applySubscription(sub);
   };
 
-  const fetchChildren = async (data: RequestData) => {
+  const fetchChildren = useCallback(async (data: RequestData) => {
     try {
       const id = data._id;
       if (!id) return;
@@ -172,9 +175,12 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
         setSelectedTab(nextTab);
       }
     } catch (error) {
-      console.error('Error fetching children:', error);
+      console.warn('Error fetching children:', error);
     }
-  };
+  // selectedSubscriptionId and selectedTab are read (not written via functional update)
+  // so they must be listed as deps to avoid stale-closure bugs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applySubscription, selectedSubscriptionId, selectedTab]);
 
   useEffect(() => {
     if (userId) {
@@ -182,7 +188,8 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
         _id: userId,
       });
     }
-  // Intentionally not including selectedTab — switching tabs no longer triggers a re-fetch.
+  // fetchChildren intentionally omitted: it changes with selectedTab/selectedSubscriptionId
+  // and we only want to fetch on mount / userId change, not on every tab switch.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
