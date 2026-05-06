@@ -1,12 +1,14 @@
 import { createStackNavigator } from '@react-navigation/stack';
 import { ToastProvider } from 'components/Error/Toast/ToastProvider';
-import { LoadingModal } from 'components/LoadingModal/LoadingModal';
+import ThemeGradientBackground from 'components/Backgrounds/GradientBackground';
+import GradientActivityIndicator from 'components/ActivityIndicator/GradientActivityIndicator';
 import { HolidayDateProvider } from 'context/calenderContext';
 import { FoodProvider } from 'context/FoodContext';
 import { MenuProvider } from 'context/MenuContext';
 import { useRegistration } from 'context/RegistrationContext';
 import { UserProfileProvider } from 'context/UserDataContext';
 import React from 'react';
+import { View } from 'react-native';
 import PaymentWebView from 'screens/PaymentWebView';
 import Registartion from 'screens/Subscription/Registration';
 import RenewSubscription from 'screens/Subscription/RenewSubscription';
@@ -25,7 +27,13 @@ const MyPlanNavigator = () => {
 
 const { currentStep, loading } = useRegistration();
 if (loading || currentStep === null) {
-  return <LoadingModal loading={true} setLoading={() => {}} />;
+  return (
+    <ThemeGradientBackground>
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <GradientActivityIndicator />
+      </View>
+    </ThemeGradientBackground>
+  );
 }
 
   return (
