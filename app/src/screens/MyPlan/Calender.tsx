@@ -13,6 +13,7 @@ import { useRegistration } from 'context/RegistrationContext';
 import { useUserProfile } from 'context/UserDataContext';
 import { useDate } from 'context/calenderContext';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import InitialsScreen from 'screens/Subscription/Components/InitialScreen';
 import {
   FlatList,
   Modal,
@@ -34,7 +35,7 @@ import Shake from 'react-native-shake';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
 import ToolTipSectionHeader from 'screens/Dashboard/Components/TooltipHeader';
 import MenueCalendar from 'screens/MyPlan/Components/MenueCalender';
-import { questionIcon } from 'styles/svg-icons';
+import { questionIcon, vabourCub } from 'styles/svg-icons';
 import { formatDate } from 'utils/dateUtils';
 import { classifySubscription, SubscriptionItem } from 'utils/subscriptionLogic';
 import CalendarLegend from './Components/ColorsLegend';
@@ -77,10 +78,10 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   const {profileData, loading, refreshProfileData} = useUserProfile();
   const {fetchChildren, startDate, endDate, allSubscriptions, selectedSubscriptionId, selectSubscription} = useMenu();
 
-  //######### SUBSCRIPTION REDIRECT ############################
-  // MyPlanNavigator always starts at PlanCalendar so that getFocusedRouteNameFromRoute
-  // works correctly and the tab bar can be hidden. Redirect here if the user should
-  // be on the registration or renewal flow instead.
+  //######### SUBSCRIPTION / PLAN STATE ############################
+  // Show the "get started" page when no active subscription exists, rather
+  // than a blank screen. Users with an expired plan are sent to RenewSubscription
+  // and users who haven't completed registration are sent to Registration.
 
   const {
     currentStep,
@@ -89,29 +90,11 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   } = useRegistration();
   const hasActiveSubscription = !!subscriptionEndDate && !isSubscriptionExpired;
 
-  // Capture subscription state at mount time so the redirect only runs once.
-  // By the time MyPlanScreen renders, MyPlanNavigator's loading guard ensures
-  // all subscription data is already resolved.
-  const shouldRedirect = useRef(
-    !hasActiveSubscription &&
-      (isSubscriptionExpired || (currentStep !== null && currentStep < 4)),
-  );
-
-  useEffect(() => {
-    if (!shouldRedirect.current) return;
-    if (isSubscriptionExpired) {
-      navigation.replace('RenewSubscription');
-    } else if (currentStep !== null && currentStep < 4) {
-      navigation.replace('Registartion');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   //######### HOOKS ############################################
 
   useFocusEffect(
     useCallback(() => {
-      if (shouldRedirect.current) return;
+      if (!hasActiveSubscription && !(currentStep !== null && currentStep >= 4)) return;
       // Refresh user profile (plan card, payment status)
       refreshProfileData();
       // Also refresh MenuContext so startDate/endDate are current after payment
@@ -121,9 +104,22 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
     }, [userId]),
   );
 
-  // Return null on the initial render when a redirect is about to happen
-  // so the user never sees a flash of PlanCalendar content.
-  if (shouldRedirect.current) return null;
+  // Show get started page when no active subscription
+  if (!hasActiveSubscription || (currentStep !== null && currentStep < 4)) {
+    return (
+      <InitialsScreen
+        navigation={navigation}
+        vabourCub={vabourCub}
+        onGetStarted={() => {
+          if (isSubscriptionExpired) {
+            navigation.navigate('RenewSubscription');
+          } else {
+            navigation.navigate('Registartion');
+          }
+        }}
+      />
+    );
+  }
 
   function onViewFoodList(): void {
     navigation.navigate('FoodList');
