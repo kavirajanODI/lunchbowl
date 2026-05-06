@@ -86,10 +86,15 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
     currentStep,
     isSubscriptionExpired,
     subscriptionEndDate,
+    loading: registrationLoading,
   } = useRegistration();
   const hasActiveSubscription = !!subscriptionEndDate && !isSubscriptionExpired;
 
+  // Only evaluate redirect after the RegistrationContext has finished loading.
+  // While loading is true, subscriptionEndDate is null which would incorrectly
+  // make hasActiveSubscription false, causing a blank-screen redirect.
   const shouldRedirect =
+    !registrationLoading &&
     !hasActiveSubscription &&
     (isSubscriptionExpired || (currentStep !== null && currentStep < 4));
 
@@ -116,8 +121,16 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
     }, [shouldRedirect, refreshProfileData, userId, fetchChildren]),
   );
 
-  // Return null on the initial render when a redirect is about to happen
-  // so the user never sees a flash of PlanCalendar content.
+  // Show skeleton while registration data loads; return null only when a
+  // redirect is definitely needed (shouldRedirect is already guarded by
+  // !registrationLoading so this never fires during the loading phase).
+  if (registrationLoading) {
+    return (
+      <ThemeGradientBackground>
+        <MyPlanSkeleton />
+      </ThemeGradientBackground>
+    );
+  }
   if (shouldRedirect) return null;
 
   function onViewFoodList(): void {
