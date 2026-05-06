@@ -118,7 +118,7 @@ export const MenuProvider = ({children}: {children: ReactNode}) => {
 
       const resData = response?.data;
       if (!resData) {
-        console.error('No plans data found or response was not successful.');
+        console.warn('No plans data found or response was not successful.');
         return;
       }
 

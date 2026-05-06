@@ -122,17 +122,14 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
     }, [shouldRedirect, refreshProfileData, userId, fetchChildren]),
   );
 
-  // Show skeleton while registration data loads; return null only when a
-  // redirect is definitely needed (shouldRedirect is already guarded by
-  // !registrationLoading so this never fires during the loading phase).
-  if (registrationLoading) {
+  // Show skeleton while loading or while a redirect is imminent (prevents blank flash).
+  if (registrationLoading || shouldRedirect) {
     return (
       <ThemeGradientBackground>
         <MyPlanSkeleton />
       </ThemeGradientBackground>
     );
   }
-  if (shouldRedirect) return null;
 
   function onViewFoodList(): void {
     navigation.navigate('FoodList');
