@@ -89,12 +89,14 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
     subscriptionEndDate,
   } = useRegistration();
   const hasActiveSubscription = !!subscriptionEndDate && !isSubscriptionExpired;
+  const shouldShowGetStarted =
+    !hasActiveSubscription || (currentStep !== null && currentStep < 4);
 
   //######### HOOKS ############################################
 
   useFocusEffect(
     useCallback(() => {
-      if (!hasActiveSubscription && !(currentStep !== null && currentStep >= 4)) return;
+      if (shouldShowGetStarted) return;
       // Refresh user profile (plan card, payment status)
       refreshProfileData();
       // Also refresh MenuContext so startDate/endDate are current after payment
@@ -105,7 +107,7 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   );
 
   // Show get started page when no active subscription
-  if (!hasActiveSubscription || (currentStep !== null && currentStep < 4)) {
+  if (shouldShowGetStarted) {
     return (
       <InitialsScreen
         navigation={navigation}
