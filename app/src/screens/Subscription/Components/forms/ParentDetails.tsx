@@ -99,7 +99,7 @@ export default function ParentDetails({
 
   return (
     <KeyboardAvoidingView
-      style={{flex: 1}}
+      style={styles.parentKeyboardAvoidingView}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.parentFormContainer}>
         <ScrollView

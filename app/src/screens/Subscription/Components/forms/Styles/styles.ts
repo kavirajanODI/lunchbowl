@@ -105,6 +105,9 @@ const styles = StyleSheet.create({
         flex: 1,
         marginTop: hp('2%'),
     },
+    parentKeyboardAvoidingView: {
+        flex: 1,
+    },
     childFormContainer: {
         marginBottom: hp('35%'),
 
