@@ -96,13 +96,16 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   const shouldRedirect =
     !registrationLoading &&
     !hasActiveSubscription &&
-    (isSubscriptionExpired || (currentStep !== null && currentStep < 4));
+    currentStep !== null;
 
   useEffect(() => {
     if (!shouldRedirect) return;
-    if (isSubscriptionExpired) {
+    if (isSubscriptionExpired || currentStep! >= 4) {
+      // Expired subscription OR registration complete but no plan yet →
+      // send user to the plan-selection / renewal flow.
       navigation.replace('RenewSubscription');
-    } else if (currentStep !== null && currentStep < 4) {
+    } else {
+      // Registration not yet complete → resume registration steps.
       navigation.replace('Registartion');
     }
   }, [shouldRedirect, isSubscriptionExpired, currentStep, navigation]);
