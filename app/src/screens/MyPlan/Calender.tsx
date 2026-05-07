@@ -79,18 +79,12 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   const {fetchChildren, startDate, endDate, allSubscriptions, selectedSubscriptionId, selectSubscription} = useMenu();
 
   //######### SUBSCRIPTION / PLAN STATE ############################
-  // Show the "get started" page when no active subscription exists, rather
-  // than a blank screen. Users with an expired plan are sent to RenewSubscription
-  // and users who haven't completed registration are sent to Registration.
+  // Show the "get started" page only for true first-time users who have never
+  // had a subscription. Once a user has any subscription history, My Plan
+  // should render the regular plan/renewal UI instead.
 
-  const {
-    currentStep,
-    isSubscriptionExpired,
-    subscriptionEndDate,
-  } = useRegistration();
-  const hasActiveSubscription = !!subscriptionEndDate && !isSubscriptionExpired;
-  const shouldShowGetStarted =
-    !hasActiveSubscription || (currentStep !== null && currentStep < 4);
+  const {hasPlanHistory} = useRegistration();
+  const shouldShowGetStarted = !hasPlanHistory;
 
   //######### HOOKS ############################################
 
@@ -103,21 +97,17 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
       if (userId) {
         fetchChildren({_id: userId});
       }
-    }, [userId]),
+    }, [fetchChildren, refreshProfileData, shouldShowGetStarted, userId]),
   );
 
-  // Show get started page when no active subscription
+  // Show get started page only for first-time users with no subscription history
   if (shouldShowGetStarted) {
     return (
       <InitialsScreen
         navigation={navigation}
         vabourCub={vabourCub}
         onGetStarted={() => {
-          if (isSubscriptionExpired) {
-            navigation.navigate('RenewSubscription');
-          } else {
-            navigation.navigate('Registartion');
-          }
+          navigation.navigate('Registartion');
         }}
       />
     );

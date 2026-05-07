@@ -6,6 +6,7 @@ import RegistrationService from 'services/RegistartionService/registartion';
 type RegistrationContextType = {
   currentStep: number | null;
   hasCompletedRegistration: boolean;
+  hasPlanHistory: boolean;
   isSubscriptionExpired: boolean;
   subscriptionEndDate: string | null;
   loading: boolean;
@@ -15,6 +16,7 @@ type RegistrationContextType = {
 const RegistrationContext = createContext<RegistrationContextType>({
   currentStep: null,
   hasCompletedRegistration: false,
+  hasPlanHistory: false,
   isSubscriptionExpired: false,
   subscriptionEndDate: null,
   loading: true,
@@ -24,6 +26,7 @@ const RegistrationContext = createContext<RegistrationContextType>({
 export const RegistrationProvider = ({ children }: any) => {
   const { userId } = useAuth();
   const [currentStep, setCurrentStep] = useState<number | null>(null);
+  const [hasPlanHistory, setHasPlanHistory] = useState(false);
   const [subscriptionEndDate, setSubscriptionEndDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +45,13 @@ export const RegistrationProvider = ({ children }: any) => {
       // The API returns subscriptions as an array; fall back to subscriptionPlan for
       // older/alternative response shapes.
       const subscriptions: any[] = res?.data?.subscriptions || [];
+      const nextHasPlanHistory =
+        subscriptions.length > 0 || !!res?.data?.subscriptionPlan;
+      setHasPlanHistory(nextHasPlanHistory);
+      await AsyncStorage.setItem(
+        '@hasPlanHistory',
+        nextHasPlanHistory ? 'true' : 'false',
+      );
       const activeSub =
         subscriptions.find((s: any) => s.status === 'active') ||
         subscriptions[subscriptions.length - 1] ||
@@ -59,15 +69,19 @@ export const RegistrationProvider = ({ children }: any) => {
     } catch (err) {
       console.log('Registration check API failed:', err);
       // Fall back to cached values if available
-      const [cachedStep, cachedEndDate] = await Promise.all([
+      const [cachedStep, cachedEndDate, cachedHasPlanHistory] = await Promise.all([
         AsyncStorage.getItem('@registrationStep'),
         AsyncStorage.getItem('@subscriptionEndDate'),
+        AsyncStorage.getItem('@hasPlanHistory'),
       ]);
       if (cachedStep) {
         setCurrentStep(Number(cachedStep));
       }
       if (cachedEndDate) {
         setSubscriptionEndDate(cachedEndDate);
+      }
+      if (cachedHasPlanHistory) {
+        setHasPlanHistory(cachedHasPlanHistory === 'true');
       }
     } finally {
       setLoading(false);
@@ -77,15 +91,19 @@ export const RegistrationProvider = ({ children }: any) => {
   useEffect(() => {
     const init = async () => {
       // Restore cached state so it is available as fallback if the API fails
-      const [cachedStep, cachedEndDate] = await Promise.all([
+      const [cachedStep, cachedEndDate, cachedHasPlanHistory] = await Promise.all([
         AsyncStorage.getItem('@registrationStep'),
         AsyncStorage.getItem('@subscriptionEndDate'),
+        AsyncStorage.getItem('@hasPlanHistory'),
       ]);
       if (cachedStep) {
         setCurrentStep(Number(cachedStep));
       }
       if (cachedEndDate) {
         setSubscriptionEndDate(cachedEndDate);
+      }
+      if (cachedHasPlanHistory) {
+        setHasPlanHistory(cachedHasPlanHistory === 'true');
       }
       // Always wait for the API so routing decisions use authoritative data.
       // loading stays true until fetchRegistrationStatus sets it false in finally.
@@ -104,6 +122,7 @@ export const RegistrationProvider = ({ children }: any) => {
       value={{
         currentStep,
         hasCompletedRegistration: !!currentStep && currentStep >= 4,
+        hasPlanHistory,
         isSubscriptionExpired,
         subscriptionEndDate,
         loading,
@@ -116,4 +135,3 @@ export const RegistrationProvider = ({ children }: any) => {
 };
 
 export const useRegistration = () => useContext(RegistrationContext);
-
