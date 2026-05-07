@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from 'context/AuthContext';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import RegistrationService from 'services/RegistartionService/registartion';
+import UserService from 'services/userService';
 
 type RegistrationContextType = {
   currentStep: number | null;
@@ -32,34 +33,45 @@ export const RegistrationProvider = ({ children }: any) => {
 
   const fetchRegistrationStatus = async () => {
     if (!userId) {
+      setCurrentStep(null);
+      setHasPlanHistory(false);
+      setSubscriptionEndDate(null);
       setLoading(false);
       return;
     }
     try {
-      const res: any = await RegistrationService.registrationCheck({ _id: userId, path: 'Step-Check' });
-      const fetchedStep = Number(res?.data?.step);
+      const [registrationRes, accountDetailsRes]: any = await Promise.all([
+        RegistrationService.registrationCheck({ _id: userId, path: 'Step-Check' }),
+        UserService.getRegisteredUSerData(userId),
+      ]);
+
+      const fetchedStep = Number(registrationRes?.data?.step);
       setCurrentStep(fetchedStep);
       await AsyncStorage.setItem('@registrationStep', String(fetchedStep));
 
-      // Persist subscription end date for expiry check.
-      // The API returns subscriptions as an array; fall back to subscriptionPlan for
-      // older/alternative response shapes.
-      const subscriptions: any[] = res?.data?.subscriptions || [];
+      // Step-Check only returns step/freeTrial, so plan history must come from
+      // account-details/Form data.
+      const accountData = accountDetailsRes?.data;
+      const subscriptions: any[] = Array.isArray(accountData?.subscriptions)
+        ? accountData.subscriptions
+        : [];
       const nextHasPlanHistory =
-        subscriptions.length > 0 || !!res?.data?.subscriptionPlan;
+        subscriptions.length > 0 ||
+        Number(accountData?.subscriptionCount || 0) > 0;
       setHasPlanHistory(nextHasPlanHistory);
       await AsyncStorage.setItem(
         '@hasPlanHistory',
         nextHasPlanHistory ? 'true' : 'false',
       );
+      const latestSub = subscriptions
+        .filter((s: any) => !!s?.endDate)
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.endDate).getTime() - new Date(a.endDate).getTime(),
+        )[0] || null;
       const activeSub =
-        subscriptions.find((s: any) => s.status === 'active') ||
-        subscriptions[subscriptions.length - 1] ||
-        null;
-      const endDate: string | null =
-        activeSub?.endDate ||
-        res?.data?.subscriptionPlan?.endDate ||
-        null;
+        subscriptions.find((s: any) => s.status === 'active') || latestSub;
+      const endDate: string | null = activeSub?.endDate || null;
       setSubscriptionEndDate(endDate);
       if (endDate) {
         await AsyncStorage.setItem('@subscriptionEndDate', endDate);
@@ -67,7 +79,7 @@ export const RegistrationProvider = ({ children }: any) => {
         await AsyncStorage.removeItem('@subscriptionEndDate');
       }
     } catch (err) {
-      console.log('Registration check API failed:', err);
+      console.log('Registration/account details API failed:', err);
       // Fall back to cached values if available
       const [cachedStep, cachedEndDate, cachedHasPlanHistory] = await Promise.all([
         AsyncStorage.getItem('@registrationStep'),
