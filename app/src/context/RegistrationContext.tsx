@@ -50,12 +50,14 @@ export const RegistrationProvider = ({ children }: any) => {
       await AsyncStorage.setItem('@registrationStep', String(fetchedStep));
 
       // Step-Check only returns step/freeTrial, so plan history must come from
-      // account-details/Form data.
+      // account-details/Form data AND from the step value itself.
+      // step >= 4 means the user completed the full registration + payment flow.
       const accountData = accountDetailsRes?.data;
       const subscriptions: any[] = Array.isArray(accountData?.subscriptions)
         ? accountData.subscriptions
         : [];
       const nextHasPlanHistory =
+        fetchedStep >= 4 ||
         subscriptions.length > 0 ||
         Number(accountData?.subscriptionCount || 0) > 0;
       setHasPlanHistory(nextHasPlanHistory);

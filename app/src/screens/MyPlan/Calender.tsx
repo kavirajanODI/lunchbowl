@@ -83,10 +83,23 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   // had a subscription. Once a user has any subscription history, My Plan
   // should render the regular plan/renewal UI instead.
 
-  const {hasPlanHistory} = useRegistration();
-  const shouldShowGetStarted = !hasPlanHistory;
+  const {hasPlanHistory, loading: regLoading} = useRegistration();
+  // Only show the "get started" screen once we know for sure (loading done) that
+  // the user has never subscribed. While loading, default to false to avoid a
+  // flash of the onboarding screen for existing subscribers.
+  const shouldShowGetStarted = !hasPlanHistory && !regLoading;
 
   //######### HOOKS ############################################
+
+  // Keep a stable ref to fetchChildren so useFocusEffect's useCallback deps
+  // don't include the function itself. fetchChildren is recreated on every
+  // MenuContext render; including it in deps would create an infinite loop:
+  // fetchChildren → state update → re-render → new fetchChildren ref →
+  // useFocusEffect fires → fetchChildren → ...
+  const fetchChildrenRef = useRef(fetchChildren);
+  useEffect(() => {
+    fetchChildrenRef.current = fetchChildren;
+  }, [fetchChildren]);
 
   useFocusEffect(
     useCallback(() => {
@@ -95,9 +108,9 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
       refreshProfileData();
       // Also refresh MenuContext so startDate/endDate are current after payment
       if (userId) {
-        fetchChildren({_id: userId});
+        fetchChildrenRef.current({_id: userId});
       }
-    }, [fetchChildren, refreshProfileData, shouldShowGetStarted, userId]),
+    }, [refreshProfileData, shouldShowGetStarted, userId]),
   );
 
   // Show get started page only for first-time users with no subscription history
