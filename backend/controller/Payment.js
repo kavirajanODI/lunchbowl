@@ -628,6 +628,17 @@ exports.addChildPaymentController = async (req, res) => {
       const savedChildrenIds = [];
       for (const child of childrenData) {
         child.user = userId;
+
+        // Normalise dob: accept both "DD/MM/YYYY" (legacy) and "YYYY-MM-DD" (ISO)
+        if (typeof child.dob === "string") {
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(child.dob)) {
+            const [d, m, y] = child.dob.split("/");
+            child.dob = new Date(`${y}-${m}-${d}`);
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(child.dob)) {
+            child.dob = new Date(child.dob);
+          }
+        }
+
         let savedChild;
 
         if (child._id && mongoose.Types.ObjectId.isValid(child._id)) {
@@ -942,6 +953,16 @@ exports.localAddChildPaymentController = async (req, res) => {
             success: false,
             message: `Child location is required for ${child.childFirstName || "unknown"}`,
           });
+        }
+
+        // Normalise dob: accept both "DD/MM/YYYY" (legacy) and "YYYY-MM-DD" (ISO)
+        if (typeof child.dob === "string") {
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(child.dob)) {
+            const [d, m, y] = child.dob.split("/");
+            child.dob = new Date(`${y}-${m}-${d}`);
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(child.dob)) {
+            child.dob = new Date(child.dob);
+          }
         }
 
         child.user = userId;

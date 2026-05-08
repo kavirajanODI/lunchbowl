@@ -114,11 +114,13 @@ export default function ChildrenDetails({
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.childFormContainer}>
+      style={{flex: 1}}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={[styles.childFormContainer]}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: hp('15%')}}>
+          style={{flex: 1}}
+          contentContainerStyle={{paddingBottom: hp('2%')}}>
           <View style={styles.addchildTab}>
             <Text style={styles.addchildTabText}>
               CHILDREN ({children.length}/{MAX_CHILDREN})

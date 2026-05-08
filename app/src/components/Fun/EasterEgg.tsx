@@ -19,17 +19,17 @@ const EasterEgg = () => {
   useEffect(() => {
     const triggerEasterEgg = async () => {
       try {
-        // const hasShown = await AsyncStorage.getItem('@easterEggShown');
+        const hasShown = await AsyncStorage.getItem('@easterEggShown');
 
-        // if (!hasShown) {
+        if (!hasShown) {
           setShowConfetti(true);
           confettiRef.current && confettiRef.current.start();
-          playSound();
+          // Sound intentionally omitted to avoid unwanted audio on home screen
 
           setTimeout(() => setShowConfetti(false), 4000);
 
-          // await AsyncStorage.setItem('@easterEggShown', 'true');
-        // }
+          await AsyncStorage.setItem('@easterEggShown', 'true');
+        }
       } catch (error) {
         console.log('EasterEgg AsyncStorage error:', error);
       }

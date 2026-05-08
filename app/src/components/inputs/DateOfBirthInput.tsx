@@ -35,12 +35,24 @@ export default function DateOfBirthInput({value, onChange, error}: Props) {
     return years;
   }, [date]);
 
-  const formatDate = (d: Date) => {
+  const formatIso = (d: Date) => {
     const day = String(d.getDate()).padStart(2, '0');
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+    return `${year}-${month}-${day}`;
   };
+
+  // Parse stored value (YYYY-MM-DD) back to DD/MM/YYYY for display
+  const displayValue = (() => {
+    if (!value) return '';
+    // ISO format YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [y, m, d] = value.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    // Legacy DD/MM/YYYY stored value — display as-is
+    return value;
+  })();
 
   const handleChange = (_: any, selectedDate?: Date) => {
     setShowPicker(false);
@@ -62,8 +74,8 @@ export default function DateOfBirthInput({value, onChange, error}: Props) {
       }
 
       setDate(selectedDate);
-      const formatted = formatDate(selectedDate);
-      onChange(formatted);
+      const isoFormatted = formatIso(selectedDate);
+      onChange(isoFormatted);
     }
   };
 
@@ -73,7 +85,7 @@ export default function DateOfBirthInput({value, onChange, error}: Props) {
         style={[styles.input, error ? {borderColor: Colors.red} : null]}
         onPress={() => setShowPicker(true)}>
         <Text style={{color: value ? Colors.bodyText : Colors.black}}>
-          {value ? `${value} (Age ${age ?? '00'})` : 'DD/MM/YYYY (Age 00)'}
+          {displayValue ? `${displayValue} (Age ${age ?? '00'})` : 'DD/MM/YYYY (Age 00)'}
         </Text>
       </TouchableOpacity>
 

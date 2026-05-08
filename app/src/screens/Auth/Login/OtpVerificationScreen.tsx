@@ -3,7 +3,7 @@ import ThemeGradientBackground from 'components/Backgrounds/GradientBackground';
 import PrimaryButton from 'components/buttons/PrimaryButton';
 import ErrorMessage from 'components/Error/BoostrapStyleError';
 import {LoadingModal} from 'components/LoadingModal/LoadingModal';
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
@@ -27,6 +28,8 @@ import {useAuth} from '../../../context/AuthContext';
 import HeaderBackButton from 'screens/Dashboard/Components/BackButton';
 import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
+
+const OTP_EXPIRY_SECONDS = 60;
 
 type OtpVerificationRouteParams = {
   mobile: string;
@@ -47,11 +50,53 @@ const OtpVerificationScreen = () => {
   const [otpInput, setOtpInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const {login, signup, isProfileSetupDone, userId} = useAuth();
+  const {login, signup, SendOtp, isProfileSetupDone, userId} = useAuth();
   const route = useRoute<RouteProp<AuthStackParamList, 'OtpVerification'>>();
   const {mobile, path, ...rest} = route.params;
   const inputRefs = useRef<Array<TextInput | null>>([]);
-  const [resendTimer, setResendTimer] = useState(60);
+  const [resendTimer, setResendTimer] = useState(OTP_EXPIRY_SECONDS);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Start countdown timer
+  useEffect(() => {
+    startTimer();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startTimer = () => {
+    setResendTimer(OTP_EXPIRY_SECONDS);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setResendTimer(prev => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      setOtpInput('');
+      const response = await SendOtp({mobile, path, ...rest});
+      if (response?.success) {
+        startTimer();
+      } else {
+        setError(response?.message || 'Failed to resend OTP. Please try again.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   const handleVerify = async () => {
@@ -196,13 +241,30 @@ const OtpVerificationScreen = () => {
                   ))}
                 </View>
               </View>
-              <PrimaryButton
-                title="Verify One Time Password"
-                onPress={handleVerify}
-                style={{
-                  width: wp('90%'),
-                }}
-              />
+              {resendTimer > 0 ? (
+                <PrimaryButton
+                  title="Verify One Time Password"
+                  onPress={handleVerify}
+                  style={{
+                    width: wp('90%'),
+                  }}
+                />
+              ) : (
+                <PrimaryButton
+                  title="Resend OTP"
+                  onPress={handleResendOtp}
+                  style={{
+                    width: wp('90%'),
+                  }}
+                />
+              )}
+              {resendTimer > 0 && (
+                <View style={styles.resendContainer}>
+                  <Text style={styles.timerText}>
+                    OTP expires in {resendTimer}s
+                  </Text>
+                </View>
+              )}
               <LoadingModal loading={loading} setLoading={setLoading} />
             </View>
           </ScrollView>

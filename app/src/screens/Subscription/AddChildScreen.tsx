@@ -256,15 +256,27 @@ export default function AddChildScreen({navigation}: any) {
       // Non-fatal: proceed with no holidays
     }
 
-    // Calculate remaining working days from tomorrow to subscription end date
+    // Calculate remaining working days.
+    // If the subscription hasn't started yet, count from the plan start date
+    // rather than tomorrow — so the user pays for the full period.
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
     const subEnd = new Date(activeSubscription.endDate);
     subEnd.setHours(0, 0, 0, 0);
 
+    // Use the later of: tomorrow OR the subscription start date
+    let calcFrom = tomorrow;
+    if (activeSubscription.startDate) {
+      const subStart = new Date(activeSubscription.startDate);
+      subStart.setHours(0, 0, 0, 0);
+      if (subStart > tomorrow) {
+        calcFrom = subStart;
+      }
+    }
+
     const remainingDays =
-      subEnd >= tomorrow ? countWorkingDays(tomorrow, subEnd, holidays) : 0;
+      subEnd >= calcFrom ? countWorkingDays(calcFrom, subEnd, holidays) : 0;
 
     if (remainingDays === 0) {
       Alert.alert(
