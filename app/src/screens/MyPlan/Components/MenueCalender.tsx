@@ -300,7 +300,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   weekendText: {color: Colors.red},
-  daysContainer: {flexDirection: 'row', flexWrap: 'wrap'},
   dayCell: {
     flex: 1,
     alignItems: 'center',
