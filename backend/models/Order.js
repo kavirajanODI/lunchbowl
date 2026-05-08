@@ -77,6 +77,11 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ["Pending", "Processing", "Delivered", "Cancel"],
     },
+    invoiceUrl: {
+      type: String,
+      required: false,
+      default: null,
+    },
   },
   {
     timestamps: true,

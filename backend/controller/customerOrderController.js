@@ -2,11 +2,13 @@ require("dotenv").config();
 const stripe = require("stripe");
 const Razorpay = require("razorpay");
 const MailChecker = require("mailchecker");
+const path = require("path");
 // const stripe = require("stripe")(`${process.env.STRIPE_KEY}` || null); /// use hardcoded key if env not work
 
 const mongoose = require("mongoose");
 
 const Order = require("../models/Order");
+const UserPayment = require("../models/Payment");
 const Setting = require("../models/Setting");
 const { sendEmail } = require("../lib/email-sender/sender");
 const { formatAmountForStripe } = require("../lib/stripe/stripe");
@@ -251,8 +253,32 @@ const sendEmailInvoiceToCustomer = async (req, res) => {
           "Invalid or disposable email address. Please provide a valid email.",
       });
     }
-    // console.log("sendEmailInvoiceToCustomer");
-    const pdf = await handleCreateInvoice(req.body, `${req.body.invoice}.pdf`);
+    let safeOrderId = `${Date.now()}`;
+    if (req.body._id && mongoose.Types.ObjectId.isValid(req.body._id)) {
+      safeOrderId = String(req.body._id);
+    } else if (
+      req.body.orderId &&
+      /^[A-Za-z0-9_-]{1,64}$/.test(String(req.body.orderId))
+    ) {
+      safeOrderId = String(req.body.orderId);
+    } else if (
+      req.body.order_id &&
+      /^[A-Za-z0-9_-]{1,64}$/.test(String(req.body.order_id))
+    ) {
+      safeOrderId = String(req.body.order_id);
+    } else if (
+      req.body.invoice !== undefined &&
+      /^[0-9]{1,20}$/.test(String(req.body.invoice))
+    ) {
+      safeOrderId = String(req.body.invoice);
+    }
+
+    const fileName = `INV-${safeOrderId}-${Date.now()}.pdf`;
+    const invoicesDir = path.join(process.cwd(), "uploads", "invoices");
+    const absoluteInvoicePath = path.join(invoicesDir, fileName);
+    const invoiceUrl = `/uploads/invoices/${fileName}`;
+
+    const pdf = await handleCreateInvoice(req.body, absoluteInvoicePath);
 
     const option = {
       date: req.body.date,
@@ -289,6 +315,33 @@ const sendEmailInvoiceToCustomer = async (req, res) => {
         },
       ],
     };
+    if (req.body._id && mongoose.Types.ObjectId.isValid(req.body._id)) {
+      await Order.updateOne(
+        { _id: mongoose.Types.ObjectId(req.body._id) },
+        { $set: { invoiceUrl } }
+      );
+    }
+
+    const orderIds = [req.body.orderId, req.body.order_id]
+      .filter(Boolean)
+      .map((id) => String(id));
+
+    if (
+      req.body.user &&
+      mongoose.Types.ObjectId.isValid(req.body.user) &&
+      orderIds.length > 0
+    ) {
+      await UserPayment.updateOne(
+        {
+          user: mongoose.Types.ObjectId(req.body.user),
+        },
+        { $set: { "payments.$[payment].invoiceUrl": invoiceUrl } },
+        {
+          arrayFilters: [{ "payment.order_id": { $in: orderIds } }],
+        }
+      );
+    }
+
     const message = `Invoice successfully sent to the customer ${user.name}`;
     sendEmail(body, res, message);
   } catch (err) {

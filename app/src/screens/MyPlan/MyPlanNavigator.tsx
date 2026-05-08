@@ -24,7 +24,7 @@ const Stack = createStackNavigator();
 const MyPlanNavigator = () => {
 
 const { currentStep, loading } = useRegistration();
-if (loading || currentStep === null) {
+if (loading) {
   return <LoadingModal loading={true} setLoading={() => {}} />;
 }
 

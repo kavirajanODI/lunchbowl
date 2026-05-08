@@ -6,6 +6,7 @@ class RegistrationApi {
   private startSubs: string;
   private registrationCheckerEndPoint: string;
   private getPlanPrice:string;
+  private requestSchoolEndpoint: string;
 
   constructor() {
     this.registrationEndpoint = '/customer/stepForm-Register';
@@ -13,6 +14,7 @@ class RegistrationApi {
     this.startSubs = '/customer/form';
     this.registrationCheckerEndPoint = '/customer/Step-Check';
     this.getPlanPrice = '/customer/get-plan-price';
+    this.requestSchoolEndpoint = '/request-school';
 
   }
 
@@ -164,6 +166,16 @@ class RegistrationApi {
     userId: string;
   }) {
     return await httpAxiosClient.post('/admin/free-trial-enquiry', payload);
+  }
+
+  async requestSchool(payload: {
+    schoolName: string;
+    location: string;
+    parentName?: string;
+    phone?: string;
+    email?: string;
+  }) {
+    return await httpAxiosClient.post(this.requestSchoolEndpoint, payload);
   }
 }
 

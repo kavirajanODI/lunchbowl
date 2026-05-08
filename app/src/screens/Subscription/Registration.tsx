@@ -24,7 +24,7 @@ import { useChildData } from 'context/ChildContext';
 
 type Step = 1 | 2 | 3 | 4;
 
-export default function Registration({ navigation }: any) {
+export default function Registration({ navigation, route }: any) {
   const { userId } = useAuth();
   const { profileData, refreshProfileData } = useUserProfile();
   const { childrenList, refreshChildren } = useChildData();
@@ -32,10 +32,12 @@ export default function Registration({ navigation }: any) {
   // Prevents childrenList useEffect from overwriting local form state after a save
   const hasLoadedChildren = useRef(false);
 
+  // When navigated here from the "LET'S GET STARTED" button on the InitialsScreen,
+  // skip the InitialsScreen inside this component and go straight to the form.
+  const [showForm, setShowForm] = useState(!!(route?.params?.startForm));
+
   // Children enriched with DB IDs — used as the source of truth for step 3
   const [savedChildrenForPlan, setSavedChildrenForPlan] = useState<any[]>([]);
-
-  // ########################### PARENT STATES ##############################
 
   const [fatherFirstName, setFatherFirstName] = useState('');
   const [fatherLastName, setFatherLastName] = useState('');
@@ -120,7 +122,6 @@ export default function Registration({ navigation }: any) {
     },
   ]);
 
-  const [showForm, setShowForm] = useState(false);
   const [step, setStep] = useState<Step>(1);
 
   // ############################ ERROR STATES ##################################

@@ -357,6 +357,26 @@ class RegistrationService {
     }
   }
 
+  static async requestSchool(payload: {
+    schoolName: string;
+    location: string;
+    parentName?: string;
+    phone?: string;
+    email?: string;
+  }): Promise<ApiResponseModel> {
+    try {
+      const response = await RegistrationApi.requestSchool(payload);
+      return response.data as ApiResponseModel;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Error submitting school request',
+        data: null,
+        error: this.handleApiError(error),
+      };
+    }
+  }
+
   private static handleApiError(error: any): string {
     if (error.response) {
       return `Error: ${
