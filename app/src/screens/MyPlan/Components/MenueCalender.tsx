@@ -95,6 +95,20 @@ export default function MenueCalendar({
   for (let i = 0; i < firstDayIndex; i++) calendarDays.push('');
   for (let day = 1; day <= daysInMonth; day++) calendarDays.push(day);
 
+  // Group calendar days into rows of 7
+  const calendarRows: (string | number)[][] = [];
+  for (let i = 0; i < calendarDays.length; i += 7) {
+    calendarRows.push(calendarDays.slice(i, i + 7));
+  }
+
+  // Pad the last row to 7 cells if needed
+  if (calendarRows.length > 0) {
+    const lastRow = calendarRows[calendarRows.length - 1];
+    while (lastRow.length < 7) {
+      lastRow.push('');
+    }
+  }
+
   // --------------------
   // Render
   // --------------------
@@ -139,104 +153,106 @@ export default function MenueCalendar({
         ))}
       </View>
 
-      {/* Dates */}
-      <View style={styles.daysContainer}>
-        {calendarDays.map((day, index) => {
-          if (day === '') return <View key={index} style={styles.dayCell} />;
+      {/* Dates — rendered row by row to avoid fractional-width wrapping bugs */}
+      {calendarRows.map((row, rowIndex) => (
+        <View key={rowIndex} style={styles.weekRow}>
+          {row.map((day, colIndex) => {
+            const cellIndex = rowIndex * 7 + colIndex;
+            if (day === '') return <View key={colIndex} style={styles.dayCell} />;
 
-          const dayNumber = day as number;
-          const dateStr = formatDate(currentYear, currentMonth, dayNumber);
-          const selected = selectedDate === dateStr;
+            const dayNumber = day as number;
+            const dateStr = formatDate(currentYear, currentMonth, dayNumber);
+            const selected = selectedDate === dateStr;
 
-          // Determine if this cell should appear greyed-out / non-interactive
-          const isSundayCell = index % 7 === 6;
-          const outOfPlan =
-            !isWithinRange(dayNumber, startDate, endDate, currentYear, currentMonth);
-          const isDisabled = isSundayCell || outOfPlan;
+            const isSundayCell = colIndex === 6;
+            const outOfPlan =
+              !isWithinRange(dayNumber, startDate, endDate, currentYear, currentMonth);
+            const isDisabled = isSundayCell || outOfPlan;
 
-          return (
-            <TouchableOpacity
-              key={index}
-              style={[styles.dayCell, isDisabled && styles.disabledCell]}
-              activeOpacity={isDisabled ? 1 : 0.7}
-              onPress={() =>
-                handleDayPress({
-                  dayNumber,
-                  currentYear,
-                  currentMonth,
-                  foodList,
-                  startDate,
-                  endDate,
-                  isPastDate,
-                  isWithinRange,
-                  isBookedDate,
-                  handleDateSelect,
-                  showToast,
-                })
-              }
-              onPressIn={() => {
-                holdTimeout = setTimeout(() => {
-                  setTooltipText(
-                    getTooltipText(
-                      dayNumber,
-                      index,
-                      currentMonth,
-                      currentYear,
-                      startDate,
-                      endDate,
-                      holidays,
-                      foodList,
-                      formatDate,
-                      isBookedDate,
-                    ),
-                  );
-                  setTooltipVisible(true);
-                }, 1000);
-              }}
-              onPressOut={() => {
-                clearTimeout(holdTimeout);
-                setTooltipVisible(false);
-              }}>
-              <LinearGradient
-                colors={getGradientColors(
-                  dayNumber,
-                  index,
-                  currentMonth,
-                  currentYear,
-                  startDate,
-                  endDate,
-                  holidays,
-                  foodList,
-                  isBookedDate,
-                )}
-                style={[styles.dayCircle, isDisabled && styles.disabledCircle]}>
-                <Text
-                  style={[
-                    styles.dayText,
-                    isDisabled && styles.disabledText,
-                    selected && !isDisabled && styles.selectedText,
-                    !isDisabled && isBookedDate(
-                      dayNumber,
-                      currentYear,
-                      currentMonth,
-                      foodList,
-                    ) && styles.bookedText,
-                    !isDisabled && (isHoliday(
-                      dayNumber,
-                      holidays,
-                      currentYear,
-                      currentMonth,
-                    ) ||
-                      isWeekend(index)) &&
-                      styles.holidayText,
-                  ]}>
-                  {dayNumber}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+            return (
+              <TouchableOpacity
+                key={colIndex}
+                style={[styles.dayCell, isDisabled && styles.disabledCell]}
+                activeOpacity={isDisabled ? 1 : 0.7}
+                onPress={() =>
+                  handleDayPress({
+                    dayNumber,
+                    currentYear,
+                    currentMonth,
+                    foodList,
+                    startDate,
+                    endDate,
+                    isPastDate,
+                    isWithinRange,
+                    isBookedDate,
+                    handleDateSelect,
+                    showToast,
+                  })
+                }
+                onPressIn={() => {
+                  holdTimeout = setTimeout(() => {
+                    setTooltipText(
+                      getTooltipText(
+                        dayNumber,
+                        cellIndex,
+                        currentMonth,
+                        currentYear,
+                        startDate,
+                        endDate,
+                        holidays,
+                        foodList,
+                        formatDate,
+                        isBookedDate,
+                      ),
+                    );
+                    setTooltipVisible(true);
+                  }, 1000);
+                }}
+                onPressOut={() => {
+                  clearTimeout(holdTimeout);
+                  setTooltipVisible(false);
+                }}>
+                <LinearGradient
+                  colors={getGradientColors(
+                    dayNumber,
+                    cellIndex,
+                    currentMonth,
+                    currentYear,
+                    startDate,
+                    endDate,
+                    holidays,
+                    foodList,
+                    isBookedDate,
+                  )}
+                  style={[styles.dayCircle, isDisabled && styles.disabledCircle]}>
+                  <Text
+                    style={[
+                      styles.dayText,
+                      isDisabled && styles.disabledText,
+                      selected && !isDisabled && styles.selectedText,
+                      !isDisabled && isBookedDate(
+                        dayNumber,
+                        currentYear,
+                        currentMonth,
+                        foodList,
+                      ) && styles.bookedText,
+                      !isDisabled && (isHoliday(
+                        dayNumber,
+                        holidays,
+                        currentYear,
+                        currentMonth,
+                      ) ||
+                        isWeekend(cellIndex)) &&
+                        styles.holidayText,
+                    ]}>
+                    {dayNumber}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ))}
 
       {/* Tooltip */}
       {tooltipVisible && (
@@ -284,9 +300,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   weekendText: {color: Colors.red},
-  daysContainer: {flexDirection: 'row', flexWrap: 'wrap'},
   dayCell: {
-    width: `${100 / 7}%`,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 6,

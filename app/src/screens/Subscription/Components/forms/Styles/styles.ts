@@ -105,8 +105,7 @@ const styles = StyleSheet.create({
         marginTop: hp('2%'),
     },
     childFormContainer: {
-        marginBottom: hp('35%'),
-
+        flex: 1,
     },
     addchildTabText: {
         color: Colors.primaryOrange,
@@ -122,8 +121,6 @@ const styles = StyleSheet.create({
         fontSize: wp('3.7%'),
     },
     SubmitButtonContainer: {
-        position: 'absolute',
-        bottom: 0,
         left: 0,
         right: 0,
         backgroundColor: Colors.bg,
@@ -134,8 +131,6 @@ const styles = StyleSheet.create({
         columnGap: wp('4%'),
     },
     parentSubmitButtonContainer: {
-        position: 'absolute',
-        bottom: 0,
         left: 0,
         right: 0,
         backgroundColor: Colors.bg,
@@ -144,7 +139,6 @@ const styles = StyleSheet.create({
         borderColor: Colors.Storke,
         justifyContent: 'space-between',
         columnGap: wp('4%'),
-        marginBottom: hp('33%'),
     },
     TitleRow: {
         flexDirection: 'row',

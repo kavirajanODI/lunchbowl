@@ -320,7 +320,7 @@ class RegistrationService {
     } catch (error: any) {
       return {
         success: false,
-        message: 'Error processing add-child payment',
+        message: error?.response?.data?.message || 'Error processing add-child payment',
         data: null,
         error: this.handleApiError(error),
       };

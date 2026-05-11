@@ -104,8 +104,8 @@ const AppNavigator = () => {
         tabBarShowLabel: true,
         tabBarLabelStyle: {
           fontFamily: Fonts.Urbanist.regular,
-          fontSize: 14,
-          marginTop: '25%',
+          fontSize: 12,
+          marginTop: '10%',
         },
         tabBarActiveTintColor: Colors.primaryOrange,
         tabBarStyle: styles.tabBar,
@@ -168,26 +168,26 @@ const styles = StyleSheet.create({
     borderTopRightRadius: wp('8%'),
     backgroundColor: Colors.white,
     elevation: 10,
-    height: hp('10%'),
-    paddingBottom: hp('0.7%'),
+    height: hp('8%'),
+    paddingBottom: hp('0.5%'),
     overflow: 'hidden',
   },
 
   iconWrapper: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: hp('4%'),
+    marginTop: hp('2%'),
     marginLeft: wp('17%'),
   },
 
   iconWrapperFocused: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingLeft: hp('4%'),
-    paddingRight: hp('4%'),
-    paddingTop: hp('4%'),
-    paddingBottom: hp('6%'),
-    marginTop: hp('2.9%'),
+    paddingLeft: hp('3%'),
+    paddingRight: hp('3%'),
+    paddingTop: hp('2.5%'),
+    paddingBottom: hp('4%'),
+    marginTop: hp('1.5%'),
   },
 
   topIndicator: {

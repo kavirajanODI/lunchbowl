@@ -17,7 +17,7 @@ const Walkslides = [
     id: 1,
     title: ['Create your', 'Account'],
     description:
-      'Lorem ipsum dolor sit amet consectetur. Facilisis in vitae nibh quis nulla. Vulputate lacus lacus euismod adipiscing adipi scing lacinia. Sed ut fermentum. ',
+      'Sign up in minutes and set up your child\'s profile. Enter details like school, class, and dietary preferences to get started.',
     image: require('assets/images/WalkThrow/walk1.png'),
   },
   {
@@ -25,7 +25,7 @@ const Walkslides = [
     title: ['Choose Yours', 'Menu'],
 
     description:
-      'Lorem ipsum dolor sit amet consectetur. Facilisis in vitae nibh quis nulla. Vulputate lacus lacus euismod adipiscing adipi scing lacinia. Sed ut fermentum. ',
+      'Browse our weekly lunch menu crafted by nutrition experts. Pick meals your child loves — healthy, tasty, and freshly prepared every day.',
     image: require('assets/images/WalkThrow/walk2.png'),
   },
   {
@@ -33,7 +33,7 @@ const Walkslides = [
     title: ['Place Your', 'Order'],
 
     description:
-      'Lorem ipsum dolor sit amet consectetur. Facilisis in vitae nibh quis nulla. Vulputate lacus lacus euismod adipiscing adipi scing lacinia. Sed ut fermentum. ',
+      'Choose a subscription plan that fits your schedule. Flexible weekly and monthly plans, with easy online payment via CC Avenue.',
     image: require('assets/images/WalkThrow/walk3.png'),
   },
   {
@@ -41,7 +41,7 @@ const Walkslides = [
     title: ['Sit Back ', 'Relax'],
 
     description:
-      'Lorem ipsum dolor sit amet consectetur. Facilisis in vitae nibh quis nulla. Vulputate lacus lacus euismod adipiscing adipi scing lacinia. Sed ut fermentum. ',
+      'Hot, home-style lunch is delivered straight to your child\'s school. Track meals, manage holidays, and add children anytime from the app.',
 
     image: require('assets/images/WalkThrow/walk4.png'),
   },

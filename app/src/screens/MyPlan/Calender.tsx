@@ -86,6 +86,7 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
   const {
     currentStep,
     isSubscriptionExpired,
+    refreshRegistration,
   } = useRegistration();
 
   // Navigate to the renewal screen when the subscription is expired.
@@ -101,6 +102,8 @@ const MyPlanScreen: React.FC<{navigation: any}> = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
+      // Refresh registration step so that a completed payment reflects immediately
+      refreshRegistration();
       // Refresh user profile (plan card, payment status)
       refreshProfileData();
       // Also refresh MenuContext so startDate/endDate are current after payment

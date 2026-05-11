@@ -3,7 +3,7 @@ import {Colors} from 'assets/styles/colors';
 import Fonts from 'assets/styles/fonts';
 import ThemeGradientBackground from 'components/Backgrounds/GradientBackground';
 import SectionTitle from 'components/Titles/SectionHeading';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   GestureResponderEvent,
   ScrollView,
@@ -26,6 +26,8 @@ import EasterEgg from 'components/Fun/EasterEgg';
 import HomeSkeleton from 'components/skeletons/HomeSkeleton';
 import QuickActions from './Components/QuickActions';
 import Highlights from './Components/Highlights';
+import {useFocusEffect} from '@react-navigation/native';
+import {useUserProfile} from 'context/UserDataContext';
 
 //############## BANNER MOCK DATA ################
 
@@ -59,6 +61,13 @@ export const mockChallenges = [
 const HomeScreen: React.FC<{navigation: any}> = ({navigation}) => {
   const [userName, setUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const {refreshProfileData} = useUserProfile();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfileData();
+    }, [refreshProfileData]),
+  );
 
   useEffect(() => {
     const getUserRole = async () => {
