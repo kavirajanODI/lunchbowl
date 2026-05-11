@@ -19,7 +19,8 @@ export default function Header({userName, navigation}: HeaderProps) {
   const normalizedName = (
     Array.isArray(userName) ? userName.join(' ') : userName || ''
   ).trim();
-  const greetingText = normalizedName ? `Hello, ${normalizedName}!` : 'Hello,';
+  const firstName = normalizedName.split(/\s+/)[0] || '';
+  const greetingText = firstName ? `Hello, ${firstName}!` : 'Hello,';
 
   const goToSettings = () => {
     navigation.navigate('Settings');
