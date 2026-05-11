@@ -29,7 +29,6 @@ import {
   NotificationBell,
   offers,
   privacyPolicy,
-  RightIcon,
   RightIconWhite,
 } from 'styles/svg-icons';
 
@@ -117,14 +116,12 @@ const SettingsScreen: React.FC<{navigation: any}> = ({navigation}) => {
       <ScrollView contentContainerStyle={styles.mainScrollContainer} keyboardShouldPersistTaps="handled">
         <View style={styles.mainContainer}>
           <HeaderBackButton title="Settings" />
-          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('EditProfile')}>
+          <View style={styles.card}>
             <Image source={{uri: profileImage}} style={styles.image} />
             <View style={styles.textSection}>
               <Text style={styles.name}>{displayName}</Text>
-              <Text style={styles.subtitle}>Edit Profile</Text>
             </View>
-            <SvgXml xml={RightIcon} width={14} height={14} />
-          </TouchableOpacity>
+          </View>
 
           <View style={styles.ItemContainer}>
             {items.map((item, index) => (
@@ -189,7 +186,6 @@ const styles = StyleSheet.create({
   image:       { width: 40, height: 40, borderRadius: 20, marginRight: wp('3%') },
   textSection: { flex: 1 },
   name:        { color: Colors.white, fontSize: 18, fontFamily: Fonts.Urbanist.bold },
-  subtitle:    { color: Colors.white, fontSize: 14, fontFamily: Fonts.Urbanist.regular },
   itemContent: { flexDirection: 'row', alignItems: 'center', gap: wp(4), marginVertical: hp(0.9) },
   ItemContainer: { marginBottom: hp(2), backgroundColor: Colors.white, padding: wp('3%'), borderRadius: 10 },
   divider:     { height: 1, backgroundColor: Colors.Storke, marginVertical: hp(1) },

@@ -20,11 +20,9 @@ import PromoBanner from './Components/Carousel';
 import FreeTrialCard from './Components/FreeTrialCard';
 import Header from './Components/Header';
 import PopularMenus from './Components/PopularMenusMarquee';
-import SchoolMarquee from './Components/SchoolsServes';
 import WhatsAppButton from 'components/buttons/WhatsAppButton';
 import EasterEgg from 'components/Fun/EasterEgg';
 import HomeSkeleton from 'components/skeletons/HomeSkeleton';
-import QuickActions from './Components/QuickActions';
 import Highlights from './Components/Highlights';
 import {useFocusEffect} from '@react-navigation/native';
 import {useUserProfile} from 'context/UserDataContext';
@@ -115,14 +113,11 @@ const HomeScreen: React.FC<{navigation: any}> = ({navigation}) => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{paddingBottom: hp('10%')}}>
-          <Header userName={userName ?? 'GuestUSer'} navigation={navigation} />
+          <Header userName={userName ?? ''} navigation={navigation} />
           <PromoBanner navigation={navigation} />
-          <SectionTitle> Kick Start your Trial Meal</SectionTitle>
           <FreeTrialCard />
           <SectionTitle>Lunch Bowl’s Highlights</SectionTitle>
           <Highlights navigation={navigation} />
-          <SectionTitle>Schools We Serve</SectionTitle>
-          <SchoolMarquee />
           <View style={styles.headerContainer}>
             <Text style={styles.heading}>Popular Menus</Text>
             <TouchableOpacity onPress={onPressViewAll}>
@@ -130,8 +125,6 @@ const HomeScreen: React.FC<{navigation: any}> = ({navigation}) => {
             </TouchableOpacity>
           </View>
           <PopularMenus />
-          <SectionTitle>Quick Actions</SectionTitle>
-          <QuickActions navigation={navigation} />
         </ScrollView>
         <EasterEgg />
         <WhatsAppButton />

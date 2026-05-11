@@ -16,6 +16,12 @@ interface HeaderProps {
 }
 
 export default function Header({userName, navigation}: HeaderProps) {
+  const normalizedName = (
+    Array.isArray(userName) ? userName.join(' ') : userName || ''
+  ).trim();
+  const firstName = normalizedName.split(/\s+/)[0] || '';
+  const greetingText = firstName ? `Hello, ${firstName}!` : 'Hello,';
+
   const goToSettings = () => {
     navigation.navigate('Settings');
   };
@@ -26,9 +32,7 @@ export default function Header({userName, navigation}: HeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.textSection}>
-        <Typography style={styles.greeting}>{`Hello, ${
-          Array.isArray(userName) ? userName.join(' ') : userName
-        }!`}</Typography>
+        <Typography style={styles.greeting}>{greetingText}</Typography>
         <Typography style={styles.subtitle}>Welcome to Lunch Bowl</Typography>
       </View>
       <View style={styles.rightIcons}>
