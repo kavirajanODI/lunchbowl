@@ -110,7 +110,7 @@ const isWorkingDay = (date: Date, holidays: Holiday[] = []): boolean => {
 
 /**
  * Returns the next working day starting from `base`, using `getNextCalendarDay`
- * as the base and then advancing past weekends and holidays.
+ * as the base and then advancing past Sundays and holidays.
  *
  * Next-day logic: any action performed today → effective start date is tomorrow.
  */
@@ -188,7 +188,7 @@ function WorkingDaysModal({
     const date = new Date(viewYear, viewMonth, day);
     date.setHours(0, 0, 0, 0);
     const dow = date.getDay(); // 0=Sun, 6=Sat
-    const isWeekendDay = dow === 0 || dow === 6;
+    const isWeekendDay = dow === 0;
     const isTodayDay = date.getTime() === today.getTime();
     const isHolidayDay = holidaySet.has(toLocalDateStr(date));
     const inPlanRange = date >= planStart && date <= planEnd;
@@ -250,7 +250,7 @@ function WorkingDaysModal({
             {['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d => (
               <Text
                 key={d}
-                style={[modalSt.weekHeader, (d === 'SAT' || d === 'SUN') && modalSt.weekendHeader]}>
+                style={[modalSt.weekHeader, d === 'SUN' && modalSt.weekendHeader]}>
                 {d}
               </Text>
             ))}
@@ -282,7 +282,7 @@ function WorkingDaysModal({
               <View style={[modalSt.legendSwatch, {backgroundColor: Colors.green}]} />
               <Text style={modalSt.legendText}>Your Working Days</Text>
               <View style={[modalSt.legendSwatch, {backgroundColor: Colors.lightRed}]} />
-              <Text style={modalSt.legendText}>Weekends</Text>
+              <Text style={modalSt.legendText}>Sundays</Text>
             </View>
             <View style={modalSt.legendRow}>
               <View style={modalSt.legendDotItem} />
@@ -988,17 +988,17 @@ export default function SubscriptionPlan({
               }
               if (!isWorkingDay(picked, holidays)) {
                 const dow = picked.getDay();
-                const isWeekendPicked = dow === 0 || dow === 6;
+                const isWeekendPicked = dow === 0;
                 const pickedStr = toLocalDateStr(picked);
                 const holidayName = holidays.find(h => h.date === pickedStr)?.name;
                 const reason = isWeekendPicked
-                  ? 'Weekends are not working days.'
+                  ? 'Sundays are not working days.'
                   : holidayName
                   ? `${holidayName} is a public holiday.`
                   : 'This is not a working day.';
                 setCustomDateErrors(prev => ({
                   ...prev,
-                  [planDays]: `Cannot select this date — ${reason} Please choose a weekday that is not a holiday.`,
+                  [planDays]: `Cannot select this date — ${reason} Please choose a day that is not a holiday.`,
                 }));
                 return;
               }

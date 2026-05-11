@@ -4,6 +4,10 @@ const { sendEmailAsync } = require("../lib/email-sender/sender");
 const schoolRequestAdminEmails =
   process.env.SCHOOL_REQUEST_ADMIN_EMAILS ||
   "contactus@lunchbowl.co.in, maniyarasanodi20@gmail.com";
+const schoolRequestAdminEmailList = schoolRequestAdminEmails
+  .split(",")
+  .map((email) => email.trim())
+  .filter(Boolean);
 
 const requestSchool = async (req, res) => {
   try {
@@ -24,9 +28,11 @@ const requestSchool = async (req, res) => {
       email: email ? String(email).trim() : "",
     });
 
+    const fromField = process.env.EMAIL_USER ? { from: process.env.EMAIL_USER } : {};
+
     const adminBody = {
-      from: process.env.EMAIL_USER,
-      to: schoolRequestAdminEmails,
+      ...fromField,
+      to: schoolRequestAdminEmailList,
       subject: "New School Request - Trial Meal",
       html: `
         <h2>New School Request</h2>
@@ -39,11 +45,11 @@ const requestSchool = async (req, res) => {
       `,
     };
 
-    await sendEmailAsync(adminBody);
+    const emailTasks = [sendEmailAsync(adminBody)];
 
     if (schoolRequest.email) {
       const userBody = {
-        from: process.env.EMAIL_USER,
+        ...fromField,
         to: schoolRequest.email,
         subject: "School Request Received - Lunch Bowl",
         html: `
@@ -55,12 +61,27 @@ const requestSchool = async (req, res) => {
           <p>Thank you,<br/>Lunch Bowl Team</p>
         `,
       };
-      await sendEmailAsync(userBody);
+      emailTasks.push(sendEmailAsync(userBody));
+    }
+
+    const communicationResults = await Promise.allSettled(emailTasks);
+    const communicationSent = communicationResults.every(
+      (result) => result.status === "fulfilled"
+    );
+
+    if (!communicationSent) {
+      const errors = communicationResults
+        .filter((result) => result.status === "rejected")
+        .map((result) => result.reason?.message || "Unknown email error");
+      console.error("School request communication failed:", errors);
     }
 
     return res.status(201).send({
       success: true,
-      message: "Request submitted successfully",
+      message: communicationSent
+        ? "Request submitted successfully"
+        : "Request submitted, but confirmation communication could not be delivered",
+      communicationSent,
       data: schoolRequest,
     });
   } catch (err) {
