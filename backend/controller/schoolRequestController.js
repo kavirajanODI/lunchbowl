@@ -28,10 +28,10 @@ const requestSchool = async (req, res) => {
       email: email ? String(email).trim() : "",
     });
 
-    const fromField = process.env.EMAIL_USER ? { from: process.env.EMAIL_USER } : {};
+    const emailFromField = process.env.EMAIL_USER ? { from: process.env.EMAIL_USER } : {};
 
     const adminBody = {
-      ...fromField,
+      ...emailFromField,
       to: schoolRequestAdminEmailList,
       subject: "New School Request - Trial Meal",
       html: `
@@ -49,7 +49,7 @@ const requestSchool = async (req, res) => {
 
     if (schoolRequest.email) {
       const userBody = {
-        ...fromField,
+        ...emailFromField,
         to: schoolRequest.email,
         subject: "School Request Received - Lunch Bowl",
         html: `

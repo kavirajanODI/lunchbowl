@@ -998,7 +998,7 @@ export default function SubscriptionPlan({
                   : 'This is not a working day.';
                 setCustomDateErrors(prev => ({
                   ...prev,
-                  [planDays]: `Cannot select this date — ${reason} Please choose a day that is not a holiday.`,
+                  [planDays]: `Cannot select this date — ${reason} Please choose a working day.`,
                 }));
                 return;
               }
