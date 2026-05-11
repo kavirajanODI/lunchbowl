@@ -28,10 +28,10 @@ const requestSchool = async (req, res) => {
       email: email ? String(email).trim() : "",
     });
 
-    const emailFromField = process.env.EMAIL_USER ? { from: process.env.EMAIL_USER } : {};
+    const emailFromConfig = process.env.EMAIL_USER ? { from: process.env.EMAIL_USER } : {};
 
     const adminBody = {
-      ...emailFromField,
+      ...emailFromConfig,
       to: schoolRequestAdminEmailList,
       subject: "New School Request - Trial Meal",
       html: `
@@ -49,7 +49,7 @@ const requestSchool = async (req, res) => {
 
     if (schoolRequest.email) {
       const userBody = {
-        ...emailFromField,
+        ...emailFromConfig,
         to: schoolRequest.email,
         subject: "School Request Received - Lunch Bowl",
         html: `
@@ -65,11 +65,11 @@ const requestSchool = async (req, res) => {
     }
 
     const communicationResults = await Promise.allSettled(emailTasks);
-    const communicationSent = communicationResults.every(
+    const allEmailsSent = communicationResults.every(
       (result) => result.status === "fulfilled"
     );
 
-    if (!communicationSent) {
+    if (!allEmailsSent) {
       const errors = communicationResults
         .filter((result) => result.status === "rejected")
         .map((result) => result.reason?.message || "Unknown email error");
@@ -78,10 +78,10 @@ const requestSchool = async (req, res) => {
 
     return res.status(201).send({
       success: true,
-      message: communicationSent
+      message: allEmailsSent
         ? "Request submitted successfully"
         : "Request submitted, but confirmation communication could not be delivered",
-      communicationSent,
+      communicationSent: allEmailsSent,
       data: schoolRequest,
     });
   } catch (err) {
