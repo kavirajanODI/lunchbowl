@@ -17,7 +17,7 @@ interface HeaderProps {
 
 export default function Header({userName, navigation}: HeaderProps) {
   const normalizedName = (
-    Array.isArray(userName) ? userName.join(' ') : userName
+    Array.isArray(userName) ? userName.join(' ') : userName || ''
   ).trim();
   const greetingText = normalizedName ? `Hello, ${normalizedName}!` : 'Hello,';
 
