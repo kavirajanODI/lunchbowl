@@ -3,6 +3,7 @@ import {View, Text, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {Colors} from 'assets/styles/colors';
 import PrimaryButton from 'components/buttons/PrimaryButton';
+import SectionTitle from 'components/Titles/SectionHeading';
 import {
   heightPercentageToDP as hp,
   widthPercentageToDP as wp,
@@ -39,22 +40,25 @@ const FreeTrialCard: React.FC = () => {
   }
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.desc}>
-        Delicious and nutritious food that meets the dietary needs of growing
-        children.
-      </Text>
-      <PrimaryButton
-        title="Get Trial Meal"
-        onPress={handleTrialMealPress}
-        style={{width: '100%'}}
-      />
-      <FreeTrialModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        navigation={navigation}
-      />
-    </View>
+    <>
+      <SectionTitle> Kick Start your Trial Meal</SectionTitle>
+      <View style={styles.card}>
+        <Text style={styles.desc}>
+          Delicious and nutritious food that meets the dietary needs of growing
+          children.
+        </Text>
+        <PrimaryButton
+          title="Get Trial Meal"
+          onPress={handleTrialMealPress}
+          style={{width: '100%'}}
+        />
+        <FreeTrialModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          navigation={navigation}
+        />
+      </View>
+    </>
   );
 };
 

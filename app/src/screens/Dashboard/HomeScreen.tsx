@@ -115,7 +115,6 @@ const HomeScreen: React.FC<{navigation: any}> = ({navigation}) => {
           contentContainerStyle={{paddingBottom: hp('10%')}}>
           <Header userName={userName ?? ''} navigation={navigation} />
           <PromoBanner navigation={navigation} />
-          <SectionTitle> Kick Start your Trial Meal</SectionTitle>
           <FreeTrialCard />
           <SectionTitle>Lunch Bowl’s Highlights</SectionTitle>
           <Highlights navigation={navigation} />
